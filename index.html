@@ -3,62 +3,39 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Phone Call Status</title>
+  <title>Phone Call Conversation</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    #conversation {
+      margin-top: 20px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      max-height: 400px;
+      overflow-y: scroll;
+    }
+    .call-message {
+      margin: 5px 0;
+    }
+  </style>
 </head>
 <body>
-  <h1>Phone Call Status</h1>
-
-  <div id="current-call">
-    <h2>Current Call</h2>
+  <h1>Phone Call Conversation</h1>
+  <div id="conversation">
     <p>Waiting for a call...</p>
   </div>
 
-  <div id="past-calls">
-    <h2>Past Calls</h2>
-    <ul id="past-calls-list">
-      <li>No past calls available</li>
-    </ul>
-  </div>
-
+  <script src="/socket.io/socket.io.js"></script>
   <script>
-    // Fetch the call data from the backend every 5 seconds
-    setInterval(() => {
-      fetch('/call-data')
-        .then(response => response.json())
-        .then(data => {
-          const currentCallDiv = document.getElementById('current-call');
-          const pastCallsList = document.getElementById('past-calls-list');
+    const socket = io();
 
-          // Display current call data
-          if (data.currentCall) {
-            currentCallDiv.innerHTML = `
-              <h2>Current Call</h2>
-              <p>Caller: ${data.currentCall.caller}</p>
-              <p>Status: ${data.currentCall.status}</p>
-              <p>Call SID: ${data.currentCall.callSid}</p>
-              <p>Duration: ${data.currentCall.duration} seconds</p>
-            `;
-          } else {
-            currentCallDiv.innerHTML = '<p>No current call</p>';
-          }
-
-          // Display past calls
-          if (data.pastCalls.length > 0) {
-            pastCallsList.innerHTML = data.pastCalls.map(call => `
-              <li>
-                <p>Caller: ${call.caller}</p>
-                <p>Status: ${call.status}</p>
-                <p>Duration: ${call.duration} seconds</p>
-              </li>
-            `).join('');
-          } else {
-            pastCallsList.innerHTML = '<li>No past calls available</li>';
-          }
-        })
-        .catch(error => {
-          console.error('Error fetching call data:', error);
-        });
-    }, 5000);
+    // Listen for the transcribed text from the backend
+    socket.on('speech-to-text', (text) => {
+      const conversationDiv = document.getElementById('conversation');
+      conversationDiv.innerHTML += `<p class="call-message">${text}</p>`;
+      conversationDiv.scrollTop = conversationDiv.scrollHeight;  // Scroll to bottom
+    });
   </script>
 </body>
 </html>
