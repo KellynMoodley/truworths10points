@@ -27,6 +27,7 @@ app.post('/voice', (req, res) => {
   const response = new twiml.VoiceResponse();
   response.say('Thank you for calling Kellyn. Goodbye!');
   response.hangup();
+  console.log(`Call from ${caller} with CallSid ${callSid} has status: ${callStatus}`);
 
   res.type('text/xml');
   res.send(response.toString());
