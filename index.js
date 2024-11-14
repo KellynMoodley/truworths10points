@@ -8,8 +8,13 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// Set up the server with the correct port for Heroku or local
+const server = app.listen(process.env.PORT || 3000, () => {
+  console.log('Server running on port ' + process.env.PORT);
+});
+
 // Set up WebSocket server to relay messages between phone and web assistants
-const wss = new WebSocket.Server({ port: 8080 });
+const wss = new WebSocket.Server({ server });
 
 wss.on('connection', ws => {
   console.log('WebSocket connected to web client');
@@ -21,9 +26,4 @@ wss.on('connection', ws => {
     // Send the message to the web assistant via WebSocket
     ws.send(message);
   });
-});
-
-// Start the server
-app.listen(process.env.PORT || 3000, () => {
-  console.log('Server running on port 3000');
 });
