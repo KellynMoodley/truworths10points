@@ -7,12 +7,12 @@
 </head>
 <body>
   <h1>Phone Call Status</h1>
-  
+
   <div id="current-call">
     <h2>Current Call</h2>
     <p>Waiting for a call...</p>
   </div>
-  
+
   <div id="past-calls">
     <h2>Past Calls</h2>
     <ul id="past-calls-list">
@@ -34,7 +34,7 @@
             currentCallDiv.innerHTML = `
               <h2>Current Call</h2>
               <p>Caller: ${data.currentCall.caller}</p>
-              <p>Status: ${data.currentCall.callStatus}</p>
+              <p>Status: ${data.currentCall.status}</p>
               <p>Call SID: ${data.currentCall.callSid}</p>
               <p>Duration: ${data.currentCall.duration} seconds</p>
             `;
@@ -47,7 +47,7 @@
             pastCallsList.innerHTML = data.pastCalls.map(call => `
               <li>
                 <p>Caller: ${call.caller}</p>
-                <p>Status: ${call.callStatus}</p>
+                <p>Status: ${call.status}</p>
                 <p>Duration: ${call.duration} seconds</p>
               </li>
             `).join('');
