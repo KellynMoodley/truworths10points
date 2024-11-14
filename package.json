@@ -1,0 +1,19 @@
+{
+  "name": "watson-phone-assistant",
+  "version": "1.0.0",
+  "description": "WebSocket integration with Watson Assistant and Twilio",
+  "main": "show.js",
+  "scripts": {
+    "start": "node show.js"
+  },
+  "dependencies": {
+    "axios": "^0.27.2",
+    "body-parser": "^1.19.0",
+    "express": "^4.18.2",
+    "twilio": "^3.64.1",
+    "ws": "^8.7.0"
+  },
+  "engines": {
+    "node": "16.x"
+  }
+}
