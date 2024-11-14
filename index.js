@@ -3,11 +3,17 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const { twiml } = require('twilio');
+const path = require('path');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(bodyParser.urlencoded({ extended: false }));
+
+// Serve the index.html file at the root
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
 
 // Handle incoming calls
 app.post('/voice', (req, res) => {
@@ -34,9 +40,6 @@ app.post('/voice', (req, res) => {
     callSid
   };
 });
-
-// Serve the frontend
-app.use(express.static('public'));
 
 // Endpoint to serve the latest call data to the frontend
 app.get('/latest-call-data', (req, res) => {
