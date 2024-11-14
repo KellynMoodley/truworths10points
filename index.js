@@ -1,90 +1,86 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const { twiml } = require('twilio');
-const path = require('path');
+const { Server } = require('socket.io');
+const WebSocket = require('ws');
+const SpeechToText = require('ibm-watson/speech-to-text/v1');
+const { IamAuthenticator } = require('ibm-watson/auth');
+const http = require('http');
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
+
 const port = process.env.PORT || 3000;
 
 app.use(bodyParser.urlencoded({ extended: false }));
 
-// Store calls in memory
-app.locals.currentCall = null;
-app.locals.pastCalls = [];
+// Watson STT setup
+const speechToText = new SpeechToText({
+  authenticator: new IamAuthenticator({
+    apikey: 'ig_BusJMZMAOYfhcRJ-PtAf4PgjzSIMebGjszzJZ9RIj',  // Replace with your API key
+  }),
+  serviceUrl: 'https://api.us-south.speech-to-text.watson.cloud.ibm.com/instances/d0fa1cd2-f3b4-4ff0-9888-196375565a8f',  // Your region URL
+});
 
 // Serve the index.html file at the root
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Handle incoming calls
+// Handle incoming calls and stream audio for transcription
 app.post('/voice', (req, res) => {
-  const callSid = req.body.CallSid;
-  const caller = req.body.From;
-  const startTime = new Date();
-
-  // Log the incoming call
-  console.log(`Incoming call from ${caller} with CallSid ${callSid}`);
-
-  // Respond with TwiML
   const response = new twiml.VoiceResponse();
-  response.say('Thank you for calling Kellyn. How are you. Today is a wonderful day. December is almost here. Hooray. I cant wait to party. Goodbye!');
+
+  // Start gathering audio
+  response.startGather({
+    action: '/process_audio', // Where audio will be streamed for transcription
+    method: 'POST',
+  });
+  
+  response.say('Please speak after the beep.');
   response.hangup();
 
   res.type('text/xml');
   res.send(response.toString());
-
-  // Store the new current call with "in-progress" status
-  app.locals.currentCall = {
-    caller,
-    callSid,
-    startTime,
-    duration: 0,
-    status: 'in-progress'
-  };
 });
 
-// Endpoint to handle call status updates
-app.post('/status', (req, res) => {
-  const callSid = req.body.CallSid;
-  const callStatus = req.body.CallStatus;
+// Process the audio stream and send it to Watson STT
+app.post('/process_audio', (req, res) => {
+  const audioStream = req.body;  // Audio data from Twilio
 
-  console.log(`Status update for CallSid ${callSid}: ${callStatus}`);
+  const ws = new WebSocket('wss://stream.watsonplatform.net/speech-to-text/api/v1/recognize');
 
-  if (app.locals.currentCall && app.locals.currentCall.callSid === callSid) {
-    // If call is completed, calculate the duration, mark as "completed," and move to past calls
-    if (callStatus === 'completed') {
-      const endTime = new Date();
-      const duration = Math.floor((endTime - app.locals.currentCall.startTime) / 1000);
+  ws.on('open', () => {
+    console.log('Connected to Watson Speech-to-Text');
+    ws.send(audioStream);  // Send the audio stream to Watson STT
+  });
 
-      app.locals.currentCall.duration = duration;
-      app.locals.currentCall.status = 'completed';
+  ws.on('message', (data) => {
+    const transcription = JSON.parse(data);
+    const text = transcription.results[0].alternatives[0].transcript;
 
-      // Move the current call to past calls
-      app.locals.pastCalls.unshift(app.locals.currentCall);
-      app.locals.currentCall = null;
-    } else {
-      // Update the status for ongoing calls
-      app.locals.currentCall.status = callStatus;
-    }
-  }
+    // Emit transcribed text to frontend
+    io.emit('speech-to-text', text);
+  });
 
-  res.sendStatus(200);
+  ws.on('close', () => {
+    console.log('Disconnected from Watson Speech-to-Text');
+  });
+
+  res.send('Audio processed');
 });
 
-// Endpoint to serve the call data to the frontend
-app.get('/call-data', (req, res) => {
-  // Calculate live duration for an ongoing call
-  if (app.locals.currentCall && app.locals.currentCall.status === 'in-progress') {
-    app.locals.currentCall.duration = Math.floor((new Date() - app.locals.currentCall.startTime) / 1000);
-  }
-
-  res.json({
-    currentCall: app.locals.currentCall,
-    pastCalls: app.locals.pastCalls
+// WebSocket setup for real-time conversation on frontend
+io.on('connection', (socket) => {
+  console.log('A user connected');
+  
+  socket.on('disconnect', () => {
+    console.log('User disconnected');
   });
 });
 
-app.listen(port, () => {
+// Start the server
+server.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
