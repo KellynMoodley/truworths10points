@@ -1,4 +1,13 @@
-<script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web Assistant</title>
+</head>
+<body>
+
+  <script>
     window.watsonAssistantChatOptions = {
       integrationID: "ed428f23-61fb-42c7-b5ad-45995b4c2d92", // The ID of this integration.
       region: "us-south", // The region your integration is hosted in.
@@ -7,7 +16,7 @@
     };
   
     // Establish WebSocket connection to receive messages from phone assistant
-    const ws = new WebSocket('ws://localhost:8080'); // WebSocket server URL
+    const ws = new WebSocket('wss://truworths-5d9b0467377c.herokuapp.com'); // WebSocket server URL (Heroku)
     ws.onmessage = function(event) {
       const message = event.data;
       console.log('Received message:', message);
@@ -33,11 +42,10 @@
                           "/WatsonAssistantChatEntry.js";
       document.head.appendChild(scriptElement);
     });
-</script>
-  
-<!-- Conversation Box for Display -->
-<div id="conversation" style="max-height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 10px;"></div>
+  </script>
   
   <!-- Conversation Box for Display -->
   <div id="conversation" style="max-height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 10px;"></div>
   
+</body>
+</html>
