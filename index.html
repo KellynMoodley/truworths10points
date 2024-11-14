@@ -6,7 +6,7 @@
       onLoad: async (instance) => { await instance.render(); }
     };
   
-    // Establish WebSocket connection to receive messages
+    // Establish WebSocket connection to receive messages from phone assistant
     const ws = new WebSocket('ws://localhost:8080'); // WebSocket server URL
     ws.onmessage = function(event) {
       const message = event.data;
@@ -33,7 +33,10 @@
                           "/WatsonAssistantChatEntry.js";
       document.head.appendChild(scriptElement);
     });
-  </script>
+</script>
+  
+<!-- Conversation Box for Display -->
+<div id="conversation" style="max-height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 10px;"></div>
   
   <!-- Conversation Box for Display -->
   <div id="conversation" style="max-height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 10px;"></div>
