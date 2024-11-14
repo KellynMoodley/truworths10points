@@ -2,13 +2,16 @@ const express = require('express');
 const { twiml } = require('twilio');
 const bodyParser = require('body-parser');
 const fetch = require('node-fetch');
+const path = require('path');
 const app = express();
 const port = 3000;
 
 app.use(bodyParser.urlencoded({ extended: false }));
 
-// Serve the static HTML file
-app.use(express.static('public'));
+// Serve the HTML file directly from the server when accessing the root URL
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
 
 // Endpoint for Twilio webhook to handle incoming calls
 app.post('/twilio-webhook', async (req, res) => {
