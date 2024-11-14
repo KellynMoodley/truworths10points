@@ -1,5 +1,3 @@
-// index.js (Backend)
-
 const express = require('express');
 const bodyParser = require('body-parser');
 const { twiml } = require('twilio');
@@ -10,6 +8,9 @@ const port = process.env.PORT || 3000;
 
 app.use(bodyParser.urlencoded({ extended: false }));
 
+// Store calls in memory (for demo purposes, consider using a database for production)
+app.locals.calls = [];
+
 // Serve the index.html file at the root
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
@@ -17,9 +18,10 @@ app.get('/', (req, res) => {
 
 // Handle incoming calls
 app.post('/voice', (req, res) => {
-  const callStatus = req.body.CallStatus; // Twilio sends the call status (completed, busy, etc.)
-  const callSid = req.body.CallSid; // Unique identifier for the call
-  const caller = req.body.From; // Phone number of the caller
+  const callStatus = req.body.CallStatus;
+  const callSid = req.body.CallSid;
+  const caller = req.body.From;
+  const startTime = new Date(); // Record the start time of the call
 
   console.log(`Call from ${caller} with CallSid ${callSid} has status: ${callStatus}`);
 
@@ -27,25 +29,34 @@ app.post('/voice', (req, res) => {
   const response = new twiml.VoiceResponse();
   response.say('Thank you for calling Kellyn. Goodbye!');
   response.hangup();
-  console.log(`Call from ${caller} with CallSid ${callSid} has status: ${callStatus}`);
 
   res.type('text/xml');
   res.send(response.toString());
 
-  // Send data to the frontend or save it as needed
-  // You can emit data to a socket or send a response to your frontend here
-  // For simplicity, we'll just store the data in memory for now.
-  app.locals.callData = {
+  // Store the call data, including the start time
+  app.locals.calls.unshift({
     caller,
     callStatus,
-    callSid
-  };
+    callSid,
+    startTime,
+    duration: 0 // Placeholder for duration, updated when call completes
+  });
 });
 
-// Endpoint to serve the latest call data to the frontend
-app.get('/latest-call-data', (req, res) => {
-  // Send the latest call data if it exists
-  res.json(app.locals.callData || null);
+// Endpoint to serve the current and past call data to the frontend
+app.get('/call-data', (req, res) => {
+  // Calculate duration for the ongoing call if it exists
+  const calls = app.locals.calls.map(call => {
+    if (call.callStatus === 'in-progress') {
+      call.duration = Math.floor((new Date() - call.startTime) / 1000); // Duration in seconds
+    }
+    return call;
+  });
+  
+  // Separate the current call (if ongoing) from past calls
+  const [currentCall, ...pastCalls] = calls;
+  
+  res.json({ currentCall, pastCalls });
 });
 
 app.listen(port, () => {
