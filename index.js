@@ -25,7 +25,7 @@ app.post('/voice', (req, res) => {
 
   // Respond to Twilio with TwiML (XML response)
   const response = new twiml.VoiceResponse();
-  response.say('Thank you for calling. Goodbye!');
+  response.say('Thank you for calling Kellyn. Goodbye!');
   response.hangup();
 
   res.type('text/xml');
