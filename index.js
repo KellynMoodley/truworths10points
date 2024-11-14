@@ -8,8 +8,9 @@ const port = process.env.PORT || 3000;
 
 app.use(bodyParser.urlencoded({ extended: false }));
 
-// Store calls in memory (for demo purposes, consider using a database for production)
-app.locals.calls = [];
+// Store calls in memory
+app.locals.currentCall = null;
+app.locals.pastCalls = [];
 
 // Serve the index.html file at the root
 app.get('/', (req, res) => {
@@ -18,45 +19,70 @@ app.get('/', (req, res) => {
 
 // Handle incoming calls
 app.post('/voice', (req, res) => {
-  const callStatus = req.body.CallStatus;
   const callSid = req.body.CallSid;
   const caller = req.body.From;
-  const startTime = new Date(); // Record the start time of the call
+  const startTime = new Date();
 
-  console.log(`Call from ${caller} with CallSid ${callSid} has status: ${callStatus}`);
+  // Log the incoming call
+  console.log(`Incoming call from ${caller} with CallSid ${callSid}`);
 
-  // Respond to Twilio with TwiML (XML response)
+  // Respond with TwiML
   const response = new twiml.VoiceResponse();
-  response.say('Thank you for calling Kellyn. My name is Charmaine. I live in spain. I travel by plain. How are you. Today is a wonderful day. Goodness me. Goodbye!');
+  response.say('Thank you for calling Kellyn. Goodbye!');
   response.hangup();
 
   res.type('text/xml');
   res.send(response.toString());
 
-  // Store the call data, including the start time
-  app.locals.calls.unshift({
+  // Store the new current call with "in-progress" status
+  app.locals.currentCall = {
     caller,
-    callStatus,
     callSid,
     startTime,
-    duration: 0 // Placeholder for duration, updated when call completes
-  });
+    duration: 0,
+    status: 'in-progress'
+  };
 });
 
-// Endpoint to serve the current and past call data to the frontend
-app.get('/call-data', (req, res) => {
-  // Calculate duration for the ongoing call if it exists
-  const calls = app.locals.calls.map(call => {
-    if (call.callStatus === 'in-progress') {
-      call.duration = Math.floor((new Date() - call.startTime) / 1000); // Duration in seconds
+// Endpoint to handle call status updates
+app.post('/status', (req, res) => {
+  const callSid = req.body.CallSid;
+  const callStatus = req.body.CallStatus;
+
+  console.log(`Status update for CallSid ${callSid}: ${callStatus}`);
+
+  if (app.locals.currentCall && app.locals.currentCall.callSid === callSid) {
+    // If call is completed, calculate the duration, mark as "completed," and move to past calls
+    if (callStatus === 'completed') {
+      const endTime = new Date();
+      const duration = Math.floor((endTime - app.locals.currentCall.startTime) / 1000);
+
+      app.locals.currentCall.duration = duration;
+      app.locals.currentCall.status = 'completed';
+
+      // Move the current call to past calls
+      app.locals.pastCalls.unshift(app.locals.currentCall);
+      app.locals.currentCall = null;
+    } else {
+      // Update the status for ongoing calls
+      app.locals.currentCall.status = callStatus;
     }
-    return call;
+  }
+
+  res.sendStatus(200);
+});
+
+// Endpoint to serve the call data to the frontend
+app.get('/call-data', (req, res) => {
+  // Calculate live duration for an ongoing call
+  if (app.locals.currentCall && app.locals.currentCall.status === 'in-progress') {
+    app.locals.currentCall.duration = Math.floor((new Date() - app.locals.currentCall.startTime) / 1000);
+  }
+
+  res.json({
+    currentCall: app.locals.currentCall,
+    pastCalls: app.locals.pastCalls
   });
-  
-  // Separate the current call (if ongoing) from past calls
-  const [currentCall, ...pastCalls] = calls;
-  
-  res.json({ currentCall, pastCalls });
 });
 
 app.listen(port, () => {
