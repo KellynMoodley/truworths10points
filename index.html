@@ -1,31 +1,38 @@
+<!-- public/index.html (Frontend) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phone Call Integration with Watsonx Assistant</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phone Call Status</title>
 </head>
 <body>
-    <h1>Phone Call Integration with Watsonx Assistant</h1>
-    <div id="callStatus"></div>
-    <button id="startCallButton">Start Call</button>
+  <h1>Phone Call Status</h1>
+  <div id="call-details">
+    <p>Waiting for a call...</p>
+  </div>
 
-    <script src="https://sdk.twilio.com/js/voice/latest/twilio.min.js"></script>
-    <script>
-        const startCallButton = document.getElementById('startCallButton');
-        const callStatus = document.getElementById('callStatus');
-
-        startCallButton.addEventListener('click', function() {
-            fetch('/start-call', {
-                method: 'POST',
-            }).then(response => response.json()).then(data => {
-                if (data.success) {
-                    callStatus.innerText = 'Call in progress...';
-                } else {
-                    callStatus.innerText = 'Error starting call';
-                }
-            });
+  <script>
+    // Fetch the latest call data from the backend every 5 seconds
+    setInterval(() => {
+      fetch('/latest-call-data')
+        .then(response => response.json())
+        .then(data => {
+          const details = document.getElementById('call-details');
+          if (data) {
+            details.innerHTML = `
+              <p>Call from: ${data.caller}</p>
+              <p>Call Status: ${data.callStatus}</p>
+              <p>Call SID: ${data.callSid}</p>
+            `;
+          } else {
+            details.innerHTML = '<p>No call data available</p>';
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching call data:', error);
         });
-    </script>
+    }, 5000);
+  </script>
 </body>
 </html>
