@@ -1,4 +1,3 @@
-<!-- public/index.html (Frontend) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,25 +7,52 @@
 </head>
 <body>
   <h1>Phone Call Status</h1>
-  <div id="call-details">
+  
+  <div id="current-call">
+    <h2>Current Call</h2>
     <p>Waiting for a call...</p>
+  </div>
+  
+  <div id="past-calls">
+    <h2>Past Calls</h2>
+    <ul id="past-calls-list">
+      <li>No past calls available</li>
+    </ul>
   </div>
 
   <script>
-    // Fetch the latest call data from the backend every 5 seconds
+    // Fetch the call data from the backend every 5 seconds
     setInterval(() => {
-      fetch('/latest-call-data')
+      fetch('/call-data')
         .then(response => response.json())
         .then(data => {
-          const details = document.getElementById('call-details');
-          if (data) {
-            details.innerHTML = `
-              <p>Call from: ${data.caller}</p>
-              <p>Call Status: ${data.callStatus}</p>
-              <p>Call SID: ${data.callSid}</p>
+          const currentCallDiv = document.getElementById('current-call');
+          const pastCallsList = document.getElementById('past-calls-list');
+
+          // Display current call data
+          if (data.currentCall) {
+            currentCallDiv.innerHTML = `
+              <h2>Current Call</h2>
+              <p>Caller: ${data.currentCall.caller}</p>
+              <p>Status: ${data.currentCall.callStatus}</p>
+              <p>Call SID: ${data.currentCall.callSid}</p>
+              <p>Duration: ${data.currentCall.duration} seconds</p>
             `;
           } else {
-            details.innerHTML = '<p>No call data available</p>';
+            currentCallDiv.innerHTML = '<p>No current call</p>';
+          }
+
+          // Display past calls
+          if (data.pastCalls.length > 0) {
+            pastCallsList.innerHTML = data.pastCalls.map(call => `
+              <li>
+                <p>Caller: ${call.caller}</p>
+                <p>Status: ${call.callStatus}</p>
+                <p>Duration: ${call.duration} seconds</p>
+              </li>
+            `).join('');
+          } else {
+            pastCallsList.innerHTML = '<li>No past calls available</li>';
           }
         })
         .catch(error => {
