@@ -11,9 +11,7 @@ const port = process.env.PORT || 3000;
 
 // Configure IBM Watson Speech to Text
 const speechToText = new SpeechToTextV1({
-  authenticator: new IamAuthenticator({
-    apikey: 'ig_BusJMZMAOYfhcRJ-PtAf4PgjzSIMebGjszzJZ9RIj',
-  }),
+  authenticator: new IamAuthenticator({ apikey: 'g_BusJMZMAOYfhcRJ-PtAf4PgjzSIMebGjszzJZ9RIj' }),
   serviceUrl: 'https://api.us-south.speech-to-text.watson.cloud.ibm.com/instances/d0fa1cd2-f3b4-4ff0-9888-196375565a8f',
 });
 
