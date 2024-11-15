@@ -28,7 +28,7 @@ app.post('/voice', (req, res) => {
 
   // Respond with TwiML
   const response = new twiml.VoiceResponse();
-  response.say('Thank you for calling Kellyn. How are you. Today is a wonderful day. December is almost here. Hooray. I cant wait to party. Goodbye!');
+  response.say('Thank you for calling Kellyn. How are you? Today is a wonderful day. December is almost here. Hooray. I can’t wait to party. Goodbye!');
   response.hangup();
 
   res.type('text/xml');
