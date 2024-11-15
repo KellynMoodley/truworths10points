@@ -2,7 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const { twiml } = require('twilio');
 const path = require('path');
-const axios = require('axios'); // For Watson Speech to Text API calls
+const axios = require('axios');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -78,6 +78,16 @@ app.post('/process-speech', async (req, res) => {
   const response = new twiml.VoiceResponse();
   response.say(botResponse);
   response.hangup();
+
+  // Update call status to "completed" and move to pastCalls
+  if (app.locals.currentCall) {
+    const currentCall = app.locals.currentCall;
+    const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
+    currentCall.duration = callDuration;
+    currentCall.status = 'completed';
+    app.locals.pastCalls.push(currentCall); // Add to past calls
+    app.locals.currentCall = null; // Clear current call
+  }
 
   res.type('text/xml');
   res.send(response.toString());
