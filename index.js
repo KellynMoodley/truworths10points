@@ -2,15 +2,21 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const { twiml } = require('twilio');
 const path = require('path');
+const axios = require('axios'); // For Watson Speech to Text API calls
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(bodyParser.urlencoded({ extended: false }));
 
-// Store calls in memory
+// Watson Speech to Text credentials
+const watsonSpeechToTextUrl = 'https://api.us-south.speech-to-text.watson.cloud.ibm.com/instances/d0fa1cd2-f3b4-4ff0-9888-196375565a8f';
+const watsonSpeechToTextApiKey = 'ig_BusJMZMAOYfhcRJ-PtAf4PgjzSIMebGjszzJZ9RIj';
+
+// Store calls and conversations in memory
 app.locals.currentCall = null;
 app.locals.pastCalls = [];
+app.locals.conversations = [];
 
 // Serve the index.html file at the root
 app.get('/', (req, res) => {
@@ -28,8 +34,15 @@ app.post('/voice', (req, res) => {
 
   // Respond with TwiML
   const response = new twiml.VoiceResponse();
-  response.say('Thank you for calling Kellyn. How are you? Today is a wonderful day. December is almost here. Hooray. I can’t wait to party. Goodbye!');
-  response.hangup();
+  response.say('Hello, please tell me something.');
+
+  // Gather speech input
+  response.gather({
+    input: 'speech',
+    action: '/process-speech',
+    method: 'POST',
+    timeout: 5,
+  });
 
   res.type('text/xml');
   res.send(response.toString());
@@ -40,48 +53,49 @@ app.post('/voice', (req, res) => {
     callSid,
     startTime,
     duration: 0,
-    status: 'in-progress'
+    status: 'in-progress',
   };
 });
 
-// Endpoint to handle call status updates
-app.post('/status', (req, res) => {
-  const callSid = req.body.CallSid;
-  const callStatus = req.body.CallStatus;
+// Process speech input
+app.post('/process-speech', async (req, res) => {
+  const speechResult = req.body.SpeechResult;
+  console.log(`Speech input received: ${speechResult}`);
 
-  console.log(`Status update for CallSid ${callSid}: ${callStatus}`);
-
-  if (app.locals.currentCall && app.locals.currentCall.callSid === callSid) {
-    // If call is completed, calculate the duration, mark as "completed," and move to past calls
-    if (callStatus === 'completed') {
-      const endTime = new Date();
-      const duration = Math.floor((endTime - app.locals.currentCall.startTime) / 1000);
-
-      app.locals.currentCall.duration = duration;
-      app.locals.currentCall.status = 'completed';
-
-      // Move the current call to past calls
-      app.locals.pastCalls.unshift(app.locals.currentCall);
-      app.locals.currentCall = null;
-    } else {
-      // Update the status for ongoing calls
-      app.locals.currentCall.status = callStatus;
-    }
+  // Simulate a response based on user input
+  let botResponse = 'I didn’t understand that. Goodbye!';
+  if (speechResult.toLowerCase().includes('hello how are you')) {
+    botResponse = 'Thank you Kellyn, goodbye!';
   }
 
-  res.sendStatus(200);
+  // Log the conversation
+  app.locals.conversations.push({
+    user: speechResult,
+    bot: botResponse,
+  });
+
+  // Respond with TwiML
+  const response = new twiml.VoiceResponse();
+  response.say(botResponse);
+  response.hangup();
+
+  res.type('text/xml');
+  res.send(response.toString());
 });
 
-// Endpoint to serve the call data to the frontend
+// Endpoint to serve call and conversation data
 app.get('/call-data', (req, res) => {
   // Calculate live duration for an ongoing call
   if (app.locals.currentCall && app.locals.currentCall.status === 'in-progress') {
-    app.locals.currentCall.duration = Math.floor((new Date() - app.locals.currentCall.startTime) / 1000);
+    app.locals.currentCall.duration = Math.floor(
+      (new Date() - app.locals.currentCall.startTime) / 1000
+    );
   }
 
   res.json({
     currentCall: app.locals.currentCall,
-    pastCalls: app.locals.pastCalls
+    pastCalls: app.locals.pastCalls,
+    conversations: app.locals.conversations,
   });
 });
 
