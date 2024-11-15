@@ -7,12 +7,12 @@
 </head>
 <body>
   <h1>Phone Call Status</h1>
-
+  
   <div id="current-call">
     <h2>Current Call</h2>
     <p>Waiting for a call...</p>
   </div>
-
+  
   <div id="past-calls">
     <h2>Past Calls</h2>
     <ul id="past-calls-list">
@@ -20,65 +20,62 @@
     </ul>
   </div>
 
-  <div id="conversations">
-    <h2>Conversations</h2>
-    <ul id="conversations-list">
-      <li>No conversations available</li>
+  <div id="conversation">
+    <h2>Conversation</h2>
+    <ul id="conversation-list">
+      <li>No conversation yet.</li>
     </ul>
   </div>
 
+  <script src="/socket.io/socket.io.js"></script>
   <script>
-    // Fetch the call data from the backend every 5 seconds
-    setInterval(() => {
-      fetch('/call-data')
-        .then(response => response.json())
-        .then(data => {
-          const currentCallDiv = document.getElementById('current-call');
-          const pastCallsList = document.getElementById('past-calls-list');
-          const conversationsList = document.getElementById('conversations-list');
+    const socket = io();
 
-          // Display current call data
-          if (data.currentCall) {
-            currentCallDiv.innerHTML = `
-              <h2>Current Call</h2>
-              <p>Caller: ${data.currentCall.caller}</p>
-              <p>Status: ${data.currentCall.status}</p>
-              <p>Call SID: ${data.currentCall.callSid}</p>
-              <p>Duration: ${data.currentCall.duration} seconds</p>
-            `;
-          } else {
-            currentCallDiv.innerHTML = '<p>No current call</p>';
-          }
+    socket.on('update', (callData) => {
+      const currentCallDiv = document.getElementById('current-call');
+      const pastCallsList = document.getElementById('past-calls-list');
+      const conversationList = document.getElementById('conversation-list');
 
-          // Display past calls
-          if (data.pastCalls.length > 0) {
-            pastCallsList.innerHTML = data.pastCalls.map(call => `
-              <li>
-                <p>Caller: ${call.caller}</p>
-                <p>Status: ${call.status}</p>
-                <p>Duration: ${call.duration} seconds</p>
-              </li>
-            `).join('');
-          } else {
-            pastCallsList.innerHTML = '<li>No past calls available</li>';
-          }
+      // Display current call data
+      if (callData.currentCall) {
+        currentCallDiv.innerHTML = `
+          <h2>Current Call</h2>
+          <p>Caller: ${callData.currentCall.caller}</p>
+          <p>Status: ${callData.currentCall.status}</p>
+          <p>Call SID: ${callData.currentCall.callSid}</p>
+          <p>Duration: ${callData.currentCall.duration} seconds</p>
+        `;
+      } else {
+        currentCallDiv.innerHTML = '<p>No current call</p>';
+      }
 
-          // Display conversations
-          if (data.conversations.length > 0) {
-            conversationsList.innerHTML = data.conversations.map(convo => `
-              <li>
-                <p>User: ${convo.user}</p>
-                <p>Bot: ${convo.bot}</p>
-              </li>
-            `).join('');
-          } else {
-            conversationsList.innerHTML = '<li>No conversations available</li>';
-          }
-        })
-        .catch(error => {
-          console.error('Error fetching call data:', error);
-        });
-    }, 5000);
+      // Display past calls
+      if (callData.pastCalls.length > 0) {
+        pastCallsList.innerHTML = callData.pastCalls.map(call => `
+          <li>
+            <p>Caller: ${call.caller}</p>
+            <p>Status: ${call.status}</p>
+            <p>Duration: ${call.duration} seconds</p>
+          </li>
+        `).join('');
+      } else {
+        pastCallsList.innerHTML = '<li>No past calls available</li>';
+      }
+
+      // Display conversation
+      if (callData.currentCall && callData.currentCall.conversation.length > 0) {
+        conversationList.innerHTML = callData.currentCall.conversation.map(
+          (entry) => `
+          <li>
+            <strong>User:</strong> ${entry.user || 'No input'}<br>
+            <strong>Bot:</strong> ${entry.bot}
+          </li>
+        `
+        ).join('');
+      } else {
+        conversationList.innerHTML = '<li>No conversation yet.</li>';
+      }
+    });
   </script>
 </body>
 </html>
