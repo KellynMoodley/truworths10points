@@ -21,29 +21,6 @@
       border-radius: 8px;
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     }
-    #conversations {
-      width: 100%;
-      height: 300px;
-      overflow-y: scroll;
-      margin: 20px;
-      padding: 10px;
-      background-color: white;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    }
-    .message {
-      margin: 10px 0;
-      padding: 10px;
-      border-radius: 8px;
-    }
-    .user {
-      background-color: #d1f7c4;
-      text-align: right;
-    }
-    .bot {
-      background-color: #e0e0e0;
-      text-align: left;
-    }
     ul {
       padding: 0;
       list-style: none;
@@ -87,7 +64,6 @@
         .then(data => {
           const currentCallDiv = document.getElementById('current-call');
           const pastCallsList = document.getElementById('past-calls-list');
-          const conversationsList = document.getElementById('conversations-list');
 
           // Display current call data
           if (data.currentCall) {
@@ -126,25 +102,6 @@
             `).join('');
           } else {
             pastCallsList.innerHTML = '<li>No past calls available</li>';
-          }
-
-          // Display conversations
-          if (data.conversations.length > 0) {
-            conversationsList.innerHTML = data.conversations.map(convo => `
-              <li>
-                <div class="message user">
-                  <p>${convo.user}</p>
-                </div>
-                <div class="message bot">
-                  <p>${convo.bot}</p>
-                </div>
-              </li>
-            `).join('');
-            // Auto-scroll to the bottom
-            const conversationsDiv = document.getElementById('conversations');
-            conversationsDiv.scrollTop = conversationsDiv.scrollHeight;
-          } else {
-            conversationsList.innerHTML = '<li>No conversations available</li>';
           }
         })
         .catch(error => {
