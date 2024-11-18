@@ -17,6 +17,7 @@ const watsonSpeechToTextApiKey = 'ig_BusJMZMAOYfhcRJ-PtAf4PgjzSIMebGjszzJZ9RIj';
 app.locals.currentCall = null;
 app.locals.pastCalls = [];
 app.locals.conversations = [];
+app.locals.pastConversations = [];  // Store completed conversations
 
 // Serve the index.html file at the root
 app.get('/', (req, res) => {
@@ -34,14 +35,14 @@ app.post('/voice', (req, res) => {
 
   // Respond with TwiML
   const response = new twiml.VoiceResponse();
-  response.say('Hello, this is Truworths. How can I help you?');
+  response.say('Hello, please tell me something.');
 
   // Gather speech input
   response.gather({
     input: 'speech',
     action: '/process-speech',
     method: 'POST',
-    timeout: 10, // Increased timeout
+    timeout: 5,
   });
 
   res.type('text/xml');
@@ -62,23 +63,10 @@ app.post('/process-speech', async (req, res) => {
   const speechResult = req.body.SpeechResult;
   console.log(`Speech input received: ${speechResult}`);
 
-  // Initialize bot response and next question
+  // Simulate a response based on user input
   let botResponse = 'I didn’t understand that. Goodbye!';
-  let nextQuestion = '';
-
-  // Simulate responses based on user input
-  if (speechResult.toLowerCase().includes('register')) {
-    botResponse = 'Okay, I will help you register an account. Please provide your details.';
-    nextQuestion = 'Please provide your full name.';
-  } else if (speechResult.toLowerCase().includes('thank you')) {
-    botResponse = 'Thank you for your interest in registering. Please provide your full name.';
-    nextQuestion = 'What is your full name?';
-  } else if (speechResult) {
-    botResponse = `Thank you, information is captured.`;
-    nextQuestion = 'Goodbye';
-  } else if (speechResult.toLowerCase().includes('goodbye')) {
-    botResponse = 'Thank you for your time! Goodbye!';
-    nextQuestion = ''; // End the conversation
+  if (speechResult.toLowerCase().includes('hello how are you')) {
+    botResponse = 'Thank you Kellyn, goodbye!';
   }
 
   // Log the conversation
@@ -90,28 +78,18 @@ app.post('/process-speech', async (req, res) => {
   // Respond with TwiML
   const response = new twiml.VoiceResponse();
   response.say(botResponse);
+  response.hangup();
 
-  // If there’s a next question, re-prompt for input
-  if (nextQuestion) {
-    response.gather({
-      input: 'speech',
-      action: '/process-speech',
-      method: 'POST',
-      timeout: 10, // Increased timeout
-    }).say(nextQuestion);
-  } else {
-    // If no more questions, end the conversation
-    response.hangup();
-
-    // Mark the call as complete
-    if (app.locals.currentCall) {
-      const currentCall = app.locals.currentCall;
-      const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
-      currentCall.duration = callDuration;
-      currentCall.status = 'completed';
-      app.locals.pastCalls.push(currentCall); // Add to past calls
-      app.locals.currentCall = null; // Clear current call
-    }
+  // Update call status to "completed" and move to pastCalls
+  if (app.locals.currentCall) {
+    const currentCall = app.locals.currentCall;
+    const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
+    currentCall.duration = callDuration;
+    currentCall.status = 'completed';
+    app.locals.pastCalls.push(currentCall); // Add to past calls
+    app.locals.pastConversations.push(...app.locals.conversations); // Move current conversations to past conversations
+    app.locals.conversations = []; // Clear current conversations
+    app.locals.currentCall = null; // Clear current call
   }
 
   res.type('text/xml');
@@ -131,6 +109,7 @@ app.get('/call-data', (req, res) => {
     currentCall: app.locals.currentCall,
     pastCalls: app.locals.pastCalls,
     conversations: app.locals.conversations,
+    pastConversations: app.locals.pastConversations,
   });
 });
 
