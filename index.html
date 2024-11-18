@@ -48,6 +48,17 @@
       padding: 0;
       list-style: none;
     }
+    .caller {
+      cursor: pointer;
+      font-weight: bold;
+      color: #007bff;
+    }
+    .caller-details {
+      display: none;
+      padding: 10px;
+      background-color: #f9f9f9;
+      border-radius: 5px;
+    }
   </style>
 </head>
 <body>
@@ -93,22 +104,24 @@
             currentCallDiv.innerHTML = '<p>No current call</p>';
           }
 
-          // Display past calls
+          // Display past calls with clickable caller ID
           if (data.pastCalls.length > 0) {
             pastCallsList.innerHTML = data.pastCalls.map(call => `
               <li>
-                <p>Caller: ${call.caller}</p>
-                <p>Status: ${call.status}</p>
-                <p>Duration: ${call.duration} seconds</p>
-                <h3>Conversation history:</h3>
-                <ul>
-                  ${call.conversations.map(convo => `
-                    <li>
-                      <p>User: ${convo.user}</p>
-                      <p>Bot: ${convo.bot}</p>
-                    </li>
-                  `).join('')}
-                </ul>
+                <span class="caller" onclick="toggleDetails('${call.caller}')">${call.caller}</span>
+                <div id="details-${call.caller}" class="caller-details">
+                  <p>Status: ${call.status}</p>
+                  <p>Duration: ${call.duration} seconds</p>
+                  <h3>Conversation history:</h3>
+                  <ul>
+                    ${call.conversations.map(convo => `
+                      <li>
+                        <p>User: ${convo.user}</p>
+                        <p>Bot: ${convo.bot}</p>
+                      </li>
+                    `).join('')}
+                  </ul>
+                </div>
               </li>
             `).join('');
           } else {
@@ -138,6 +151,12 @@
           console.error('Error fetching call data:', error);
         });
     }, 5000);
+
+    // Function to toggle conversation details for each caller
+    function toggleDetails(callerId) {
+      const detailsDiv = document.getElementById(`details-${callerId}`);
+      detailsDiv.style.display = detailsDiv.style.display === 'none' || detailsDiv.style.display === '' ? 'block' : 'none';
+    }
   </script>
 </body>
 </html>
