@@ -9,14 +9,11 @@ const port = process.env.PORT || 3000;
 
 app.use(bodyParser.urlencoded({ extended: false }));
 
-// Watson Speech to Text credentials
-const watsonSpeechToTextUrl = 'https://api.us-south.speech-to-text.watson.cloud.ibm.com/instances/d0fa1cd2-f3b4-4ff0-9888-196375565a8f';
-const watsonSpeechToTextApiKey = 'ig_BusJMZMAOYfhcRJ-PtAf4PgjzSIMebGjszzJZ9RIj';
-
 // Store calls and conversations in memory
 app.locals.currentCall = null;
 app.locals.pastCalls = [];
 app.locals.conversations = [];
+app.locals.conversationState = 'greeting'; // Add state to manage the conversation flow
 
 // Serve the index.html file at the root
 app.get('/', (req, res) => {
@@ -34,7 +31,7 @@ app.post('/voice', (req, res) => {
 
   // Respond with TwiML
   const response = new twiml.VoiceResponse();
-  response.say('Hello, please tell me something.');
+  response.say('Hello, this is Truworths. How can I help you?');
 
   // Gather speech input
   response.gather({
@@ -62,10 +59,28 @@ app.post('/process-speech', async (req, res) => {
   const speechResult = req.body.SpeechResult;
   console.log(`Speech input received: ${speechResult}`);
 
-  // Simulate a response based on user input
   let botResponse = 'I didn’t understand that. Goodbye!';
-  if (speechResult.toLowerCase().includes('hello how are you')) {
-    botResponse = 'Thank you Kellyn, goodbye!';
+  let nextState = app.locals.conversationState;
+
+  // Handle conversation logic based on the conversation state
+  if (app.locals.conversationState === 'greeting') {
+    if (speechResult.toLowerCase().includes('register')) {
+      botResponse = 'Okay, I will help you register an account. Please provide your details.';
+      nextState = 'registering'; // Move to next state
+    } else if (speechResult.toLowerCase().includes('check status')) {
+      botResponse = 'Sure, I will help you check your status.';
+      nextState = 'checking-status';
+    } else {
+      botResponse = 'Sorry, I can only assist with account registration or status checking.';
+    }
+  } else if (app.locals.conversationState === 'registering') {
+    // Continue with registration flow if in 'registering' state
+    botResponse = `Thank you for your interest in registering. Please provide your full name.`;
+    nextState = 'getting-name';
+  } else if (app.locals.conversationState === 'checking-status') {
+    // Handle status checking logic if needed
+    botResponse = `Checking your status now. Please wait.`;
+    nextState = 'status-checked';
   }
 
   // Log the conversation
@@ -74,10 +89,25 @@ app.post('/process-speech', async (req, res) => {
     bot: botResponse,
   });
 
-  // Respond with TwiML
+  // Respond with TwiML based on the bot's response
   const response = new twiml.VoiceResponse();
   response.say(botResponse);
-  response.hangup();
+
+  // If the conversation state has changed, we update the state
+  app.locals.conversationState = nextState;
+
+  // Optionally, keep the conversation open or end it after a response
+  if (nextState === 'registering' || nextState === 'checking-status') {
+    // Ask for the next piece of information (e.g., user's name)
+    response.gather({
+      input: 'speech',
+      action: '/process-speech',
+      method: 'POST',
+      timeout: 5,
+    });
+  } else {
+    response.hangup();
+  }
 
   // Update call status to "completed" and move to pastCalls
   if (app.locals.currentCall) {
