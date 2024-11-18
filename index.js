@@ -64,7 +64,7 @@ app.post('/process-speech', async (req, res) => {
 
   // Simulate a response based on user input
   let botResponse = 'I didn’t understand that. Goodbye!';
-  if (speechResult.toLowerCase().includes('Hello.)) {
+  if (speechResult.toLowerCase().includes('hello how are you')) {
     botResponse = 'Thank you Kellyn, goodbye!';
   }
 
