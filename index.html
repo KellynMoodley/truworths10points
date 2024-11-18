@@ -21,31 +21,13 @@
   </div>
 
   <div id="conversations">
-    <h2>Live Transcriptions</h2>
-    <div id="transcriptions">
-      <p>No speech detected yet.</p>
-    </div>
+    <h2>Conversations</h2>
+    <ul id="conversations-list">
+      <li>No conversations available</li>
+    </ul>
   </div>
 
   <script>
-    // Connect to WebSocket server
-    const ws = new WebSocket('wss://your-websocket-server-url:8080'); // Replace with your WebSocket URL
-
-    ws.onmessage = (event) => {
-      const transcriptionDiv = document.getElementById('transcriptions');
-      const transcription = document.createElement('p');
-      transcription.textContent = event.data;
-      transcriptionDiv.appendChild(transcription);
-    };
-
-    ws.onopen = () => {
-      console.log('WebSocket connection opened');
-    };
-
-    ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
-
     // Fetch the call data from the backend every 5 seconds
     setInterval(() => {
       fetch('/call-data')
