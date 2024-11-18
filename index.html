@@ -57,6 +57,15 @@
                 <p>Caller: ${call.caller}</p>
                 <p>Status: ${call.status}</p>
                 <p>Duration: ${call.duration} seconds</p>
+                <h3>Conversation history:</h3>
+                <ul>
+                  ${call.conversations.map(convo => `
+                    <li>
+                      <p>User: ${convo.user}</p>
+                      <p>Bot: ${convo.bot}</p>
+                    </li>
+                  `).join('')}
+                </ul>
               </li>
             `).join('');
           } else {
