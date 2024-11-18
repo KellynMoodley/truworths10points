@@ -64,10 +64,7 @@ app.post('/process-speech', async (req, res) => {
   console.log(`Speech input received: ${speechResult}`);
 
   // Simulate a response based on user input
-  let botResponse = 'I didn’t understand that. Goodbye!';
-  if (speechResult.toLowerCase().includes('hello how are you')) {
-    botResponse = 'Thank you Kellyn, goodbye!';
-  }
+  let botResponse = 'Thank you. Goodbye!';
 
   // Log the conversation
   app.locals.conversations.push({
@@ -87,14 +84,13 @@ app.post('/process-speech', async (req, res) => {
     currentCall.duration = callDuration;
     currentCall.status = 'completed';
     app.locals.pastCalls.push(currentCall); // Add to past calls
-    app.locals.pastConversations.push(...app.locals.conversations); // Move current conversations to past conversations
-    app.locals.conversations = []; // Clear current conversations
     app.locals.currentCall = null; // Clear current call
   }
 
   res.type('text/xml');
   res.send(response.toString());
 });
+
 
 // Endpoint to serve call and conversation data
 app.get('/call-data', (req, res) => {
