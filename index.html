@@ -4,6 +4,51 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Phone Call Status</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f9;
+    }
+    h1, h2 {
+      text-align: center;
+    }
+    #current-call, #past-calls {
+      margin: 20px;
+      padding: 20px;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    #conversations {
+      width: 100%;
+      height: 300px;
+      overflow-y: scroll;
+      margin: 20px;
+      padding: 10px;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    .message {
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 8px;
+    }
+    .user {
+      background-color: #d1f7c4;
+      text-align: right;
+    }
+    .bot {
+      background-color: #e0e0e0;
+      text-align: left;
+    }
+    ul {
+      padding: 0;
+      list-style: none;
+    }
+  </style>
 </head>
 <body>
   <h1>Phone Call Status</h1>
@@ -18,6 +63,11 @@
     <ul id="past-calls-list">
       <li>No past calls available</li>
     </ul>
+  </div>
+
+  <div id="conversations">
+    <h2>Current Conversation</h2>
+    <ul id="conversations-list"></ul>
   </div>
 
   <script>
@@ -69,10 +119,17 @@
           if (data.conversations.length > 0) {
             conversationsList.innerHTML = data.conversations.map(convo => `
               <li>
-                <p>User: ${convo.user}</p>
-                <p>Bot: ${convo.bot}</p>
+                <div class="message user">
+                  <p>${convo.user}</p>
+                </div>
+                <div class="message bot">
+                  <p>${convo.bot}</p>
+                </div>
               </li>
             `).join('');
+            // Auto-scroll to the bottom
+            const conversationsDiv = document.getElementById('conversations');
+            conversationsDiv.scrollTop = conversationsDiv.scrollHeight;
           } else {
             conversationsList.innerHTML = '<li>No conversations available</li>';
           }
