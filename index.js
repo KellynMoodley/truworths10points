@@ -73,12 +73,12 @@ app.post('/process-speech', async (req, res) => {
   } else if (speechResult.toLowerCase().includes('thank you')) {
     botResponse = 'Thank you for your interest in registering. Please provide your full name.';
     nextQuestion = 'What is your full name?';
-  } else if (speechResult.toLowerCase().includes('b******')) {
-    botResponse = `Thank you, we have received your name. Please continue with your other details.`;
-    nextQuestion = 'Can you provide your email address?';
+  } else if (speechResult) {
+    botResponse = `Thank you, information is captured.`;
+    nextQuestion = 'Goodbye';
   } else if (speechResult.toLowerCase().includes('goodbye')) {
     botResponse = 'Thank you for your time! Goodbye!';
-    nextQuestion = '';
+    nextQuestion = ''; // End the conversation
   }
 
   // Log the conversation
@@ -100,7 +100,18 @@ app.post('/process-speech', async (req, res) => {
       timeout: 10, // Increased timeout
     }).say(nextQuestion);
   } else {
+    // If no more questions, end the conversation
     response.hangup();
+
+    // Mark the call as complete
+    if (app.locals.currentCall) {
+      const currentCall = app.locals.currentCall;
+      const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
+      currentCall.duration = callDuration;
+      currentCall.status = 'completed';
+      app.locals.pastCalls.push(currentCall); // Add to past calls
+      app.locals.currentCall = null; // Clear current call
+    }
   }
 
   res.type('text/xml');
