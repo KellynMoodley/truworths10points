@@ -22,9 +22,6 @@
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     }
     #conversations {
-      width: 100%;
-      height: 300px;
-      overflow-y: scroll;
       margin: 20px;
       padding: 10px;
       background-color: white;
@@ -47,6 +44,20 @@
     ul {
       padding: 0;
       list-style: none;
+    }
+    .conversation-preview {
+      cursor: pointer;
+      padding: 10px;
+      background-color: #e9ecef;
+      border-radius: 8px;
+      margin: 5px 0;
+    }
+    .conversation-preview:hover {
+      background-color: #dee2e6;
+    }
+    .conversation-content {
+      display: none;
+      padding-left: 20px;
     }
   </style>
 </head>
@@ -103,9 +114,15 @@
                 <h3>Conversation history:</h3>
                 <ul>
                   ${call.conversations.map(convo => `
-                    <li>
-                      <p>User: ${convo.user}</p>
-                      <p>Bot: ${convo.bot}</p>
+                    <li class="conversation-preview" onclick="toggleConversation(${call.id})">
+                      <p><strong>Latest message:</strong> ${convo.user}: ${convo.bot}</p>
+                      <div class="conversation-content" id="conversation-content-${call.id}">
+                        ${convo.conversations.map(message => `
+                          <div class="message ${message.user ? 'user' : 'bot'}">
+                            <p>${message.user ? 'User' : 'Bot'}: ${message.text}</p>
+                          </div>
+                        `).join('')}
+                      </div>
                     </li>
                   `).join('')}
                 </ul>
@@ -127,9 +144,6 @@
                 </div>
               </li>
             `).join('');
-            // Auto-scroll to the bottom
-            const conversationsDiv = document.getElementById('conversations');
-            conversationsDiv.scrollTop = conversationsDiv.scrollHeight;
           } else {
             conversationsList.innerHTML = '<li>No conversations available</li>';
           }
@@ -138,6 +152,16 @@
           console.error('Error fetching call data:', error);
         });
     }, 5000);
+
+    // Toggle conversation visibility when clicked
+    function toggleConversation(callId) {
+      const content = document.getElementById(`conversation-content-${callId}`);
+      if (content.style.display === 'none' || content.style.display === '') {
+        content.style.display = 'block';
+      } else {
+        content.style.display = 'none';
+      }
+    }
   </script>
 </body>
 </html>
