@@ -3,10 +3,11 @@ const bodyParser = require('body-parser');
 const { twiml } = require('twilio');
 const path = require('path');
 const axios = require('axios');
-const WebSocket = require('ws');
 
 const app = express();
 const port = process.env.PORT || 3000;
+
+app.use(bodyParser.urlencoded({ extended: false }));
 
 // Watson Speech to Text credentials
 const watsonSpeechToTextUrl = 'https://api.us-south.speech-to-text.watson.cloud.ibm.com/instances/d0fa1cd2-f3b4-4ff0-9888-196375565a8f';
@@ -22,7 +23,7 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Handle incoming calls (Twilio webhook)
+// Handle incoming calls
 app.post('/voice', (req, res) => {
   const callSid = req.body.CallSid;
   const caller = req.body.From;
@@ -31,7 +32,7 @@ app.post('/voice', (req, res) => {
   // Log the incoming call
   console.log(`Incoming call from ${caller} with CallSid ${callSid}`);
 
-  // Respond with TwiML to prompt for speech input
+  // Respond with TwiML
   const response = new twiml.VoiceResponse();
   response.say('Hello, please tell me something.');
 
@@ -56,15 +57,15 @@ app.post('/voice', (req, res) => {
   };
 });
 
-// Process speech input (send to Watson Speech-to-Text)
+// Process speech input
 app.post('/process-speech', async (req, res) => {
   const speechResult = req.body.SpeechResult;
   console.log(`Speech input received: ${speechResult}`);
 
   // Simulate a response based on user input
-  let botResponse = 'Thank you. Goodbye!';
-  if (speechResult.toLowerCase().includes('hello')) {
-    botResponse = 'Thank you, goodbye!';
+  let botResponse = 'I didn’t understand that. Goodbye!';
+  if (speechResult.toLowerCase().includes('hello how are you')) {
+    botResponse = 'Thank you Kellyn, goodbye!';
   }
 
   // Log the conversation
@@ -92,48 +93,9 @@ app.post('/process-speech', async (req, res) => {
   res.send(response.toString());
 });
 
-// WebSocket server for real-time speech-to-text
-const wss = new WebSocket.Server({ port: 8080 });
-
-wss.on('connection', (ws) => {
-  console.log('WebSocket connection established');
-
-  ws.on('message', async (message) => {
-    console.log('Audio data received');
-
-    try {
-      // Send audio to Watson Speech-to-Text
-      const response = await axios.post(
-        `${watsonSpeechToTextUrl}/v1/recognize`,
-        message,
-        {
-          headers: {
-            'Content-Type': 'audio/wav',
-            Authorization: `Basic ${Buffer.from(`apikey:${watsonSpeechToTextApiKey}`).toString('base64')}`,
-          },
-        }
-      );
-
-      const transcription = response.data.results
-        .map((result) => result.alternatives[0].transcript)
-        .join(' ');
-
-      console.log(`Transcription: ${transcription}`);
-
-      // Broadcast transcription to all connected clients
-      wss.clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
-          client.send(transcription);
-        }
-      });
-    } catch (error) {
-      console.error('Error transcribing audio:', error);
-    }
-  });
-});
-
-// Endpoint to serve call and conversation data (for frontend)
+// Endpoint to serve call and conversation data
 app.get('/call-data', (req, res) => {
+  // Calculate live duration for an ongoing call
   if (app.locals.currentCall && app.locals.currentCall.status === 'in-progress') {
     app.locals.currentCall.duration = Math.floor(
       (new Date() - app.locals.currentCall.startTime) / 1000
@@ -150,4 +112,3 @@ app.get('/call-data', (req, res) => {
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
-
