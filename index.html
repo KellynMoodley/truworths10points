@@ -3,56 +3,36 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Live Call Transcription</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-    }
-    h1, h2 {
-      color: #333;
-    }
-    #live-transcription, #bot-response {
-      border: 1px solid #ccc;
-      padding: 10px;
-      margin: 10px 0;
-      border-radius: 5px;
-    }
-  </style>
+  <title>Live Speech Processing</title>
 </head>
 <body>
-  <h1>Live Phone Call Interaction</h1>
+  <h1>Live Speech Processing</h1>
 
   <div id="live-transcription">
     <h2>Live Transcription</h2>
-    <p>Waiting for input...</p>
+    <p id="transcription">Waiting for transcription...</p>
   </div>
 
-  <div id="bot-response">
+  <div id="assistant-response">
     <h2>Assistant Response</h2>
-    <p>Waiting for response...</p>
+    <p id="response">Waiting for response...</p>
   </div>
 
   <script>
-    const socket = new WebSocket('ws://localhost:8080');
+    const socket = new WebSocket('wss://truworths-5d9b0467377c.herokuapp.com/');
 
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      const { transcription, botResponse } = data;
-
-      const transcriptionDiv = document.getElementById('live-transcription');
-      const botResponseDiv = document.getElementById('bot-response');
-
-      transcriptionDiv.innerHTML = `
-        <h2>Live Transcription</h2>
-        <p>${transcription}</p>
-      `;
-
-      botResponseDiv.innerHTML = `
-        <h2>Assistant Response</h2>
-        <p>${botResponse}</p>
-      `;
+      if (data.type === 'transcription') {
+        document.getElementById('transcription').innerText = data.content;
+      } else if (data.type === 'response') {
+        document.getElementById('response').innerText = data.content;
+      }
     };
+
+    socket.onopen = () => console.log('WebSocket connected');
+    socket.onerror = (error) => console.error('WebSocket error:', error);
+    socket.onclose = () => console.log('WebSocket closed');
   </script>
 </body>
 </html>
