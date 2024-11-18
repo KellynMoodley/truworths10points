@@ -3,36 +3,82 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Live Speech Processing</title>
+  <title>Phone Call Status</title>
 </head>
 <body>
-  <h1>Live Speech Processing</h1>
+  <h1>Phone Call Status</h1>
 
-  <div id="live-transcription">
-    <h2>Live Transcription</h2>
-    <p id="transcription">Waiting for transcription...</p>
+  <div id="current-call">
+    <h2>Current Call</h2>
+    <p>Waiting for a call...</p>
   </div>
 
-  <div id="assistant-response">
-    <h2>Assistant Response</h2>
-    <p id="response">Waiting for response...</p>
+  <div id="past-calls">
+    <h2>Past Calls</h2>
+    <ul id="past-calls-list">
+      <li>No past calls available</li>
+    </ul>
+  </div>
+
+  <div id="conversations">
+    <h2>Conversations</h2>
+    <ul id="conversations-list">
+      <li>No conversations available</li>
+    </ul>
   </div>
 
   <script>
-    const socket = new WebSocket('wss://truworths-5d9b0467377c.herokuapp.com/');
+    // Fetch the call data from the backend every 5 seconds
+    setInterval(() => {
+      fetch('/call-data')
+        .then(response => response.json())
+        .then(data => {
+          const currentCallDiv = document.getElementById('current-call');
+          const pastCallsList = document.getElementById('past-calls-list');
+          const conversationsList = document.getElementById('conversations-list');
 
-    socket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === 'transcription') {
-        document.getElementById('transcription').innerText = data.content;
-      } else if (data.type === 'response') {
-        document.getElementById('response').innerText = data.content;
-      }
-    };
+          // Display current call data
+          if (data.currentCall) {
+            currentCallDiv.innerHTML = ` 
+              <h2>Current Call</h2>
+              <p>Caller: ${data.currentCall.caller}</p>
+              <p>Status: ${data.currentCall.status}</p>
+              <p>Call SID: ${data.currentCall.callSid}</p>
+              <p>Duration: ${data.currentCall.duration} seconds</p>
+            `;
+          } else {
+            currentCallDiv.innerHTML = '<p>No current call</p>';
+          }
 
-    socket.onopen = () => console.log('WebSocket connected');
-    socket.onerror = (error) => console.error('WebSocket error:', error);
-    socket.onclose = () => console.log('WebSocket closed');
+          // Display past calls
+          if (data.pastCalls.length > 0) {
+            pastCallsList.innerHTML = data.pastCalls.map(call => `
+              <li>
+                <p>Caller: ${call.caller}</p>
+                <p>Status: ${call.status}</p>
+                <p>Duration: ${call.duration} seconds</p>
+              </li>
+            `).join('');
+          } else {
+            pastCallsList.innerHTML = '<li>No past calls available</li>';
+          }
+
+          // Display conversations
+          if (data.conversations.length > 0) {
+            conversationsList.innerHTML = data.conversations.map(convo => `
+              <li>
+                <p>User: ${convo.user}</p>
+                <p>Bot: ${convo.bot}</p>
+              </li>
+            `).join('');
+          } else {
+            conversationsList.innerHTML = '<li>No conversations available</li>';
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching call data:', error);
+        });
+    }, 5000);
   </script>
 </body>
 </html>
