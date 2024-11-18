@@ -3,40 +3,36 @@ const bodyParser = require('body-parser');
 const { twiml } = require('twilio');
 const path = require('path');
 const axios = require('axios');
-const WebSocket = require('ws');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Watson Assistant credentials
-const watsonAssistantApiKey = 'XrmHraHtnUmM6G6w9EI_qbXSHabHgnms7sIP0rCx9XKf';
-const watsonAssistantUrl = 'https://api.us-south.assistant.watson.cloud.ibm.com/instances/65990e2d-697c-473b-9033-da43beb1a8ee';
-const watsonAssistantIntegrationId = 'ed428f23-61fb-42c7-b5ad-45995b4c2d92';
-
-// WebSocket server for live updates
-const wss = new WebSocket.Server({ noServer: true });
-
-// Middleware
 app.use(bodyParser.urlencoded({ extended: false }));
 
-// Serve the index.html file
+// Watson Speech to Text credentials
+const watsonSpeechToTextUrl = 'https://api.us-south.speech-to-text.watson.cloud.ibm.com/instances/d0fa1cd2-f3b4-4ff0-9888-196375565a8f';
+const watsonSpeechToTextApiKey = 'ig_BusJMZMAOYfhcRJ-PtAf4PgjzSIMebGjszzJZ9RIj';
+
+// Store calls and conversations in memory
+app.locals.currentCall = null;
+app.locals.pastCalls = [];
+app.locals.conversations = [];
+
+// Serve the index.html file at the root
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-// Handle WebSocket connections
-wss.on('connection', (socket) => {
-  console.log('WebSocket connection established');
 });
 
 // Handle incoming calls
 app.post('/voice', (req, res) => {
   const callSid = req.body.CallSid;
   const caller = req.body.From;
+  const startTime = new Date();
 
   // Log the incoming call
   console.log(`Incoming call from ${caller} with CallSid ${callSid}`);
 
+  // Respond with TwiML
   const response = new twiml.VoiceResponse();
   response.say('Hello, please tell me something.');
 
@@ -50,48 +46,69 @@ app.post('/voice', (req, res) => {
 
   res.type('text/xml');
   res.send(response.toString());
+
+  // Store the new current call with "in-progress" status
+  app.locals.currentCall = {
+    caller,
+    callSid,
+    startTime,
+    duration: 0,
+    status: 'in-progress',
+  };
 });
 
 // Process speech input
 app.post('/process-speech', async (req, res) => {
-  const speechResult = req.body.SpeechResult || '';
+  const speechResult = req.body.SpeechResult;
   console.log(`Speech input received: ${speechResult}`);
 
+  // Simulate a response based on user input
   let botResponse = 'I didn’t understand that. Goodbye!';
-  try {
-    // Call Watson Assistant action "hello"
-    const watsonResponse = await axios.post(
-      `${watsonAssistantUrl}/v2/integrations/${watsonAssistantIntegrationId}/messages`,
-      { input: { message_type: 'text', text: speechResult } },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Basic ${Buffer.from(`apikey:${watsonAssistantApiKey}`).toString('base64')}`,
-        },
-      }
-    );
-
-    botResponse = watsonResponse.data.output.generic[0]?.text || botResponse;
-  } catch (error) {
-    console.error('Error calling Watson Assistant:', error.message);
+  if (speechResult.toLowerCase().includes('hello how are you')) {
+    botResponse = 'Thank you Kellyn, goodbye!';
   }
 
-  // Send response to user
+  // Log the conversation
+  app.locals.conversations.push({
+    user: speechResult,
+    bot: botResponse,
+  });
+
+  // Respond with TwiML
   const response = new twiml.VoiceResponse();
   response.say(botResponse);
   response.hangup();
+
+  // Update call status to "completed" and move to pastCalls
+  if (app.locals.currentCall) {
+    const currentCall = app.locals.currentCall;
+    const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
+    currentCall.duration = callDuration;
+    currentCall.status = 'completed';
+    app.locals.pastCalls.push(currentCall); // Add to past calls
+    app.locals.currentCall = null; // Clear current call
+  }
 
   res.type('text/xml');
   res.send(response.toString());
 });
 
-// Upgrade HTTP server for WebSocket
-const server = app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+// Endpoint to serve call and conversation data
+app.get('/call-data', (req, res) => {
+  // Calculate live duration for an ongoing call
+  if (app.locals.currentCall && app.locals.currentCall.status === 'in-progress') {
+    app.locals.currentCall.duration = Math.floor(
+      (new Date() - app.locals.currentCall.startTime) / 1000
+    );
+  }
+
+  res.json({
+    currentCall: app.locals.currentCall,
+    pastCalls: app.locals.pastCalls,
+    conversations: app.locals.conversations,
+  });
 });
 
-server.on('upgrade', (request, socket, head) => {
-  wss.handleUpgrade(request, socket, head, (ws) => {
-    wss.emit('connection', ws, request);
-  });
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
 });
