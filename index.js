@@ -59,6 +59,7 @@ app.post('/voice', (req, res) => {
 });
 
 // Process speech input
+// Process speech input
 app.post('/process-speech', async (req, res) => {
   const speechResult = req.body.SpeechResult;
   console.log(`Speech input received: ${speechResult}`);
@@ -83,13 +84,22 @@ app.post('/process-speech', async (req, res) => {
     const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
     currentCall.duration = callDuration;
     currentCall.status = 'completed';
-    app.locals.pastCalls.push(currentCall); // Add to past calls
-    app.locals.currentCall = null; // Clear current call
+
+    // Store conversation history with the completed call
+    currentCall.conversations = app.locals.conversations;
+
+    // Add to past calls
+    app.locals.pastCalls.push(currentCall);
+    
+    // Clear current call and conversations for the next one
+    app.locals.currentCall = null;
+    app.locals.conversations = [];
   }
 
   res.type('text/xml');
   res.send(response.toString());
 });
+
 
 
 // Endpoint to serve call and conversation data
