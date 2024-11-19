@@ -13,14 +13,11 @@ app.use(bodyParser.urlencoded({ extended: false }));
 const watsonSpeechToTextUrl = 'https://api.us-south.speech-to-text.watson.cloud.ibm.com/instances/d0fa1cd2-f3b4-4ff0-9888-196375565a8f';
 const watsonSpeechToTextApiKey = 'ig_BusJMZMAOYfhcRJ-PtAf4PgjzSIMebGjszzJZ9RIj';
 
-// HubSpot API credentials
-const hubspotApiKey = 'pat-eu1-8a63beb2-b274-4166-869a-b47a4130275f'; // Replace with your HubSpot API key
-const hubspotBaseUrl = 'https://api.hubapi.com';
-
 // Store calls and conversations in memory
 app.locals.currentCall = null;
 app.locals.pastCalls = [];
 app.locals.conversations = [];
+app.locals.pastConversations = [];  // Store completed conversations
 
 // Serve the index.html file at the root
 app.get('/', (req, res) => {
@@ -33,10 +30,14 @@ app.post('/voice', (req, res) => {
   const caller = req.body.From;
   const startTime = new Date();
 
+  // Log the incoming call
   console.log(`Incoming call from ${caller} with CallSid ${callSid}`);
 
+  // Respond with TwiML
   const response = new twiml.VoiceResponse();
   response.say('Hello, please tell me something.');
+
+  // Gather speech input
   response.gather({
     input: 'speech',
     action: '/process-speech',
@@ -47,6 +48,7 @@ app.post('/voice', (req, res) => {
   res.type('text/xml');
   res.send(response.toString());
 
+  // Store the new current call with "in-progress" status
   app.locals.currentCall = {
     caller,
     callSid,
@@ -57,30 +59,39 @@ app.post('/voice', (req, res) => {
 });
 
 // Process speech input
+// Process speech input
 app.post('/process-speech', async (req, res) => {
   const speechResult = req.body.SpeechResult;
   console.log(`Speech input received: ${speechResult}`);
 
+  // Simulate a response based on user input
   let botResponse = 'Thank you. Goodbye!';
 
+  // Log the conversation
   app.locals.conversations.push({
     user: speechResult,
     bot: botResponse,
   });
 
+  // Respond with TwiML
   const response = new twiml.VoiceResponse();
   response.say(botResponse);
   response.hangup();
 
+  // Update call status to "completed" and move to pastCalls
   if (app.locals.currentCall) {
     const currentCall = app.locals.currentCall;
     const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
     currentCall.duration = callDuration;
     currentCall.status = 'completed';
 
+    // Store conversation history with the completed call
     currentCall.conversations = app.locals.conversations;
 
+    // Add to past calls
     app.locals.pastCalls.push(currentCall);
+    
+    // Clear current call and conversations for the next one
     app.locals.currentCall = null;
     app.locals.conversations = [];
   }
@@ -89,38 +100,11 @@ app.post('/process-speech', async (req, res) => {
   res.send(response.toString());
 });
 
-// Retrieve HubSpot CRM data
-app.get('/hubspot-profile', async (req, res) => {
-  const phone = req.query.phone;
 
-  if (!phone) {
-    return res.status(400).json({ error: 'Phone number is required' });
-  }
 
-  try {
-    const response = await axios.get(
-      `${hubspotBaseUrl}/contacts/v1/search/query?q=${phone}&hapikey=${hubspotApiKey}`
-    );
-
-    const contact = response.data.results[0]; // Retrieve the first matching contact
-    if (contact) {
-      res.json({
-        name: contact.properties.firstname.value,
-        email: contact.properties.email.value,
-        phone:contact.properties.phone.value,
-        accountnumbers: contact.properties.accountnumbers.value
-      });
-    } else {
-      res.status(404).json({ error: 'No matching contact found' });
-    }
-  } catch (error) {
-    console.error('Error fetching HubSpot data:', error.message);
-    res.status(500).json({ error: 'Failed to fetch data from HubSpot' });
-  }
-});
-
-// Endpoint to serve call data
+// Endpoint to serve call and conversation data
 app.get('/call-data', (req, res) => {
+  // Calculate live duration for an ongoing call
   if (app.locals.currentCall && app.locals.currentCall.status === 'in-progress') {
     app.locals.currentCall.duration = Math.floor(
       (new Date() - app.locals.currentCall.startTime) / 1000
@@ -131,6 +115,7 @@ app.get('/call-data', (req, res) => {
     currentCall: app.locals.currentCall,
     pastCalls: app.locals.pastCalls,
     conversations: app.locals.conversations,
+    pastConversations: app.locals.pastConversations,
   });
 });
 
