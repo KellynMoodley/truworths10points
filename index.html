@@ -96,20 +96,20 @@
 
           // Display current call data
           if (data.currentCall) {
-            currentCallDiv.innerHTML = 
+            currentCallDiv.innerHTML = `
               <h2>Current Call</h2>
               <p>Caller: ${data.currentCall.caller}</p>
               <p>Status: ${data.currentCall.status}</p>
               <p>Call SID: ${data.currentCall.callSid}</p>
               <p>Duration: ${data.currentCall.duration} seconds</p>
-            ;
+            `;
           } else {
             currentCallDiv.innerHTML = '<p>No current call</p>';
           }
 
           // Display past calls with clickable caller ID and unique call ID for each call
           if (data.pastCalls.length > 0) {
-            pastCallsList.innerHTML = data.pastCalls.map(call => 
+            pastCallsList.innerHTML = data.pastCalls.map(call => `
               <li>
                 <div>
                   <span class="caller" onclick="toggleDetails('${call.callSid}')">${call.caller}</span>
@@ -118,24 +118,24 @@
                     <p>Duration: ${call.duration} seconds</p>
                     <h3>Conversation history:</h3>
                     <ul>
-                      ${call.conversations.map(convo => 
+                      ${call.conversations.map(convo => `
                         <li>
                           <p>User: ${convo.user}</p>
                           <p>Bot: ${convo.bot}</p>
                         </li>
-                      ).join('')}
+                      `).join('')}
                     </ul>
                   </div>
                 </div>
               </li>
-            ).join('');
+            `).join('');
           } else {
             pastCallsList.innerHTML = '<li>No past calls available</li>';
           }
 
           // Display conversations
           if (data.conversations.length > 0) {
-            conversationsList.innerHTML = data.conversations.map(convo => 
+            conversationsList.innerHTML = data.conversations.map(convo => `
               <li>
                 <div class="message user">
                   <p>${convo.user}</p>
@@ -144,7 +144,7 @@
                   <p>${convo.bot}</p>
                 </div>
               </li>
-            ).join('');
+            `).join('');
             // Auto-scroll to the bottom
             const conversationsDiv = document.getElementById('conversations');
             conversationsDiv.scrollTop = conversationsDiv.scrollHeight;
@@ -159,7 +159,7 @@
 
     // Function to toggle conversation details for each caller
     function toggleDetails(callSid) {
-      const detailsDiv = document.getElementById(details-${callSid});
+      const detailsDiv = document.getElementById(`details-${callSid}`);
       detailsDiv.style.display = detailsDiv.style.display === 'none' || detailsDiv.style.display === '' ? 'block' : 'none';
     }
   </script>
