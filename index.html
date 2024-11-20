@@ -14,7 +14,7 @@
     h1, h2 {
       text-align: center;
     }
-    #current-call, #past-calls, #hubspot-profile {
+    #current-call, #past-calls {
       margin: 20px;
       padding: 20px;
       background-color: white;
@@ -62,19 +62,29 @@
       border-radius: 5px;
       margin-top: 10px;
     }
+    .contact-info {
+      margin: 20px;
+      padding: 20px;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
   </style>
 </head>
 <body>
   <h1>Phone Call Status</h1>
 
+  <!-- Phone number input form -->
+  <div class="contact-info">
+    <h2>Search by Phone Number</h2>
+    <input type="text" id="phoneNumber" placeholder="Enter phone number" />
+    <button onclick="searchPhoneNumber()">Search</button>
+    <div id="contactDetails"></div>
+  </div>
+
   <div id="current-call">
     <h2>Current Call</h2>
     <p>Waiting for a call...</p>
-  </div>
-
-  <div id="hubspot-profile">
-    <h2>Caller Profile</h2>
-    <p>No profile information available</p>
   </div>
 
   <div id="past-calls">
@@ -98,7 +108,6 @@
           const currentCallDiv = document.getElementById('current-call');
           const pastCallsList = document.getElementById('past-calls-list');
           const conversationsList = document.getElementById('conversations-list');
-          const hubspotProfileDiv = document.getElementById('hubspot-profile');
 
           // Display current call data
           if (data.currentCall) {
@@ -109,34 +118,11 @@
               <p>Call SID: ${data.currentCall.callSid}</p>
               <p>Duration: ${data.currentCall.duration} seconds</p>
             `;
-
-            // Fetch the HubSpot profile for the current caller
-            fetch(`/hubspot-profile?phone=${encodeURIComponent(data.currentCall.caller)}`)
-              .then(response => response.json())
-              .then(profile => {
-                if (profile) {
-                  hubspotProfileDiv.innerHTML = `
-                    <h2>Caller Profile</h2>
-                    <p><strong>First Name:</strong> ${profile.firstname || 'N/A'}</p>
-                    <p><strong>Last Name:</strong> ${profile.lastname || 'N/A'}</p>
-                    <p><strong>City:</strong> ${profile.city || 'N/A'}</p>
-                    <p><strong>Message:</strong> ${profile.message || 'N/A'}</p>
-                    <p><strong>Account Number:</strong> ${profile.accountnumbers || 'N/A'}</p>
-                    <p><strong>Phone Number:</strong> ${profile.phonenumber || 'N/A'}</p>
-                  `;
-                } else {
-                  hubspotProfileDiv.innerHTML = '<p>No profile information available</p>';
-                }
-              })
-              .catch(error => {
-                console.error('Error fetching HubSpot profile:', error);
-              });
           } else {
             currentCallDiv.innerHTML = '<p>No current call</p>';
-            hubspotProfileDiv.innerHTML = '<p>No profile information available</p>';
           }
 
-          // Display past calls
+          // Display past calls with clickable caller ID and unique call ID for each call
           if (data.pastCalls.length > 0) {
             pastCallsList.innerHTML = data.pastCalls.map(call => `
               <li>
@@ -145,6 +131,15 @@
                   <div id="details-${call.callSid}" class="caller-details">
                     <p>Status: ${call.status}</p>
                     <p>Duration: ${call.duration} seconds</p>
+                    <h3>Conversation history:</h3>
+                    <ul>
+                      ${call.conversations.map(convo => `
+                        <li>
+                          <p>User: ${convo.user}</p>
+                          <p>Bot: ${convo.bot}</p>
+                        </li>
+                      `).join('')}
+                    </ul>
                   </div>
                 </div>
               </li>
@@ -165,6 +160,7 @@
                 </div>
               </li>
             `).join('');
+            // Auto-scroll to the bottom
             const conversationsDiv = document.getElementById('conversations');
             conversationsDiv.scrollTop = conversationsDiv.scrollHeight;
           } else {
@@ -176,6 +172,47 @@
         });
     }, 5000);
 
+    // Function to search contact by phone number using HubSpot API
+    async function searchPhoneNumber() {
+      const phone = document.getElementById('phoneNumber').value;
+
+      if (!phone) {
+        alert('Please enter a phone number');
+        return;
+      }
+
+      try {
+        const response = await fetch('/search-phone', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ phone })
+        });
+
+        const data = await response.json();
+
+        // Display contact details
+        const contactDetailsDiv = document.getElementById('contactDetails');
+        if (data && data.contact) {
+          contactDetailsDiv.innerHTML = `
+            <h3>Contact Information</h3>
+            <p>First Name: ${data.contact.firstname}</p>
+            <p>Last Name: ${data.contact.lastname}</p>
+            <p>City: ${data.contact.city}</p>
+            <p>Message: ${data.contact.message}</p>
+            <p>Account Number: ${data.contact.accountnumbers}</p>
+            <p>Phone Number: ${data.contact.phonenumber}</p>
+          `;
+        } else {
+          contactDetailsDiv.innerHTML = '<p>No contact found with that phone number.</p>';
+        }
+      } catch (error) {
+        console.error('Error searching by phone number:', error);
+      }
+    }
+
+    // Function to toggle conversation details for each caller
     function toggleDetails(callSid) {
       const detailsDiv = document.getElementById(`details-${callSid}`);
       detailsDiv.style.display = detailsDiv.style.display === 'none' || detailsDiv.style.display === '' ? 'block' : 'none';
