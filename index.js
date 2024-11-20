@@ -13,25 +13,63 @@ app.use(bodyParser.urlencoded({ extended: false }));
 const watsonSpeechToTextUrl = 'https://api.us-south.speech-to-text.watson.cloud.ibm.com/instances/d0fa1cd2-f3b4-4ff0-9888-196375565a8f';
 const watsonSpeechToTextApiKey = 'ig_BusJMZMAOYfhcRJ-PtAf4PgjzSIMebGjszzJZ9RIj';
 
+// HubSpot Access Token
+const ACCESS_TOKEN = 'pat-na1-bc9ea2a9-e8e6-42a1-99ed-43276eadb3ac'; // Replace with an environment variable in production
+
 // Store calls and conversations in memory
 app.locals.currentCall = null;
 app.locals.pastCalls = [];
 app.locals.conversations = [];
-app.locals.pastConversations = [];  // Store completed conversations
+app.locals.pastConversations = [];
 
 // Serve the index.html file at the root
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// Search for a contact by phone number in HubSpot
+async function searchByPhoneNumber(phone) {
+  const url = 'https://api.hubapi.com/crm/v3/objects/contacts/search';
+  const query = {
+    filterGroups: [
+      {
+        filters: [
+          {
+            propertyName: 'phonenumber',
+            operator: 'EQ',
+            value: phone
+          }
+        ]
+      }
+    ],
+    properties: ['firstname', 'lastname', 'city', 'message', 'accountnumbers', 'phonenumber']
+  };
+
+  try {
+    const response = await axios.post(url, query, {
+      headers: {
+        Authorization: `Bearer ${ACCESS_TOKEN}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    return response.data.results[0]?.properties || null; // Return the first contact's properties or null
+  } catch (error) {
+    console.error('Error searching contacts:', error.response?.data || error.message);
+    return null;
+  }
+}
+
 // Handle incoming calls
-app.post('/voice', (req, res) => {
+app.post('/voice', async (req, res) => {
   const callSid = req.body.CallSid;
   const caller = req.body.From;
   const startTime = new Date();
 
   // Log the incoming call
   console.log(`Incoming call from ${caller} with CallSid ${callSid}`);
+
+  // Search HubSpot for the caller's profile
+  const profile = await searchByPhoneNumber(caller);
 
   // Respond with TwiML
   const response = new twiml.VoiceResponse();
@@ -48,17 +86,17 @@ app.post('/voice', (req, res) => {
   res.type('text/xml');
   res.send(response.toString());
 
-  // Store the new current call with "in-progress" status
+  // Store the new current call with "in-progress" status and profile info
   app.locals.currentCall = {
     caller,
     callSid,
     startTime,
     duration: 0,
     status: 'in-progress',
+    profile, // Add the HubSpot profile data
   };
 });
 
-// Process speech input
 // Process speech input
 app.post('/process-speech', async (req, res) => {
   const speechResult = req.body.SpeechResult;
@@ -100,11 +138,8 @@ app.post('/process-speech', async (req, res) => {
   res.send(response.toString());
 });
 
-
-
 // Endpoint to serve call and conversation data
 app.get('/call-data', (req, res) => {
-  // Calculate live duration for an ongoing call
   if (app.locals.currentCall && app.locals.currentCall.status === 'in-progress') {
     app.locals.currentCall.duration = Math.floor(
       (new Date() - app.locals.currentCall.startTime) / 1000
@@ -117,6 +152,10 @@ app.get('/call-data', (req, res) => {
     conversations: app.locals.conversations,
     pastConversations: app.locals.pastConversations,
   });
+});
+
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
 });
 
 app.listen(port, () => {
