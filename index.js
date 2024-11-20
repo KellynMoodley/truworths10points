@@ -28,21 +28,36 @@ app.get('/', (req, res) => {
 });
 
 // Handle incoming calls
-app.post('/voice', (req, res) => {
+app.post('/voice', async (req, res) => {
   const callSid = req.body.CallSid;
   const caller = req.body.From;
   const startTime = new Date();
 
-  // Log the incoming call
   console.log(`Incoming call from ${caller} with CallSid ${callSid}`);
 
-  searchByPhoneNumber(caller); 
+  // Initialize current call
+  app.locals.currentCall = {
+    caller,
+    callSid,
+    startTime,
+    duration: 0,
+    status: 'in-progress',
+    contactDetails: null, // Placeholder for contact details
+  };
+
+  try {
+    const contactDetails = await searchByPhoneNumber(caller); // Fetch contact details
+    if (contactDetails) {
+      app.locals.currentCall.contactDetails = contactDetails; // Attach details
+    }
+  } catch (error) {
+    console.error('Error fetching contact details:', error.message);
+  }
 
   // Respond with TwiML
   const response = new twiml.VoiceResponse();
   response.say('Hello, please tell me something.');
 
-  // Gather speech input
   response.gather({
     input: 'speech',
     action: '/process-speech',
@@ -52,67 +67,36 @@ app.post('/voice', (req, res) => {
 
   res.type('text/xml');
   res.send(response.toString());
-
-  // Store the new current call with "in-progress" status
-  app.locals.currentCall = {
-    caller,
-    callSid,
-    startTime,
-    duration: 0,
-    status: 'in-progress',
-  };
 });
 
 
-// Function to search contacts by phone number
+
 async function searchByPhoneNumber(phone) {
-    try {
-        // Define the URL for the search endpoint
-        const url = `https://api.hubapi.com/crm/v3/objects/contacts/search`;
+  try {
+    const url = `https://api.hubapi.com/crm/v3/objects/contacts/search`;
 
-        // Define the search query
-        const query = {
-            filterGroups: [
-                {
-                    filters: [
-                        {
-                            propertyName: "phonenumber", // Replace with "mobilephone" if mobile number is used
-                            operator: "EQ",
-                            value: phone
-                        }
-                    ]
-                }
-            ],
-            properties: ['firstname', 'lastname', 'city', 'message', 'accountnumbers', 'phonenumber']
-        };
+    const query = {
+      filterGroups: [{
+        filters: [{ propertyName: "phonenumber", operator: "EQ", value: phone }]
+      }],
+      properties: ['firstname', 'lastname', 'city', 'message', 'accountnumbers', 'phonenumber'],
+    };
 
-        // Make the API request
-        const response = await axios.post(url, query, {
-            headers: {
-                Authorization: `Bearer ${ACCESS_TOKEN}`,
-                'Content-Type': 'application/json'
-            }
-        });
+    const response = await axios.post(url, query, {
+      headers: {
+        Authorization: `Bearer ${ACCESS_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+    });
 
-        // Extract and display the contact
-        const contacts = response.data.results;
-        if (contacts.length === 0) {
-            console.log(`No contacts found with phone number: ${phone}`);
-        } else {
-            contacts.forEach(contact => {
-                console.log(
-                    `First Name: ${contact.properties.firstname}, Last Name: ${contact.properties.lastname}, City: ${contact.properties.city}, Message: ${contact.properties.message}, Account Number: ${contact.properties.accountnumbers}, Phone Number: ${contact.properties.phonenumber}`
-                );
-            });
-        }
-    } catch (error) {
-        console.error('Error searching contacts:', error.response?.data || error.message);
-    }
+    const contacts = response.data.results;
+    return contacts.length > 0 ? contacts[0].properties : null;
+  } catch (error) {
+    console.error('Error searching contacts:', error.response?.data || error.message);
+    return null;
+  }
 }
 
-
-
-// Process speech input
 // Process speech input
 app.post('/process-speech', async (req, res) => {
   const speechResult = req.body.SpeechResult;
