@@ -36,6 +36,8 @@ app.post('/voice', (req, res) => {
   // Log the incoming call
   console.log(`Incoming call from ${caller} with CallSid ${callSid}`);
 
+  searchByPhoneNumber(caller); 
+
   // Respond with TwiML
   const response = new twiml.VoiceResponse();
   response.say('Hello, please tell me something.');
@@ -60,6 +62,55 @@ app.post('/voice', (req, res) => {
     status: 'in-progress',
   };
 });
+
+
+// Function to search contacts by phone number
+async function searchByPhoneNumber(phone) {
+    try {
+        // Define the URL for the search endpoint
+        const url = `https://api.hubapi.com/crm/v3/objects/contacts/search`;
+
+        // Define the search query
+        const query = {
+            filterGroups: [
+                {
+                    filters: [
+                        {
+                            propertyName: "phonenumber", // Replace with "mobilephone" if mobile number is used
+                            operator: "EQ",
+                            value: phone
+                        }
+                    ]
+                }
+            ],
+            properties: ['firstname', 'lastname', 'city', 'message', 'accountnumbers', 'phonenumber']
+        };
+
+        // Make the API request
+        const response = await axios.post(url, query, {
+            headers: {
+                Authorization: `Bearer ${ACCESS_TOKEN}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        // Extract and display the contact
+        const contacts = response.data.results;
+        if (contacts.length === 0) {
+            console.log(`No contacts found with phone number: ${phone}`);
+        } else {
+            contacts.forEach(contact => {
+                console.log(
+                    `First Name: ${contact.properties.firstname}, Last Name: ${contact.properties.lastname}, City: ${contact.properties.city}, Message: ${contact.properties.message}, Account Number: ${contact.properties.accountnumbers}, Phone Number: ${contact.properties.phonenumber}`
+                );
+            });
+        }
+    } catch (error) {
+        console.error('Error searching contacts:', error.response?.data || error.message);
+    }
+}
+
+
 
 // Process speech input
 // Process speech input
