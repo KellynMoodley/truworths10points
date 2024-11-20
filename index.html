@@ -108,28 +108,28 @@
           const callerAccountNumber = document.getElementById('caller-accountnumber');
           const callerPhone = document.getElementById('caller-phone');
 
-          // Display current call data
-          if (data.currentCall) {
-            currentCallDiv.innerHTML = ` 
-              <h2>Current Call</h2>
-              <p>Caller: ${data.currentCall.caller}</p>
-              <p>Status: ${data.currentCall.status}</p>
-              <p>Call SID: ${data.currentCall.callSid}</p>
-              <p>Duration: ${data.currentCall.duration} seconds</p>
-            `;
-            // Display caller details if available
-            if (data.currentCall.contactDetails) {
-              callerDetailsDiv.style.display = 'block';
-              callerName.innerHTML = `Name: ${data.currentCall.contactDetails.firstname} ${data.currentCall.contactDetails.lastname}`;
-              callerCity.innerHTML = `City: ${data.currentCall.contactDetails.city}`;
-              callerMessage.innerHTML = `Message: ${data.currentCall.contactDetails.message}`;
-              callerAccountNumber.innerHTML = `Account Number: ${data.currentCall.contactDetails.accountnumbers}`;
-              callerPhone.innerHTML = `Phone: ${data.currentCall.contactDetails.phonenumber}`;
-            }
-          } else {
-            currentCallDiv.innerHTML = '<p>No current call</p>';
-            callerDetailsDiv.style.display = 'none';
-          }
+                            // Display current call data
+if (data.currentCall) {
+  currentCallDiv.innerHTML = ` 
+    <h2>Current Call</h2>
+    <p>Caller: ${data.currentCall.caller}</p>
+    <p>Status: ${data.currentCall.status}</p>
+    <p>Call SID: ${data.currentCall.callSid}</p>
+    <p>Duration: ${data.currentCall.duration} seconds</p>
+  `;
+
+  if (data.currentCall.contactDetails) {
+    callerDetailsDiv.style.display = 'block';
+    callerName.innerHTML = `Name: ${data.currentCall.contactDetails.firstname} ${data.currentCall.contactDetails.lastname}`;
+    callerCity.innerHTML = `City: ${data.currentCall.contactDetails.city}`;
+    callerMessage.innerHTML = `Message: ${data.currentCall.contactDetails.message}`;
+    callerAccountNumber.innerHTML = `Account Number: ${data.currentCall.contactDetails.accountnumbers}`;
+    callerPhone.innerHTML = `Phone: ${data.currentCall.contactDetails.phonenumber}`;
+  }
+} else {
+  currentCallDiv.innerHTML = '<p>No current call</p>';
+  callerDetailsDiv.style.display = 'none';
+}
 
           // Display past calls with clickable caller ID and unique call ID for each call
           if (data.pastCalls.length > 0) {
