@@ -10,11 +10,8 @@ const port = process.env.PORT || 3000;
 app.use(bodyParser.urlencoded({ extended: false }));
 
 // Watson Speech to Text credentials
-const watsonSpeechToTextUrl = process.env.WATSON_SPEECH_TO_TEXT_URL;
-const watsonSpeechToTextApiKey = process.env.WATSON_SPEECH_TO_TEXT_API_KEY;
-
-// HubSpot Access Token
-const ACCESS_TOKEN = process.env.HUBSPOT_ACCESS_TOKEN;
+const watsonSpeechToTextUrl = 'https://api.us-south.speech-to-text.watson.cloud.ibm.com/instances/d0fa1cd2-f3b4-4ff0-9888-196375565a8f';
+const watsonSpeechToTextApiKey = 'ig_BusJMZMAOYfhcRJ-PtAf4PgjzSIMebGjszzJZ9RIj';
 
 // Store calls and conversations in memory
 app.locals.currentCall = null;
@@ -28,36 +25,19 @@ app.get('/', (req, res) => {
 });
 
 // Handle incoming calls
-app.post('/voice', async (req, res) => {
+app.post('/voice', (req, res) => {
   const callSid = req.body.CallSid;
   const caller = req.body.From;
   const startTime = new Date();
 
+  // Log the incoming call
   console.log(`Incoming call from ${caller} with CallSid ${callSid}`);
-
-  // Initialize current call
-  app.locals.currentCall = {
-    caller,
-    callSid,
-    startTime,
-    duration: 0,
-    status: 'in-progress',
-    contactDetails: null, // Placeholder for contact details
-  };
-
-  try {
-    const contactDetails = await searchByPhoneNumber(caller); // Fetch contact details
-    if (contactDetails) {
-      app.locals.currentCall.contactDetails = contactDetails; // Attach details
-    }
-  } catch (error) {
-    console.error('Error fetching contact details:', error.message);
-  }
 
   // Respond with TwiML
   const response = new twiml.VoiceResponse();
   response.say('Hello, please tell me something.');
 
+  // Gather speech input
   response.gather({
     input: 'speech',
     action: '/process-speech',
@@ -67,36 +47,18 @@ app.post('/voice', async (req, res) => {
 
   res.type('text/xml');
   res.send(response.toString());
+
+  // Store the new current call with "in-progress" status
+  app.locals.currentCall = {
+    caller,
+    callSid,
+    startTime,
+    duration: 0,
+    status: 'in-progress',
+  };
 });
 
-
-
-async function searchByPhoneNumber(phone) {
-  try {
-    const url = `https://api.hubapi.com/crm/v3/objects/contacts/search`;
-
-    const query = {
-      filterGroups: [{
-        filters: [{ propertyName: "phonenumber", operator: "EQ", value: phone }]
-      }],
-      properties: ['firstname', 'lastname', 'city', 'message', 'accountnumbers', 'phonenumber'],
-    };
-
-    const response = await axios.post(url, query, {
-      headers: {
-        Authorization: `Bearer ${ACCESS_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    const contacts = response.data.results;
-    return contacts.length > 0 ? contacts[0].properties : null;
-  } catch (error) {
-    console.error('Error searching contacts:', error.response?.data || error.message);
-    return null;
-  }
-}
-
+// Process speech input
 // Process speech input
 app.post('/process-speech', async (req, res) => {
   const speechResult = req.body.SpeechResult;
@@ -160,4 +122,3 @@ app.get('/call-data', (req, res) => {
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
-
