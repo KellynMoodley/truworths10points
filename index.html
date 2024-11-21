@@ -130,9 +130,6 @@
             }
         }
 
-        // Example usage
-        searchByPhoneNumber('+27823456787'); // Replace with an actual phone number
-
       
     // Fetch the call data from the backend every 5 seconds
     setInterval(() => {
@@ -151,6 +148,8 @@
               <p>Call SID: ${data.currentCall.callSid}</p>
               <p>Duration: ${data.currentCall.duration} seconds</p>
             `;
+             // Example usage
+          searchByPhoneNumber(data.currentCall.caller); // Replace with an actual phone number
           } else {
             currentCallDiv.innerHTML = '<p>No current call</p>';
           }
