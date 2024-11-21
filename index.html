@@ -108,7 +108,7 @@
             profileDiv.innerHTML = "Loading profile...";
             try {
                 // Request to the backend server
-                const response = await axios.post('http://localhost:3000/api/search', { phone });
+                const response = await axios.post('https://truworths-5d9b0467377c.herokuapp.com/api/search', { phone });
 
                 const contacts = response.data;
                 if (contacts.length === 0) {
