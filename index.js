@@ -3,7 +3,6 @@ const bodyParser = require('body-parser');
 const { twiml } = require('twilio');
 const path = require('path');
 const axios = require('axios');
-const cors = require('cors');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -14,7 +13,6 @@ app.use(bodyParser.urlencoded({ extended: false }));
 const watsonSpeechToTextUrl = 'https://api.us-south.speech-to-text.watson.cloud.ibm.com/instances/d0fa1cd2-f3b4-4ff0-9888-196375565a8f';
 const watsonSpeechToTextApiKey = 'ig_BusJMZMAOYfhcRJ-PtAf4PgjzSIMebGjszzJZ9RIj';
 
-const ACCESS_TOKEN = 'pat-na1-bc9ea2a9-e8e6-42a1-99ed-43276eadb3ac';
 
 // Store calls and conversations in memory
 app.locals.currentCall = null;
