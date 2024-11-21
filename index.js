@@ -17,7 +17,7 @@ require('dotenv').config();
 
 const watsonSpeechToTextUrl = process.env.watson_speech_to_text_url;
 const watsonSpeechToTextApiKey = process.env.watson_speech_to_text_api_key;
-const accessToken = process.env.access_token;
+const ACCESS_TOKEN = process.env.access_token;
 
 
 // Store calls and conversations in memory
