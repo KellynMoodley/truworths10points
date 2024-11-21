@@ -11,33 +11,51 @@
       padding: 0;
       background-color: #f4f4f9;
     }
-    h1, h2 {
-      text-align: center;
-    }
-    #current-call, #past-calls {
+
+    #container {
+      display: flex;
+      flex-wrap: wrap;
       margin: 20px;
+    }
+
+    #profile-container {
+      flex: 1;
+      min-width: 300px;
+      background: #ffffff;
       padding: 20px;
-      background-color: white;
       border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      margin-right: 20px;
     }
-    .message {
-      margin: 10px 0;
-      padding: 10px;
+
+    #current-call {
+      flex: 2;
+      min-width: 300px;
+      background: #ffffff;
+      padding: 20px;
       border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     }
-    .user {
-      background-color: #d1f7c4;
-      text-align: right;
+
+    #past-calls {
+      flex: 1;
+      width: 100%;
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      margin-top: 20px;
     }
-    .bot {
-      background-color: #e0e0e0;
-      text-align: left;
+
+    h1, h2 {
+      margin-top: 0;
     }
+
     ul {
       padding: 0;
       list-style: none;
     }
+
     .caller {
       cursor: pointer;
       font-weight: bold;
@@ -45,6 +63,7 @@
       display: block;
       margin: 10px 0;
     }
+
     .caller-details {
       display: none;
       padding: 10px;
@@ -52,39 +71,37 @@
       border-radius: 5px;
       margin-top: 10px;
     }
-    .profile-container {
-            background: #ffffff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            max-width: 400px;
+
+    .profile-details span {
+      font-weight: bold;
     }
-    .profile-container h1 {
-            font-size: 24px;
-            margin-bottom: 20px;
+
+    .error-message {
+      color: red;
+      font-weight: bold;
     }
-        .profile-details {
-            text-align: left;
-            font-size: 16px;
-            line-height: 1.6;
-        }
-        .profile-details span {
-            font-weight: bold;
-        }
-        .error-message {
-            color: red;
-            font-weight: bold;
-        }
   </style>
 </head>
 <body>
-  <h1>Phone Call Status</h1>
+  <h1 style="text-align: center;">Phone Call Status</h1>
 
-  <div id="current-call">
-    <h2>Current Call</h2>
-    <p>Waiting for a call...</p>
+  <div id="container">
+    <!-- Profile Information -->
+    <div id="profile-container">
+      <h2>Contact Profile</h2>
+      <div id="profile" class="profile-details">
+        Loading profile...
+      </div>
+    </div>
+
+    <!-- Current Call -->
+    <div id="current-call">
+      <h2>Current Call</h2>
+      <p>Waiting for a call...</p>
+    </div>
   </div>
 
+  <!-- Past Calls -->
   <div id="past-calls">
     <h2>Past Calls</h2>
     <ul id="past-calls-list">
@@ -92,46 +109,34 @@
     </ul>
   </div>
 
-  <div class="profile-container">
-        <h1>Contact Profile</h1>
-        <div id="profile" class="profile-details">
-            <!-- Contact details will be displayed here -->
-            Loading profile...
-        </div>
-    </div>
-  </div>
-
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script>
-        async function searchByPhoneNumber(phone) {
-            const profileDiv = document.getElementById('profile');
-            profileDiv.innerHTML = "Loading profile...";
-            try {
-                // Request to the backend server
-                const response = await axios.post('https://truworths-5d9b0467377c.herokuapp.com/api/search', { phone });
+    async function searchByPhoneNumber(phone) {
+      const profileDiv = document.getElementById('profile');
+      profileDiv.innerHTML = "Loading profile...";
+      try {
+        const response = await axios.post('https://truworths-5d9b0467377c.herokuapp.com/api/search', { phone });
 
-                const contacts = response.data;
-                if (contacts.length === 0) {
-                    profileDiv.innerHTML = `<p class="error-message">No contacts found with phone number: ${phone}</p>`;
-                } else {
-                    const contact = contacts[0].properties;
-                    profileDiv.innerHTML = `
-                        <p><span>First Name:</span> ${contact.firstname || 'N/A'}</p>
-                        <p><span>Last Name:</span> ${contact.lastname || 'N/A'}</p>
-                        <p><span>City:</span> ${contact.city || 'N/A'}</p>
-                        <p><span>Message:</span> ${contact.message || 'N/A'}</p>
-                        <p><span>Account Number:</span> ${contact.accountnumbers || 'N/A'}</p>
-                        <p><span>Phone Number:</span> ${contact.phonenumber || 'N/A'}</p>
-                    `;
-                }
-            } catch (error) {
-                console.error('Error searching contacts:', error.message);
-                profileDiv.innerHTML = `<p class="error-message">Error loading profile. Please try again later.</p>`;
-            }
+        const contacts = response.data;
+        if (contacts.length === 0) {
+          profileDiv.innerHTML = `<p class="error-message">No contacts found with phone number: ${phone}</p>`;
+        } else {
+          const contact = contacts[0].properties;
+          profileDiv.innerHTML = `
+            <p><span>First Name:</span> ${contact.firstname || 'N/A'}</p>
+            <p><span>Last Name:</span> ${contact.lastname || 'N/A'}</p>
+            <p><span>City:</span> ${contact.city || 'N/A'}</p>
+            <p><span>Message:</span> ${contact.message || 'N/A'}</p>
+            <p><span>Account Number:</span> ${contact.accountnumbers || 'N/A'}</p>
+            <p><span>Phone Number:</span> ${contact.phonenumber || 'N/A'}</p>
+          `;
         }
+      } catch (error) {
+        console.error('Error searching contacts:', error.message);
+        profileDiv.innerHTML = `<p class="error-message">Error loading profile. Please try again later.</p>`;
+      }
+    }
 
-      
-    // Fetch the call data from the backend every 5 seconds
     setInterval(() => {
       fetch('/call-data')
         .then(response => response.json())
@@ -139,7 +144,6 @@
           const currentCallDiv = document.getElementById('current-call');
           const pastCallsList = document.getElementById('past-calls-list');
 
-          // Display current call data
           if (data.currentCall) {
             currentCallDiv.innerHTML = ` 
               <h2>Current Call</h2>
@@ -148,13 +152,11 @@
               <p>Call SID: ${data.currentCall.callSid}</p>
               <p>Duration: ${data.currentCall.duration} seconds</p>
             `;
-             // Example usage
-          searchByPhoneNumber(data.currentCall.caller); // Replace with an actual phone number
+            searchByPhoneNumber(data.currentCall.caller);
           } else {
             currentCallDiv.innerHTML = '<p>No current call</p>';
           }
 
-          // Display past calls with clickable caller ID and unique call ID for each call
           if (data.pastCalls.length > 0) {
             pastCallsList.innerHTML = data.pastCalls.map(call => `
               <li>
@@ -185,7 +187,6 @@
         });
     }, 5000);
 
-    // Function to toggle conversation details for each caller
     function toggleDetails(callSid) {
       const detailsDiv = document.getElementById(`details-${callSid}`);
       detailsDiv.style.display = detailsDiv.style.display === 'none' || detailsDiv.style.display === '' ? 'block' : 'none';
