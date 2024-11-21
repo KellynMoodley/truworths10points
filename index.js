@@ -16,15 +16,12 @@ app.use(express.json());
 const watsonSpeechToTextUrl = 'https://api.us-south.speech-to-text.watson.cloud.ibm.com/instances/d0fa1cd2-f3b4-4ff0-9888-196375565a8f';
 const watsonSpeechToTextApiKey = 'ig_BusJMZMAOYfhcRJ-PtAf4PgjzSIMebGjszzJZ9RIj';
 
-const ACCESS_TOKEN = 'pat-na1-bc9ea2a9-e8e6-42a1-99ed-43276eadb3ac';
-
-// Store calls and conversations in memory
+// Store calls and conversations
 app.locals.currentCall = null;
 app.locals.pastCalls = [];
 app.locals.conversations = [];
-app.locals.pastConversations = []; // Store completed conversations
 
-// Serve the index.html file at the root
+// Serve the index.html file
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -61,9 +58,7 @@ app.post('/api/search', async (req, res) => {
       }
     });
 
-    console.log(response.data); // Log the full response to check if the data structure is correct
     res.json(response.data.results);
-
   } catch (error) {
     console.error('Error searching contacts:', error.response?.data || error.message);
     res.status(500).json({ error: 'Failed to search contacts. Please try again later.' });
@@ -85,12 +80,13 @@ app.post('/voice', (req, res) => {
     input: 'speech',
     action: '/process-speech',
     method: 'POST',
-    timeout: 5, // Wait for up to 5 seconds for speech input
+    timeout: 5, // Wait for speech for 5 seconds
   });
 
   res.type('text/xml');
   res.send(response.toString());
 
+  // Store the call
   app.locals.currentCall = {
     caller,
     callSid,
@@ -101,44 +97,47 @@ app.post('/voice', (req, res) => {
 });
 
 // Process speech input
-app.post('/process-speech', async (req, res) => {
+app.post('/process-speech', (req, res) => {
   const speechResult = req.body.SpeechResult;
   console.log(`Speech input received: ${speechResult}`);
-
-  let botResponse = 'Thank you. Goodbye!';
-
-  app.locals.conversations.push({
-    user: speechResult || 'No response detected',
-    bot: botResponse,
-  });
 
   const response = new twiml.VoiceResponse();
 
   if (speechResult) {
-    setTimeout(() => {
-      response.say(botResponse);
-      response.hangup();
-      completeCurrentCall();
-    }, 3000); // Wait 3 seconds before responding if the user speaks
+    response.say('Thank you for speaking. Goodbye!');
   } else {
-    response.say(botResponse);
-    response.hangup();
-    completeCurrentCall(); // Directly complete the call if no response
+    response.say('No input detected. Goodbye!');
   }
 
+  response.hangup();
   res.type('text/xml');
   res.send(response.toString());
+
+  // Mark the call as completed
+  completeCurrentCall();
 });
 
-// Complete the current call
+// Handle call status updates
+app.post('/call-status', (req, res) => {
+  const { CallSid, CallStatus } = req.body;
+
+  console.log(`Call Status Update: ${CallSid} is now ${CallStatus}`);
+
+  if (CallStatus === 'completed') {
+    completeCurrentCall();
+  }
+
+  res.sendStatus(200);
+});
+
+// Function to complete the current call
 function completeCurrentCall() {
   if (app.locals.currentCall) {
     const currentCall = app.locals.currentCall;
     const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
+
     currentCall.duration = callDuration;
     currentCall.status = 'completed';
-
-    currentCall.conversations = app.locals.conversations;
 
     app.locals.pastCalls.push(currentCall);
     app.locals.currentCall = null;
@@ -146,7 +145,7 @@ function completeCurrentCall() {
   }
 }
 
-// Endpoint to serve call and conversation data
+// Endpoint to fetch call and conversation data
 app.get('/call-data', (req, res) => {
   if (app.locals.currentCall && app.locals.currentCall.status === 'in-progress') {
     app.locals.currentCall.duration = Math.floor(
@@ -158,10 +157,10 @@ app.get('/call-data', (req, res) => {
     currentCall: app.locals.currentCall,
     pastCalls: app.locals.pastCalls,
     conversations: app.locals.conversations,
-    pastConversations: app.locals.pastConversations,
   });
 });
 
+// Start the server
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
