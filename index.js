@@ -13,11 +13,11 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cors());
 app.use(express.json());
 
-// Watson Speech to Text credentials
-const watsonSpeechToTextUrl = 'https://api.us-south.speech-to-text.watson.cloud.ibm.com/instances/d0fa1cd2-f3b4-4ff0-9888-196375565a8f';
-const watsonSpeechToTextApiKey = 'ig_BusJMZMAOYfhcRJ-PtAf4PgjzSIMebGjszzJZ9RIj';
+require('dotenv').config();
 
-const ACCESS_TOKEN = 'pat-na1-bc9ea2a9-e8e6-42a1-99ed-43276eadb3ac';
+const watsonSpeechToTextUrl = process.env.watson_speech_to_text_url;
+const watsonSpeechToTextApiKey = process.env.watson_speech_to_text_api_key;
+const accessToken = process.env.access_token;
 
 
 // Store calls and conversations in memory
