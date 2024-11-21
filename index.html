@@ -3,51 +3,61 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Phone Call Status</title>
+  <title>Phone Call & HubSpot Profile</title>
   <style>
     body {
       font-family: Arial, sans-serif;
+      background-color: #f4f4f9;
       margin: 0;
       padding: 0;
-      background-color: #f4f4f9;
     }
-    h1, h2 {
+
+    h1 {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      padding: 20px;
+    }
+
+    #current-call, #past-calls, #conversations, .profile-container {
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      margin: 10px;
+      flex: 1 1 calc(48% - 20px);
+    }
+
+    h2 {
       text-align: center;
     }
-    #current-call, #past-calls {
-      margin: 20px;
-      padding: 20px;
-      background-color: white;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+
+    ul {
+      padding: 0;
+      list-style: none;
     }
-    #conversations {
-      width: 100%;
-      height: 300px;
-      overflow-y: scroll;
-      margin: 20px;
-      padding: 10px;
-      background-color: white;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    }
+
     .message {
       margin: 10px 0;
       padding: 10px;
       border-radius: 8px;
     }
+
     .user {
       background-color: #d1f7c4;
       text-align: right;
     }
+
     .bot {
       background-color: #e0e0e0;
       text-align: left;
     }
-    ul {
-      padding: 0;
-      list-style: none;
-    }
+
     .caller {
       cursor: pointer;
       font-weight: bold;
@@ -55,6 +65,7 @@
       display: block;
       margin: 10px 0;
     }
+
     .caller-details {
       display: none;
       padding: 10px;
@@ -62,28 +73,45 @@
       border-radius: 5px;
       margin-top: 10px;
     }
+
+    .error-message {
+      color: red;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
-  <h1>Phone Call Status</h1>
+  <h1>Phone Call Status & HubSpot Profile</h1>
 
-  <div id="current-call">
-    <h2>Current Call</h2>
-    <p>Waiting for a call...</p>
+  <div class="container">
+    <!-- Phone Call Status Section -->
+    <div id="current-call">
+      <h2>Current Call</h2>
+      <p>Waiting for a call...</p>
+    </div>
+
+    <div id="past-calls">
+      <h2>Past Calls</h2>
+      <ul id="past-calls-list">
+        <li>No past calls available</li>
+      </ul>
+    </div>
+
+    <div id="conversations">
+      <h2>Current Conversation</h2>
+      <ul id="conversations-list"></ul>
+    </div>
+
+    <!-- HubSpot Profile Section -->
+    <div class="profile-container">
+      <h2>Contact Profile</h2>
+      <div id="profile" class="profile-details">
+        Loading profile...
+      </div>
+    </div>
   </div>
 
-  <div id="past-calls">
-    <h2>Past Calls</h2>
-    <ul id="past-calls-list">
-      <li>No past calls available</li>
-    </ul>
-  </div>
-
-  <div id="conversations">
-    <h2>Current Conversation</h2>
-    <ul id="conversations-list"></ul>
-  </div>
-
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script>
     // Fetch the call data from the backend every 5 seconds
     setInterval(() => {
@@ -107,7 +135,7 @@
             currentCallDiv.innerHTML = '<p>No current call</p>';
           }
 
-          // Display past calls with clickable caller ID and unique call ID for each call
+          // Display past calls
           if (data.pastCalls.length > 0) {
             pastCallsList.innerHTML = data.pastCalls.map(call => `
               <li>
@@ -116,15 +144,6 @@
                   <div id="details-${call.callSid}" class="caller-details">
                     <p>Status: ${call.status}</p>
                     <p>Duration: ${call.duration} seconds</p>
-                    <h3>Conversation history:</h3>
-                    <ul>
-                      ${call.conversations.map(convo => `
-                        <li>
-                          <p>User: ${convo.user}</p>
-                          <p>Bot: ${convo.bot}</p>
-                        </li>
-                      `).join('')}
-                    </ul>
                   </div>
                 </div>
               </li>
@@ -137,31 +156,52 @@
           if (data.conversations.length > 0) {
             conversationsList.innerHTML = data.conversations.map(convo => `
               <li>
-                <div class="message user">
-                  <p>${convo.user}</p>
-                </div>
-                <div class="message bot">
-                  <p>${convo.bot}</p>
-                </div>
+                <div class="message user">${convo.user}</div>
+                <div class="message bot">${convo.bot}</div>
               </li>
             `).join('');
-            // Auto-scroll to the bottom
-            const conversationsDiv = document.getElementById('conversations');
-            conversationsDiv.scrollTop = conversationsDiv.scrollHeight;
           } else {
             conversationsList.innerHTML = '<li>No conversations available</li>';
           }
         })
-        .catch(error => {
-          console.error('Error fetching call data:', error);
-        });
+        .catch(error => console.error('Error fetching call data:', error));
     }, 5000);
 
-    // Function to toggle conversation details for each caller
+    // Toggle past call details
     function toggleDetails(callSid) {
       const detailsDiv = document.getElementById(`details-${callSid}`);
-      detailsDiv.style.display = detailsDiv.style.display === 'none' || detailsDiv.style.display === '' ? 'block' : 'none';
+      detailsDiv.style.display = detailsDiv.style.display === 'none' ? 'block' : 'none';
     }
+
+    // Search for contact profile by phone number
+    async function searchByPhoneNumber(phone) {
+      const profileDiv = document.getElementById('profile');
+      profileDiv.innerHTML = "Loading profile...";
+      try {
+        const response = await axios.post('http://localhost:3000/api/search', { phone });
+        const contacts = response.data;
+
+        if (contacts.length === 0) {
+          profileDiv.innerHTML = `<p class="error-message">No contacts found with phone number: ${phone}</p>`;
+        } else {
+          const contact = contacts[0].properties;
+          profileDiv.innerHTML = `
+            <p><strong>First Name:</strong> ${contact.firstname || 'N/A'}</p>
+            <p><strong>Last Name:</strong> ${contact.lastname || 'N/A'}</p>
+            <p><strong>City:</strong> ${contact.city || 'N/A'}</p>
+            <p><strong>Message:</strong> ${contact.message || 'N/A'}</p>
+            <p><strong>Account Number:</strong> ${contact.accountnumbers || 'N/A'}</p>
+            <p><strong>Phone Number:</strong> ${contact.phonenumber || 'N/A'}</p>
+          `;
+        }
+      } catch (error) {
+        console.error('Error searching contacts:', error.message);
+        profileDiv.innerHTML = `<p class="error-message">Error loading profile. Please try again later.</p>`;
+      }
+    }
+
+    // Example usage
+    searchByPhoneNumber('+27823456787'); // Replace with actual phone number
   </script>
 </body>
 </html>
