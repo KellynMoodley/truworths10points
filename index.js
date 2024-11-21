@@ -13,7 +13,6 @@ app.use(bodyParser.urlencoded({ extended: false }));
 const watsonSpeechToTextUrl = 'https://api.us-south.speech-to-text.watson.cloud.ibm.com/instances/d0fa1cd2-f3b4-4ff0-9888-196375565a8f';
 const watsonSpeechToTextApiKey = 'ig_BusJMZMAOYfhcRJ-PtAf4PgjzSIMebGjszzJZ9RIj';
 
-
 // Store calls and conversations in memory
 app.locals.currentCall = null;
 app.locals.pastCalls = [];
@@ -32,7 +31,7 @@ app.post('/voice', (req, res) => {
   const startTime = new Date();
 
   // Log the incoming call
-  console.log(Incoming call from ${caller} with CallSid ${callSid});
+  console.log(`Incoming call from ${caller} with CallSid ${callSid}`);
 
   // Respond with TwiML
   const response = new twiml.VoiceResponse();
@@ -63,7 +62,7 @@ app.post('/voice', (req, res) => {
 // Process speech input
 app.post('/process-speech', async (req, res) => {
   const speechResult = req.body.SpeechResult;
-  console.log(Speech input received: ${speechResult});
+  console.log(`Speech input received: ${speechResult}`);
 
   // Simulate a response based on user input
   let botResponse = 'Thank you. Goodbye!';
@@ -121,5 +120,5 @@ app.get('/call-data', (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(Server running on port ${port});
+  console.log(`Server running on port ${port}`);
 });
