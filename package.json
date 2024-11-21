@@ -12,7 +12,8 @@
     "twilio": "^3.79.0",
     "body-parser": "^1.20.2",
     "socket.io": "^4.5.0",
-    "ibm-watson": "^6.1.0"
+    "ibm-watson": "^6.1.0",
+    "cors":"^2.8.5"
   },
   "devDependencies": {
     "nodemon": "^2.0.22"
