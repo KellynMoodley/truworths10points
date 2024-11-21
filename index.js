@@ -57,12 +57,16 @@ app.post('/api/search', async (req, res) => {
 
         const response = await axios.post(url, query, {
             headers: {
-                Authorization: `Bearer ${ACCESS_TOKEN}`,
-                'Content-Type': 'application/json'
+               Authorization: `Bearer ${ACCESS_TOKEN}`,
+               'Content-Type': 'application/json'
             }
-        });
+       });
+    
+      console.log(response.data);  // Log the full response to check if the data structure is correct
 
-        res.json(response.data.results);
+
+      res.json(response.data.results);
+      
     } catch (error) {
         console.error('Error searching contacts:', error.response?.data || error.message);
         res.status(500).json({ error: 'Failed to search contacts. Please try again later.' });
