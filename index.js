@@ -113,9 +113,9 @@ app.post('/voice', (req, res) => {
 
   const response = new twiml.VoiceResponse();
   response.say('Welcome to Truworths.');
-  response.say('How can I assist? Your issue will be transcribed and an agent will look into it');
-  response.say('Alternatively say review account to know your payment details');
-  response.say('or log an issue to urgently create a ticket.');
+  response.say('How can I assist? Start speaking.');
+  response.say('Or say REVIEW ACCOUNT to know your payment details');
+  response.say('Or say create ticket');
 
   response.gather({
     input: 'speech',
@@ -125,6 +125,9 @@ app.post('/voice', (req, res) => {
     timeout: 5,
     enhanced: true
   });
+
+  // Add statusCallback for call status updates
+  response.redirect({ method: 'POST' }, '/status-callback');
 
   res.type('text/xml');
   res.send(response.toString());
@@ -248,6 +251,27 @@ app.get('/call-data', (req, res) => {
       (new Date() - app.locals.currentCall.startTime) / 1000
     );
   }
+  
+// Status callback to handle call status changes
+app.post('/status-callback', (req, res) => {
+  const callSid = req.body.CallSid;
+  const callStatus = req.body.CallStatus;
+
+  console.log(`Status update for CallSid ${callSid}: ${callStatus}`);
+
+  if (app.locals.currentCall && app.locals.currentCall.callSid === callSid) {
+    if (callStatus === 'completed' || callStatus === 'failed' || callStatus === 'no-answer') {
+      const currentCall = app.locals.currentCall;
+      currentCall.duration = Math.floor((new Date() - currentCall.startTime) / 1000);
+      currentCall.status = callStatus;
+      app.locals.pastCalls.push(currentCall);
+      app.locals.currentCall = null;
+      app.locals.conversations = [];
+    }
+  }
+
+  res.sendStatus(200);
+});
 
   res.json({
     currentCall: app.locals.currentCall,
@@ -260,4 +284,3 @@ app.get('/call-data', (req, res) => {
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
-
