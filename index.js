@@ -18,18 +18,18 @@ const watsonSpeechToTextApiKey = 'ig_BusJMZMAOYfhcRJ-PtAf4PgjzSIMebGjszzJZ9RIj';
 
 const ACCESS_TOKEN = process.env.access_token;
 
-// Store calls and conversations in memory
+// Store call and conversation data
 app.locals.currentCall = null;
 app.locals.pastCalls = [];
 app.locals.conversations = [];
-app.locals.pastConversations = []; // Store completed conversations
+app.locals.pastConversations = [];
 
-// Serve the index.html file at the root
+// Serve the index.html file
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// API Route to search contact by phone number
+// Search API for profile details
 app.post('/api/search', async (req, res) => {
   const { phone } = req.body;
 
@@ -73,11 +73,10 @@ app.post('/api/search', async (req, res) => {
       },
     });
 
-    console.log(response.data); // Log the full response to check if the data structure is correct
     res.json(response.data.results);
   } catch (error) {
     console.error('Error searching contacts:', error.response?.data || error.message);
-    res.status(500).json({ error: 'Failed to search contacts. Please try again later.' });
+    res.status(500).json({ error: 'Failed to search contacts.' });
   }
 });
 
@@ -91,15 +90,15 @@ app.post('/voice', (req, res) => {
 
   const response = new twiml.VoiceResponse();
   response.say('Hello. Welcome to Truworths assistant.');
-  response.say('Press 1 to create an account');
-  response.say('Press 2 to open a ticket');
+  response.say('Press 1 to create an account.');
+  response.say('Press 2 to open a ticket.');
 
   response.gather({
     input: 'speech',
     action: '/process-speech',
     method: 'POST',
     voice: 'Polly.Ayanda-Neural',
-    timeout: 5,
+    timeout: 5
   });
 
   res.type('text/xml');
@@ -112,35 +111,20 @@ app.post('/voice', (req, res) => {
     duration: 0,
     status: 'in-progress',
     timeoutId: setTimeout(() => {
-      console.log(`Call from ${caller} timed out due to inactivity.`);
+      if (app.locals.currentCall && app.locals.conversations.length === 0) {
+        console.log(`Call from ${caller} timed out due to inactivity.`);
+        const timeoutResponse = new twiml.VoiceResponse();
+        timeoutResponse.say('No input received. Goodbye!');
+        timeoutResponse.hangup();
 
-      const timeoutResponse = new twiml.VoiceResponse();
-      timeoutResponse.say('No input received. Goodbye!');
-      timeoutResponse.hangup();
-
-      if (app.locals.currentCall) {
         app.locals.currentCall.status = 'timed-out';
-        app.locals.currentCall.duration = Math.floor(
-          (new Date() - app.locals.currentCall.startTime) / 1000
-        );
-        app.locals.currentCall.conversations = app.locals.conversations.length
-          ? app.locals.conversations
-          : [{ user: null, bot: 'User did not speak.' }];
-
         app.locals.pastCalls.push(app.locals.currentCall);
-        if (app.locals.conversations.length) {
-          app.locals.pastConversations.push(...app.locals.conversations);
-        } else {
-          app.locals.pastConversations.push({
-            user: 'User did not speak.',
-            bot: 'No response detected.',
-          });
-        }
-
         app.locals.currentCall = null;
         app.locals.conversations = [];
+        res.type('text/xml');
+        res.send(timeoutResponse.toString());
       }
-    }, 20000), // 8 seconds
+    }, 8000), // Timeout set to 8 seconds
   };
 });
 
@@ -149,12 +133,12 @@ app.post('/process-speech', async (req, res) => {
   const speechResult = req.body.SpeechResult;
   console.log(`Speech input received: ${speechResult}`);
 
-  let botResponse = 'Thank you. Goodbye!';
-
+  // Reset timeout
   if (app.locals.currentCall?.timeoutId) {
     clearTimeout(app.locals.currentCall.timeoutId);
   }
 
+  let botResponse = 'Thank you. Goodbye!';
   app.locals.conversations.push({
     user: speechResult,
     bot: botResponse,
@@ -171,7 +155,6 @@ app.post('/process-speech', async (req, res) => {
     currentCall.conversations = [...app.locals.conversations];
 
     app.locals.pastCalls.push(currentCall);
-    app.locals.pastConversations.push(...app.locals.conversations);
     app.locals.currentCall = null;
     app.locals.conversations = [];
   }
@@ -180,7 +163,7 @@ app.post('/process-speech', async (req, res) => {
   res.send(response.toString());
 });
 
-// Endpoint to serve call and conversation data
+// Endpoint to fetch call and conversation data
 app.get('/call-data', (req, res) => {
   if (app.locals.currentCall && app.locals.currentCall.status === 'in-progress') {
     app.locals.currentCall.duration = Math.floor(
