@@ -288,74 +288,91 @@ app.post('/process-issue', async (req, res) => {
     console.log(`Speech input received: ${speechResult}`);
 
     let botResponse = '';
+    const phone = req.body.From;  // Use From instead of PhoneNumber
 
-    // Helper function to store conversation
-    const storeConversation = (userInput, botReply) => {
-      const conversationEntry = {
-        timestamp: new Date().toISOString(),
-        user: userInput,
-        bot: botReply,
-      };
-      app.locals.conversations.push(conversationEntry);
-    };
+    // Store the entire conversation in pastConversations
+    const entireConversation = [...app.locals.conversations];
 
-    const phone = req.body.PhoneNumber;  // Assuming this is how the phone number is passed in
+    // Default bot response
+    botResponse = 'Please wait while I retrieve your account details.';
 
-  // Default bot response
-  botResponse = 'Please wait while I retrieve your account details.';
-  conversationLog.push({ user: speechResult, bot: botResponse });
+    if (!phone) {
+      botResponse = "I couldn't retrieve your phone number. Please provide it.";
+    } else {
+      try {
+        const url = 'https://api.hubapi.com/crm/v3/objects/contacts/search';
+        const query = {
+          filterGroups: [
+            {
+              filters: [
+                {
+                  propertyName: 'mobilenumber',
+                  operator: 'EQ',
+                  value: phone
+                }
+              ]
+            }
+          ],
+          properties: ['email']
+        };
 
-  if (!phone) {
-    botResponse = "I couldn't retrieve your phone number. Please provide it.";
-    conversationLog.push({ user: speechResult, bot: botResponse });
-  } else {
-    try {
-      const url = 'https://api.hubapi.com/crm/v3/objects/contacts/search';
-      const query = {
-        filterGroups: [
-          {
-            filters: [
-              {
-                propertyName: 'mobilenumber',
-                operator: 'EQ',
-                value: phone
-              }
-            ]
+        const apiResponse = await axios.post(url, query, {
+          headers: {
+            Authorization: `Bearer ${ACCESS_TOKEN}`,
+            'Content-Type': 'application/json'
           }
-        ],
-        properties: ['email']
-      };
+        });
 
-      const apiResponse = await axios.post(url, query, {
-        headers: {
-          Authorization: `Bearer ${ACCESS_TOKEN}`,
-          'Content-Type': 'application/json'
+        const contact = apiResponse.data.results[0];
+
+        if (contact) {
+          const { email } = contact.properties;
+          botResponse = `An issue has been logged for the email ${email}.`;
+          
+          // Push the entire conversation to pastConversations
+          app.locals.pastConversations.push({
+            phone: phone,
+            email: email,
+            conversation: entireConversation
+          });
+        } else {
+          botResponse = "I couldn't find your account details.";
         }
-      });
-
-      const contact = apiResponse.data.results[0];
-
-      if (contact) {
-        const { email } = contact.properties;
-        botResponse = ` An email will be sent to ${email} .`;
-        conversationLog.push({ user: speechResult, bot: botResponse });
-      } else {
-        botResponse = "I couldn't find your account details.";
-        conversationLog.push({ user: speechResult, bot: botResponse });
+      } catch (error) {
+        console.error('Error fetching contact details from HubSpot:', error.response?.data || error.message);
+        botResponse = "There was an issue retrieving your account details. Please try again later.";
       }
-    } catch (error) {
-      console.error('Error fetching contact details from HubSpot:', error.response?.data || error.message);
-      botResponse = "There was an issue retrieving your account details. Please try again later.";
-      conversationLog.push({ user: speechResult, bot: botResponse });
     }
-  }
 
-  // Respond to the user with the final bot response
-  const response = new twiml.VoiceResponse();
-  response.say(botResponse);
-  return res.send(response.toString());
-  }
+    // Respond to the user with the final bot response
+    const response = new twiml.VoiceResponse();
+    response.say(botResponse);
+    
+    // Reset conversations after pushing to pastConversations
+    app.locals.conversations = [];
 
+    res.type('text/xml');
+    res.send(response.toString());
+
+  } catch (error) {
+    console.error('Error processing speech:', error);
+
+    const response = new twiml.VoiceResponse();
+    response.say('I did not catch that. Could you please repeat?');
+
+    response.gather({
+      input: 'speech',
+      action: '/process-issue',
+      method: 'POST',
+      voice: 'Polly.Ayanda-Neural',
+      timeout: 5,
+      enhanced: true,
+    });
+
+    res.type('text/xml');
+    res.send(response.toString());
+  }
+});
 
 // Serve call data
 app.get('/call-data', (req, res) => {
