@@ -141,7 +141,6 @@ app.post('/voice', (req, res) => {
   };
 });
 
-// Process input route
 app.post('/process-input', async (req, res) => {
   try {
     let userInput = req.body.SpeechResult || req.body.Digits;  // Check for speech or keypad input
@@ -161,14 +160,23 @@ app.post('/process-input', async (req, res) => {
       
       botResponse = "To create an account, please provide your first name.";
       
-      // New gathering step for first name
+      // Log the conversation entry
+      const conversationEntry = {
+        timestamp: new Date().toISOString(),
+        user: userInput,
+        bot: botResponse
+      };
+      app.locals.currentCall.conversations.push(conversationEntry);
+
+      // Gather first name
       const response = new twiml.VoiceResponse();
+      response.say(botResponse);
       response.gather({
         input: 'speech',
         action: '/capture-account-details',
         method: 'POST',
         voice: 'Polly.Ayanda-Neural',
-        timeout: 5,
+        timeout: 10,
         enhanced: true,
         hints: 'first name'
       });
@@ -176,6 +184,7 @@ app.post('/process-input', async (req, res) => {
       res.type('text/xml');
       return res.send(response.toString());
     } else if (userInput.toLowerCase().includes('option 3') || userInput === '3') {
+      // Existing option 3 code remains the same
       const phone = req.body.From;
 
       if (!phone) {
@@ -218,38 +227,62 @@ app.post('/process-input', async (req, res) => {
           botResponse = "There was an issue retrieving your account details. Please try again later.";
         }
       }
-    }
 
-    // Log the conversation for the current call
-    const conversationEntry = {
-      timestamp: new Date().toISOString(),
-      user: userInput,
-      bot: botResponse,
-    };
-    app.locals.currentCall.conversations.push(conversationEntry);
+      // Log the conversation for the current call
+      const conversationEntry = {
+        timestamp: new Date().toISOString(),
+        user: userInput,
+        bot: botResponse,
+      };
+      app.locals.currentCall.conversations.push(conversationEntry);
 
-    // Respond to the user
-    const response = new twiml.VoiceResponse();
-    response.say(botResponse);
-    response.hangup();
+      // Respond to the user
+      const response = new twiml.VoiceResponse();
+      response.say(botResponse);
+      response.hangup();
 
-    // When the call ends, move the conversation to pastConversations
-    if (app.locals.currentCall) {
-      const currentCall = app.locals.currentCall;
-      const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
-      currentCall.duration = callDuration;
-      currentCall.status = 'completed';
+      // When the call ends, move the conversation to pastConversations
+      if (app.locals.currentCall) {
+        const currentCall = app.locals.currentCall;
+        const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
+        currentCall.duration = callDuration;
+        currentCall.status = 'completed';
+        
+        // Store the conversation history under pastConversations
+        app.locals.pastCalls.push(currentCall);
+        app.locals.pastConversations.push(...currentCall.conversations);  // Move conversation history to pastConversations
+
+        app.locals.currentCall = null;
+        app.locals.conversations = [];
+      }
+
+      res.type('text/xml');
+      res.send(response.toString());
+    } else {
+      // Default handling for other inputs
+      const conversationEntry = {
+        timestamp: new Date().toISOString(),
+        user: userInput,
+        bot: "I'm sorry, I didn't understand that option. Please try again.",
+      };
+      app.locals.currentCall.conversations.push(conversationEntry);
+
+      const response = new twiml.VoiceResponse();
+      response.say(conversationEntry.bot);
       
-      // Store the conversation history under pastConversations
-      app.locals.pastCalls.push(currentCall);
-      app.locals.pastConversations.push(...currentCall.conversations);  // Move conversation history to pastConversations
+      // Retry input
+      response.gather({
+        input: 'speech dtmf',
+        action: '/process-input',
+        method: 'POST',
+        voice: 'Polly.Ayanda-Neural',
+        timeout: 5,
+        enhanced: true
+      });
 
-      app.locals.currentCall = null;
-      app.locals.conversations = [];
+      res.type('text/xml');
+      res.send(response.toString());
     }
-
-    res.type('text/xml');
-    res.send(response.toString());
   } catch (error) {
     console.error('Error processing input:', error);
 
