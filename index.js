@@ -4,97 +4,74 @@ const { twiml } = require('twilio');
 const path = require('path');
 const axios = require('axios');
 const cors = require('cors');
-const { IamAuthenticator } = require('ibm-watson/auth');
-const SpeechToTextV1 = require('ibm-watson/speech-to-text/v1');
-const twilio = require('twilio');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Configure middleware
 app.use(bodyParser.urlencoded({ extended: false }));
+
 app.use(cors());
 app.use(express.json());
 
-require('dotenv').config();
+// Watson Speech to Text credentials
+const watsonSpeechToTextUrl = 'https://api.us-south.speech-to-text.watson.cloud.ibm.com/instances/d0fa1cd2-f3b4-4ff0-9888-196375565a8f';
+const watsonSpeechToTextApiKey = 'ig_BusJMZMAOYfhcRJ-PtAf4PgjzSIMebGjszzJZ9RIj';
 
-// Watson configuration
-const speechToText = new SpeechToTextV1({
-  authenticator: new IamAuthenticator({
-    apikey: process.env.watson_speech_to_text_api_key,
-  }),
-  serviceUrl: process.env.watson_speech_to_text_url,
-});
+const ACCESS_TOKEN = 'pat-na1-bc9ea2a9-e8e6-42a1-99ed-43276eadb3ac';
 
-// Twilio configuration
-const twilioClient = twilio(
-  process.env.TWILIO_ACCOUNT_SID,
-  process.env.TWILIO_AUTH_TOKEN
-);
-
-const ACCESS_TOKEN = process.env.access_token;
 
 // Store calls and conversations in memory
 app.locals.currentCall = null;
 app.locals.pastCalls = [];
 app.locals.conversations = [];
-app.locals.pastConversations = [];
+app.locals.pastConversations = [];  // Store completed conversations
 
-// Root endpoint
+// Serve the index.html file at the root
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// HubSpot contact search endpoint
+// API Route to search contact by phone number
 app.post('/api/search', async (req, res) => {
-  const { phone } = req.body;
+    const { phone } = req.body;
 
-  if (!phone) {
-    return res.status(400).json({ error: 'Phone number is required.' });
-  }
+    if (!phone) {
+        return res.status(400).json({ error: 'Phone number is required.' });
+    }
 
-  try {
-    const url = 'https://api.hubapi.com/crm/v3/objects/contacts/search';
-    const query = {
-      filterGroups: [
-        {
-          filters: [
-            {
-              propertyName: 'mobilenumber',
-              operator: 'EQ',
-              value: phone,
-            },
-          ],
-        },
-      ],
-      properties: [
-        'firstname',
-        'lastname',
-        'email',
-        'mobilenumber',
-        'customerid',
-        'accountnumbers',
-        'highvalue',
-        'delinquencystatus',
-        'segmentation',
-        'outstandingbalance',
-        'missedpayment',
-      ],
-    };
+    try {
+        const url = 'https://api.hubapi.com/crm/v3/objects/contacts/search';
+        const query = {
+            filterGroups: [
+                {
+                    filters: [
+                        {
+                            propertyName: "phonenumber",
+                            operator: "EQ",
+                            value: phone
+                        }
+                    ]
+                }
+            ],
+            properties: ['firstname', 'lastname', 'city', 'message', 'accountnumbers', 'phonenumber']
+        };
 
-    const response = await axios.post(url, query, {
-      headers: {
-        Authorization: `Bearer ${ACCESS_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-    });
+        const response = await axios.post(url, query, {
+            headers: {
+               Authorization: `Bearer ${ACCESS_TOKEN}`,
+               'Content-Type': 'application/json'
+            }
+       });
+    
+      console.log(response.data);  // Log the full response to check if the data structure is correct
 
-    console.log(response.data);
-    res.json(response.data.results);
-  } catch (error) {
-    console.error('Error searching contacts:', error.response?.data || error.message);
-    res.status(500).json({ error: 'Failed to search contacts. Please try again later.' });
-  }
+
+      res.json(response.data.results);
+      
+    } catch (error) {
+        console.error('Error searching contacts:', error.response?.data || error.message);
+        res.status(500).json({ error: 'Failed to search contacts. Please try again later.' });
+    }
 });
 
 // Handle incoming calls
@@ -103,26 +80,28 @@ app.post('/voice', (req, res) => {
   const caller = req.body.From;
   const startTime = new Date();
 
+  // Log the incoming call
   console.log(`Incoming call from ${caller} with CallSid ${callSid}`);
 
+  // Respond with TwiML
   const response = new twiml.VoiceResponse();
-  response.say('Welcome!');
-  response.say('Choose an option');
-  response.say('Press or say 1 to create an account');
-  response.say('2 to log an issue');
-  response.say('3 to open a query');
- 
+  response.say('Hello. Welcome to Truworths assistant.');
+  response.say('Press 1 to create an account');
+  response.say('Press 2 to open a ticket');
+
+  // Gather speech input
   response.gather({
     input: 'speech',
     action: '/process-speech',
     method: 'POST',
-    timeout: 5,
-    language: 'en-US',
+    voice:'Polly.Ayanda-Neural',
+    timeout: 5
   });
 
   res.type('text/xml');
   res.send(response.toString());
 
+  // Store the new current call with "in-progress" status
   app.locals.currentCall = {
     caller,
     callSid,
@@ -132,183 +111,53 @@ app.post('/voice', (req, res) => {
   };
 });
 
-// Process speech input and redirect based on the option
+// Process speech input
+// Process speech input
 app.post('/process-speech', async (req, res) => {
-  try {
-    const speechResult = req.body.SpeechResult?.toLowerCase();
-    const digitResult = req.body.Digits;
-
-    let selectedOption = '';
-    if (digitResult === '1' || speechResult?.includes('create account')) {
-      selectedOption = 'create account';
-    } else if (digitResult === '2' || speechResult?.includes('log an issue')) {
-      selectedOption = 'log an issue';
-    } else if (digitResult === '3' || speechResult?.includes('open query')) {
-      selectedOption = 'open query';
-    } else {
-      throw new Error('Invalid input');
-    }
-
-    console.log(`User selected: ${selectedOption}`);
-
-    let botResponse = '';
-    if (selectedOption === 'create account') {
-      botResponse = 'You selected Create Account. Please provide your details.';
-    } else if (selectedOption === 'log an issue') {
-      botResponse = 'You selected Log an Issue. Please describe your issue.';
-    } else if (selectedOption === 'open query') {
-      botResponse = 'You selected Open Query. Please state your query.';
-    }
-
-    // Log the conversation
-    app.locals.conversations.push({
-      user: speechResult || digitResult,
-      bot: botResponse,
-    });
-
-    const response = new twiml.VoiceResponse();
-    response.say(botResponse);
-    response.gather({
-      input: 'speech',
-      action: '/finalize-response',
-      method: 'POST',
-      timeout: 10,
-      language: 'en-US',
-    });
-
-    res.type('text/xml');
-    res.send(response.toString());
-  } catch (error) {
-    console.error('Error processing speech:', error);
-    const response = new twiml.VoiceResponse();
-    response.say('I did not catch that. Could you please repeat?');
-    response.gather({
-      input: 'speech dtmf',
-      action: '/process-speech',
-      method: 'POST',
-      timeout: 5,
-      language: 'en-US',
-      enhanced: true,
-    });
-    res.type('text/xml');
-    res.send(response.toString());
-  }
-});
-
-// Process speech input and redirect based on the option
-app.post('/process-speech', async (req, res) => {
-  try {
-    const speechResult = req.body.SpeechResult?.toLowerCase();
-    const digitResult = req.body.Digits;
-
-    let selectedOption = '';
-    if (digitResult === '1' || speechResult?.includes('create account')) {
-      selectedOption = 'create account';
-    } else if (digitResult === '2' || speechResult?.includes('log an issue')) {
-      selectedOption = 'log an issue';
-    } else if (digitResult === '3' || speechResult?.includes('open query')) {
-      selectedOption = 'open query';
-    } else {
-      throw new Error('Invalid input');
-    }
-
-    console.log(`User selected: ${selectedOption}`);
-
-    let botResponse = '';
-    if (selectedOption === 'create account') {
-      botResponse = 'You selected Create Account. Please provide your details.';
-    } else if (selectedOption === 'log an issue') {
-      botResponse = 'You selected Log an Issue. Please describe your issue.';
-    } else if (selectedOption === 'open query') {
-      botResponse = 'You selected Open Query. Please state your query.';
-    }
-
-    // Log the conversation
-    app.locals.conversations.push({
-      user: speechResult || digitResult,
-      bot: botResponse,
-    });
-
-    const response = new twiml.VoiceResponse();
-
-    // Add delay before responding
-    setTimeout(() => {
-      response.say(botResponse);
-      response.gather({
-        input: 'speech',
-        action: '/finalize-response',
-        method: 'POST',
-        timeout: 10,
-        language: 'en-US',
-      });
-
-      res.type('text/xml');
-      res.send(response.toString());
-    }, 2000); // 3-second delay
-  } catch (error) {
-    console.error('Error processing speech:', error);
-    const response = new twiml.VoiceResponse();
-    response.say('I did not catch that. Could you please repeat?');
-    response.gather({
-      input: 'speech dtmf',
-      action: '/process-speech',
-      method: 'POST',
-      timeout: 5,
-      language: 'en-US',
-      enhanced: true,
-      voice:'Polly.Ayanda-Neural'
-    });
-    res.type('text/xml');
-    res.send(response.toString());
-  }
-});
-
-// Finalize the response and end the call
-app.post('/finalize-response', (req, res) => {
   const speechResult = req.body.SpeechResult;
+  console.log(`Speech input received: ${speechResult}`);
 
-  console.log(`User said: ${speechResult}`);
+  // Simulate a response based on user input
+  let botResponse = 'Thank you. Goodbye!';
 
-  const botResponse = 'Thank you, goodbye!';
-
-  // Log the final conversation
+  // Log the conversation
   app.locals.conversations.push({
     user: speechResult,
     bot: botResponse,
   });
 
+  // Respond with TwiML
   const response = new twiml.VoiceResponse();
+  response.say(botResponse);
+  response.hangup();
 
-  // Add delay before final response
-  setTimeout(() => {
-    response.say(botResponse);
-    response.hangup();
+  // Update call status to "completed" and move to pastCalls
+  if (app.locals.currentCall) {
+    const currentCall = app.locals.currentCall;
+    const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
+    currentCall.duration = callDuration;
+    currentCall.status = 'completed';
 
-    // Update call status
-    if (app.locals.currentCall) {
-      const currentCall = app.locals.currentCall;
-      const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
-      currentCall.duration = callDuration;
-      currentCall.status = 'completed';
-      currentCall.conversations = app.locals.conversations;
+    // Store conversation history with the completed call
+    currentCall.conversations = app.locals.conversations;
 
-      // Store completed conversations in pastConversations
-      app.locals.pastConversations.push(...app.locals.conversations);
+    // Add to past calls
+    app.locals.pastCalls.push(currentCall);
+    
+    // Clear current call and conversations for the next one
+    app.locals.currentCall = null;
+    app.locals.conversations = [];
+  }
 
-      // Reset current call and conversations
-      app.locals.pastCalls.push(currentCall);
-      app.locals.currentCall = null;
-      app.locals.conversations = [];
-    }
-
-    res.type('text/xml');
-    res.send(response.toString());
-  }, 2000); // 2-second delay
+  res.type('text/xml');
+  res.send(response.toString());
 });
 
 
-// Serve call data
+
+// Endpoint to serve call and conversation data
 app.get('/call-data', (req, res) => {
+  // Calculate live duration for an ongoing call
   if (app.locals.currentCall && app.locals.currentCall.status === 'in-progress') {
     app.locals.currentCall.duration = Math.floor(
       (new Date() - app.locals.currentCall.startTime) / 1000
