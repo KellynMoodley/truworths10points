@@ -1,3 +1,81 @@
+onst express = require('express');
+const bodyParser = require('body-parser');
+const { twiml } = require('twilio');
+const path = require('path');
+const axios = require('axios');
+const cors = require('cors');
+
+const app = express();
+const port = process.env.PORT || 3000;
+
+app.use(bodyParser.urlencoded({ extended: false }));
+
+app.use(cors());
+app.use(express.json());
+
+require('dotenv').config();
+
+// Watson Speech to Text credentials
+const watsonSpeechToTextUrl = 'https://api.us-south.speech-to-text.watson.cloud.ibm.com/instances/d0fa1cd2-f3b4-4ff0-9888-196375565a8f';
+const watsonSpeechToTextApiKey = 'ig_BusJMZMAOYfhcRJ-PtAf4PgjzSIMebGjszzJZ9RIj';
+
+const ACCESS_TOKEN = process.env.access_token;
+
+
+// Store calls and conversations in memory
+app.locals.currentCall = null;
+app.locals.pastCalls = [];
+app.locals.conversations = [];
+app.locals.pastConversations = [];  // Store completed conversations
+
+// Serve the index.html file at the root
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// API Route to search contact by phone number
+app.post('/api/search', async (req, res) => {
+    const { phone } = req.body;
+
+    if (!phone) {
+        return res.status(400).json({ error: 'Phone number is required.' });
+    }
+
+    try {
+        const url = 'https://api.hubapi.com/crm/v3/objects/contacts/search';
+        const query = {
+            filterGroups: [
+                {
+                    filters: [
+                        {
+                            propertyName: "mobilenumber",
+                            operator: "EQ",
+                            value: phone
+                        }
+                    ]
+                }
+            ],
+            properties: ['firstname', 'lastname','email','mobilenumber', 'customerid', 'accountnumbers','highvalue', 'delinquencystatus','segmentation','outstandingbalance','missedpayment' ]
+        };
+
+        const response = await axios.post(url, query, {
+            headers: {
+               Authorization: `Bearer ${ACCESS_TOKEN}`,
+               'Content-Type': 'application/json'
+            }
+       });
+    
+      console.log(response.data);  // Log the full response to check if the data structure is correct
+
+
+      res.json(response.data.results);
+      
+    } catch (error) {
+        console.error('Error searching contacts:', error.response?.data || error.message);
+        res.status(500).json({ error: 'Failed to search contacts. Please try again later.' });
+    }
+});
+
 // Handle incoming calls
 app.post('/voice', (req, res) => {
   const callSid = req.body.CallSid;
@@ -37,9 +115,6 @@ app.post('/process-speech', async (req, res) => {
   console.log(`Digit input received: ${digit}`);
 
   const response = new twiml.VoiceResponse();
-  if (!response){
-    response.hangup();
-  }
 
   if (digit === '1') {
     response.say('Please provide your first name.');
@@ -57,7 +132,7 @@ app.post('/process-speech', async (req, res) => {
     });
   } else if (digit === '3') {
     response.say('Connecting you to an agent. Please hold.');
-    
+    response.dial('+1234567890'); // Replace with the agent's phone number
   } else {
     response.say('Invalid option. Goodbye!');
     response.hangup();
@@ -123,4 +198,28 @@ app.post('/process-issue', (req, res) => {
 
   res.type('text/xml');
   res.send(response.toString());
+});
+
+
+
+
+// Endpoint to serve call and conversation data
+app.get('/call-data', (req, res) => {
+  // Calculate live duration for an ongoing call
+  if (app.locals.currentCall && app.locals.currentCall.status === 'in-progress') {
+    app.locals.currentCall.duration = Math.floor(
+      (new Date() - app.locals.currentCall.startTime) / 1000
+    );
+  }
+
+  res.json({
+    currentCall: app.locals.currentCall,
+    pastCalls: app.locals.pastCalls,
+    conversations: app.locals.conversations,
+    pastConversations: app.locals.pastConversations,
+  });
+});
+
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
 });
