@@ -90,7 +90,7 @@
     <div id="profile-container">
       <h2>Contact Profile</h2>
       <div id="profile" class="profile-details">
-        No caller detected.
+        No caller details found.
       </div>
     </div>
 
@@ -163,7 +163,7 @@
             profileDiv.style.display = 'block';  // Show profile when there is an active call
           } else {
             currentCallDiv.innerHTML = '<p>No current call</p>';
-            profileDiv.style.display = 'none';  // Hide profile when no call
+            profileDiv.innerHTML = 'No caller details found.'; // Display this message when no call is active
           }
 
           if (data.pastCalls.length > 0) {
