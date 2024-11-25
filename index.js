@@ -46,6 +46,64 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// Download conversation endpoint
+app.get('/download-conversation/:callSid', (req, res) => {
+  const callSid = req.params.callSid;
+  const call = app.locals.pastCalls.find(c => c.callSid === callSid);
+
+  if (!call || !call.conversations) {
+    return res.status(404).send('Conversation not found');
+  }
+
+  const conversationText = call.conversations.map(conv => 
+    `User: ${conv.user}\nBot: ${conv.bot}\n---\n`
+  ).join('');
+
+  res.setHeader('Content-Type', 'text/plain');
+  res.setHeader('Content-Disposition', `attachment; filename=conversation_${callSid}.txt`);
+  res.send(conversationText);
+});
+
+// HubSpot contact search endpoint
+app.post('/api/search', async (req, res) => {
+  const { phone } = req.body;
+
+  if (!phone) {
+    return res.status(400).json({ error: 'Phone number is required.' });
+  }
+
+  try {
+    const url = 'https://api.hubapi.com/crm/v3/objects/contacts/search';
+    const query = {
+      filterGroups: [
+        {
+          filters: [
+            {
+              propertyName: "mobilenumber",
+              operator: "EQ",
+              value: phone
+            }
+          ]
+        }
+      ],
+      properties: ['firstname', 'lastname','email','mobilenumber', 'customerid', 'accountnumbers','highvalue', 'delinquencystatus','segmentation','outstandingbalance','missedpayment']
+    };
+
+    const response = await axios.post(url, query, {
+      headers: {
+        Authorization: `Bearer ${ACCESS_TOKEN}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    res.json(response.data.results);
+  } catch (error) {
+    console.error('Error searching contacts:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Failed to search contacts. Please try again later.' });
+  }
+});
+
+// Handle incoming calls
 // Handle incoming calls
 app.post('/voice', (req, res) => {
   const callSid = req.body.CallSid;
@@ -60,9 +118,10 @@ app.post('/voice', (req, res) => {
   response.say('Press 2 to log an issue');
   response.say('Press 3 to review account');
 
+  // Gather both speech and keypad inputs
   response.gather({
     input: 'speech dtmf',
-    action: '/process-selection',
+    action: '/process-input',
     method: 'POST',
     voice: 'Polly.Ayanda-Neural',
     timeout: 5,
@@ -81,115 +140,125 @@ app.post('/voice', (req, res) => {
   };
 });
 
-// Process the selection from user input (either speech or keypad)
-app.post('/process-selection', async (req, res) => {
-  const selection = req.body.SpeechResult || req.body.Digits;
-  let botResponse = '';
-  
-  console.log(`User selected: ${selection}`);
+// Handle both speech and keypad input
+app.post('/process-input', async (req, res) => {
+  try {
+    let userInput = req.body.SpeechResult || req.body.Digits;  // Check for speech or keypad input
+    if (!userInput) {
+      throw new Error('No input received');
+    }
 
-  if (!selection) {
-    return res.status(400).send('No input received');
-  }
+    console.log(`User input received: ${userInput}`);
 
-  // Store the conversation entry
-  const storeConversation = (userInput, botReply) => {
+    let botResponse = 'Thank you for your message. Goodbye!';
+
+    // Handle speech or keypad input for option 3
+    if (userInput.toLowerCase().includes('option 3') || userInput === '3') {
+      const phone = req.body.From;
+
+      if (!phone) {
+        botResponse = "I couldn't retrieve your phone number. Please provide it.";
+      } else {
+        try {
+          const url = 'https://api.hubapi.com/crm/v3/objects/contacts/search';
+          const query = {
+            filterGroups: [
+              {
+                filters: [
+                  {
+                    propertyName: 'mobilenumber',
+                    operator: 'EQ',
+                    value: phone
+                  }
+                ]
+              }
+            ],
+            properties: ['firstname', 'lastname', 'outstandingbalance']
+          };
+
+          const response = await axios.post(url, query, {
+            headers: {
+              Authorization: `Bearer ${ACCESS_TOKEN}`,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          const contact = response.data.results[0];
+
+          if (contact) {
+            const { firstname, lastname, outstandingbalance } = contact.properties;
+            botResponse = `Based on your account, your name is ${firstname}, your surname is ${lastname}, and your balance is ${outstandingbalance}.`;
+          } else {
+            botResponse = "I couldn't find your account details.";
+          }
+        } catch (error) {
+          console.error('Error fetching contact details from HubSpot:', error.response?.data || error.message);
+          botResponse = "There was an issue retrieving your account details. Please try again later.";
+        }
+      }
+    }
+
+    // Log the conversation
     const conversationEntry = {
       timestamp: new Date().toISOString(),
       user: userInput,
-      bot: botReply,
+      bot: botResponse,
     };
     app.locals.conversations.push(conversationEntry);
-  };
 
-  // Handle the selected option
-  if (selection === '1' || selection.toLowerCase().includes('create an account')) {
-    botResponse = 'Please provide your details to create an account.';
-  } else if (selection === '2' || selection.toLowerCase().includes('log an issue')) {
-    botResponse = 'Please tell us what the issue is.';
-  } else if (selection === '3' || selection.toLowerCase().includes('review account')) {
-    botResponse = 'Please provide your phone number to retrieve your account details.';
-  } else {
-    botResponse = 'I didn’t understand your selection. Please try again.';
+    // Respond to the user
     const response = new twiml.VoiceResponse();
     response.say(botResponse);
+    response.hangup();
+
+    if (app.locals.currentCall) {
+      const currentCall = app.locals.currentCall;
+      const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
+      currentCall.duration = callDuration;
+      currentCall.status = 'completed';
+      currentCall.conversations = app.locals.conversations;
+      app.locals.pastCalls.push(currentCall);
+      app.locals.currentCall = null;
+      app.locals.conversations = [];
+    }
+
+    res.type('text/xml');
+    res.send(response.toString());
+  } catch (error) {
+    console.error('Error processing input:', error);
+
+    const response = new twiml.VoiceResponse();
+    response.say('I did not catch that. Could you please repeat?');
+
+    // Retry input
     response.gather({
       input: 'speech dtmf',
-      action: '/process-selection',
+      action: '/process-input',
       method: 'POST',
+      voice: 'Polly.Ayanda-Neural',
       timeout: 5,
+      enhanced: true
     });
-    return res.type('text/xml').send(response.toString());
+
+    res.type('text/xml');
+    res.send(response.toString());
   }
-
-  storeConversation(selection, botResponse);
-
-  // Ask for additional information based on the selection
-  const response = new twiml.VoiceResponse();
-  response.say(botResponse);
-
-  // Gather additional information if necessary
-  response.gather({
-    input: 'speech dtmf',
-    action: '/process-additional-info',
-    method: 'POST',
-    timeout: 10,
-  });
-
-  res.type('text/xml');
-  res.send(response.toString());
 });
 
-// Process additional information based on selection
-app.post('/process-additional-info', async (req, res) => {
-  const additionalInfo = req.body.SpeechResult || req.body.Digits;
-  let botResponse = '';
-
-  if (!additionalInfo) {
-    return res.status(400).send('No additional information received');
+// Serve call data
+app.get('/call-data', (req, res) => {
+  if (app.locals.currentCall && app.locals.currentCall.status === 'in-progress') {
+    app.locals.currentCall.duration = Math.floor(
+      (new Date() - app.locals.currentCall.startTime) / 1000
+    );
   }
 
-  // Example: If the user wants to create an account, ask for more details
-  if (additionalInfo.toLowerCase().includes('create')) {
-    botResponse = 'Please provide your full name.';
-  } else if (additionalInfo.toLowerCase().includes('issue')) {
-    botResponse = 'Can you describe the issue in more detail?';
-  } else if (additionalInfo.toLowerCase().includes('review')) {
-    botResponse = 'Please provide your account number to proceed with the review.';
-  } else {
-    botResponse = 'Sorry, I didn’t understand. Can you please repeat the information?';
-  }
-
-  // Store the conversation entry
-  const storeConversation = (userInput, botReply) => {
-    const conversationEntry = {
-      timestamp: new Date().toISOString(),
-      user: userInput,
-      bot: botReply,
-    };
-    app.locals.conversations.push(conversationEntry);
-  };
-
-  storeConversation(additionalInfo, botResponse);
-
-  const response = new twiml.VoiceResponse();
-  response.say(botResponse);
-  response.hangup();
-
-  // Store and end the call
-  if (app.locals.currentCall) {
-    const currentCall = app.locals.currentCall;
-    const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
-    currentCall.duration = callDuration;
-    currentCall.status = 'completed';
-    currentCall.conversations = app.locals.conversations;
-    app.locals.pastCalls.push(currentCall);
-    app.locals.currentCall = null;
-    app.locals.conversations = [];
-  }
-
-  res.type('text/xml');
-  res.send(response.toString());
+  res.json({
+    currentCall: app.locals.currentCall,
+    pastCalls: app.locals.pastCalls,
+    conversations: app.locals.conversations,
+    pastConversations: app.locals.pastConversations,
+  });
 });
 
 app.listen(port, () => {
