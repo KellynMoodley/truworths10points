@@ -45,58 +45,6 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// HubSpot contact search endpoint
-app.post('/api/search', async (req, res) => {
-  const { phone } = req.body;
-
-  if (!phone) {
-    return res.status(400).json({ error: 'Phone number is required.' });
-  }
-
-  try {
-    const url = 'https://api.hubapi.com/crm/v3/objects/contacts/search';
-    const query = {
-      filterGroups: [
-        {
-          filters: [
-            {
-              propertyName: 'mobilenumber',
-              operator: 'EQ',
-              value: phone,
-            },
-          ],
-        },
-      ],
-      properties: [
-        'firstname',
-        'lastname',
-        'email',
-        'mobilenumber',
-        'customerid',
-        'accountnumbers',
-        'highvalue',
-        'delinquencystatus',
-        'segmentation',
-        'outstandingbalance',
-        'missedpayment',
-      ],
-    };
-
-    const response = await axios.post(url, query, {
-      headers: {
-        Authorization: `Bearer ${ACCESS_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    console.log(response.data);
-    res.json(response.data.results);
-  } catch (error) {
-    console.error('Error searching contacts:', error.response?.data || error.message);
-    res.status(500).json({ error: 'Failed to search contacts. Please try again later.' });
-  }
-});
-
 // Handle incoming calls
 app.post('/voice', (req, res) => {
   const callSid = req.body.CallSid;
@@ -154,7 +102,7 @@ app.post('/process-speech', async (req, res) => {
 
     const response = new twiml.VoiceResponse();
     if (selectedOption === 'create account') {
-      response.say('You selected Create Account. Please provide your name, email, and phone number.');
+      response.say('You selected Create Account. Please provide your details.');
     } else if (selectedOption === 'log an issue') {
       response.say('You selected Log an Issue. Please describe your issue.');
     } else if (selectedOption === 'open query') {
@@ -163,7 +111,7 @@ app.post('/process-speech', async (req, res) => {
 
     response.gather({
       input: 'speech',
-      action: `/process-${selectedOption.replace(/\s/g, '-')}`,
+      action: '/finalize-response',
       method: 'POST',
       timeout: 10,
       language: 'en-US',
@@ -186,6 +134,32 @@ app.post('/process-speech', async (req, res) => {
     res.type('text/xml');
     res.send(response.toString());
   }
+});
+
+// Finalize the response and end the call
+app.post('/finalize-response', (req, res) => {
+  const speechResult = req.body.SpeechResult;
+
+  console.log(`User said: ${speechResult}`);
+
+  const response = new twiml.VoiceResponse();
+  response.say('Thank you, goodbye!');
+  response.hangup();
+
+  // Update call status
+  if (app.locals.currentCall) {
+    const currentCall = app.locals.currentCall;
+    const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
+    currentCall.duration = callDuration;
+    currentCall.status = 'completed';
+    currentCall.conversations = app.locals.conversations;
+    app.locals.pastCalls.push(currentCall);
+    app.locals.currentCall = null;
+    app.locals.conversations = [];
+  }
+
+  res.type('text/xml');
+  res.send(response.toString());
 });
 
 // Serve call data
