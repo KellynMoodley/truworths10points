@@ -6,10 +6,12 @@ const axios = require('axios');
 const cors = require('cors');
 const { IamAuthenticator } = require('ibm-watson/auth');
 const SpeechToTextV1 = require('ibm-watson/speech-to-text/v1');
+const twilio = require('twilio');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Configure middleware
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cors());
 app.use(express.json());
@@ -24,6 +26,12 @@ const speechToText = new SpeechToTextV1({
   serviceUrl: process.env.watson_speech_to_text_url,
 });
 
+// Twilio configuration
+const twilioClient = twilio(
+  process.env.TWILIO_ACCOUNT_SID,
+  process.env.TWILIO_AUTH_TOKEN
+);
+
 const ACCESS_TOKEN = process.env.access_token;
 
 // Store calls and conversations in memory
@@ -32,10 +40,12 @@ app.locals.pastCalls = [];
 app.locals.conversations = [];
 app.locals.pastConversations = [];
 
+// Root endpoint
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// HubSpot contact search endpoint
 app.post('/api/search', async (req, res) => {
     const { phone } = req.body;
 
@@ -87,13 +97,14 @@ app.post('/voice', (req, res) => {
   const response = new twiml.VoiceResponse();
   response.say('Hello, please tell me something.');
 
-  // Use Twilio's Record verb instead of Gather for Watson integration
-  response.record({
+  // Use Gather with enhanced settings
+  response.gather({
+    input: 'speech',
     action: '/process-speech',
     method: 'POST',
-    maxLength: 10,
-    transcribe: false, // Disable Twilio transcription since we'll use Watson
-    playBeep: true
+    timeout: 5,
+    language: 'en-US',
+    enhanced: true  // Enable enhanced speech recognition
   });
 
   res.type('text/xml');
@@ -111,41 +122,24 @@ app.post('/voice', (req, res) => {
 // Process speech using Watson
 app.post('/process-speech', async (req, res) => {
   try {
-    const recordingUrl = req.body.RecordingUrl;
+    const speechResult = req.body.SpeechResult;
     
-    // Download the recording from Twilio
-    const audioResponse = await axios({
-      method: 'get',
-      url: recordingUrl,
-      responseType: 'stream'
-    });
+    if (!speechResult) {
+      throw new Error('No speech input received');
+    }
 
-    // Configure Watson recognition parameters
-    const params = {
-      audio: audioResponse.data,
-      contentType: 'audio/wav',
-      model: 'en-US_NarrowbandModel', // Appropriate for phone calls
-      wordAlternativesThreshold: 0.9,
-      keywords: ['help', 'support', 'problem'], // Add relevant keywords
-      keywordsThreshold: 0.5
-    };
+    console.log(`Speech input received: ${speechResult}`);
 
-    // Perform speech recognition
-    const watsonResponse = await speechToText.recognize(params);
-    const transcription = watsonResponse.result.results?.[0]?.alternatives?.[0]?.transcript || '';
-    
-    console.log(`Watson transcription: ${transcription}`);
-
-    // Generate bot response (you can enhance this based on the transcription)
-    let botResponse = 'Thank you. Goodbye!';
+    // Generate bot response based on the transcription
+    let botResponse = 'Thank you for your message. Goodbye!';
 
     // Log the conversation
     app.locals.conversations.push({
-      user: transcription,
+      user: speechResult,
       bot: botResponse,
     });
 
-    // Respond with TwiML
+    // Create TwiML response
     const response = new twiml.VoiceResponse();
     response.say(botResponse);
     response.hangup();
@@ -168,13 +162,24 @@ app.post('/process-speech', async (req, res) => {
   } catch (error) {
     console.error('Error processing speech:', error);
     const response = new twiml.VoiceResponse();
-    response.say('Sorry, there was an error processing your message. Goodbye.');
-    response.hangup();
+    response.say('I did not catch that. Could you please repeat?');
+    
+    // Gather speech input again
+    response.gather({
+      input: 'speech',
+      action: '/process-speech',
+      method: 'POST',
+      timeout: 5,
+      language: 'en-US',
+      enhanced: true
+    });
+
     res.type('text/xml');
     res.send(response.toString());
   }
 });
 
+// Serve call data
 app.get('/call-data', (req, res) => {
   if (app.locals.currentCall && app.locals.currentCall.status === 'in-progress') {
     app.locals.currentCall.duration = Math.floor(
