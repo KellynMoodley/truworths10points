@@ -106,10 +106,14 @@ app.post('/voice', (req, res) => {
   console.log(`Incoming call from ${caller} with CallSid ${callSid}`);
 
   const response = new twiml.VoiceResponse();
-  response.say('Welcome! Please choose an option. Press or say 1 to create an account, 2 to log an issue, or 3 to open a query.');
-
+  response.say('Welcome!');
+  response.say('Choose an option');
+  response.say('Press or say 1 to create an account');
+  response.say('2 to log an issue');
+  response.say('3 to open a query');
+ 
   response.gather({
-    input: 'speech dtmf',
+    input: 'speech',
     action: '/process-speech',
     method: 'POST',
     timeout: 5,
