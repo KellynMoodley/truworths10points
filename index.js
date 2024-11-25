@@ -138,8 +138,6 @@ app.post('/voice', (req, res) => {
   };
 });
 
-app.locals.conversations = app.locals.conversations || [];
-
 // Process speech using Watson and handle options
 app.post('/process-speech', async (req, res) => {
   try {
@@ -164,33 +162,8 @@ app.post('/process-speech', async (req, res) => {
       app.locals.conversations.push(conversationEntry);
     };
 
-    // Check for Option 2 (log an issue)
-    // Create an array to track the conversation flow (or use a database if required)
-let conversationLog = [];
-
-// Ensure the speech result is captured from the request body
-const speechResult = req.body.SpeechResult.toLowerCase();
-
-// Declare botResponse once and update it as needed
-let botResponse = '';
-
-if (speechResult.includes('option 2')) {
-  // Log the user's initial response (Option 2)
-  botResponse = 'Please tell us what the issue is.';
-  conversationLog.push({ user: speechResult, bot: botResponse });
-  storeConversation(speechResult, botResponse);
-
-  response.gather({
-      input: 'speech',
-      action: '/process-issue',
-      method: 'POST',
-      voice: 'Polly.Ayanda-Neural',
-      timeout: 5,
-      enhanced: true,
-    });
-  
-}   // Check for Option 3 (review account)
-    else if (speechResult.toLowerCase().includes('option 3')) {
+    // Check for Option 3 (review account)
+    if (speechResult.toLowerCase().includes('option 3')) {
       botResponse = 'Please wait while I retrieve your account details.';
       if (!phone) {
         botResponse = "I couldn't retrieve your phone number. Please provide it.";
@@ -232,6 +205,20 @@ if (speechResult.includes('option 2')) {
           botResponse = "There was an issue retrieving your account details. Please try again later.";
         }
       }
+    } 
+    // Check for Option 2 (log an issue)
+    else if (speechResult.toLowerCase().includes('option 2')) {
+      botResponse = 'Please tell us what the issue is.';
+      
+      const response = new twiml.VoiceResponse();
+      response.gather({
+        input: 'speech',
+        action: '/process-issue',
+        method: 'POST',
+        voice: 'Polly.Ayanda-Neural',
+        timeout: 5,
+        enhanced: true,
+      });
     }
 
     // Store conversation entry after the bot response
@@ -288,7 +275,7 @@ app.post('/process-issue', async (req, res) => {
     console.log(`Speech input received: ${speechResult}`);
 
     let botResponse = '';
-    const phone = req.body.From;  // Use From instead of PhoneNumber
+    const phone = req.body.From;
 
     // Store the entire conversation in pastConversations
     const entireConversation = [...app.locals.conversations];
