@@ -87,7 +87,8 @@ app.post('/voice', (req, res) => {
 
   // Respond with TwiML
   const response = new twiml.VoiceResponse();
-  response.say('Hello, please tell me something.');
+  response.say('Welcome I am a Truworths agent.');
+  response.say('Press or say 1 to create an account');
 
   // Gather speech input
   response.gather({
