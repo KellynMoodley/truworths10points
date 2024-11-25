@@ -171,7 +171,8 @@ app.post('/process-speech', async (req, res) => {
 }
 
 
-    if (speechResult.toLowerCase().includes('three')) {
+    if (speechResult.toLowerCase().includes('3') || 
+    speechResult.toLowerCase().includes('three'))  {
       const phone = req.body.From;
 
       if (!phone) {
