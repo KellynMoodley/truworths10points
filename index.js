@@ -86,7 +86,7 @@ app.post('/api/search', async (req, res) => {
           ]
         }
       ],
-      properties: ['firstname', 'lastname', 'outstandingbalance']
+      properties: ['firstname', 'lastname','email','mobilenumber', 'customerid', 'accountnumbers','highvalue', 'delinquencystatus','segmentation','outstandingbalance','missedpayment']
     };
 
     const response = await axios.post(url, query, {
@@ -145,6 +145,7 @@ app.post('/process-speech', async (req, res) => {
 
     if (!speechResult) {
       throw new Error('No speech input received');
+      response.hangup();
     }
 
     console.log(`Speech input received: ${speechResult}`);
@@ -187,7 +188,7 @@ app.post('/process-speech', async (req, res) => {
             const { firstname, lastname, outstandingbalance } = contact.properties;
             botResponse = `Based on your account, your name is ${firstname}, your surname is ${lastname}, and your balance is ${outstandingbalance}.`;
           } else {
-            botResponse = "I couldn't find your account details. Please verify your phone number.";
+            botResponse = "I couldn't find your account details.";
           }
         } catch (error) {
           console.error('Error fetching contact details from HubSpot:', error.response?.data || error.message);
