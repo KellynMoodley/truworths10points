@@ -234,7 +234,6 @@ app.get('/call-data', (req, res) => {
     currentCall: app.locals.currentCall,
     pastCalls: app.locals.pastCalls,
   });
-});
 
   res.json({
     currentCall: app.locals.currentCall,
