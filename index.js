@@ -46,14 +46,14 @@ app.post('/api/search', async (req, res) => {
                 {
                     filters: [
                         {
-                            propertyName: "phonenumber",
+                            propertyName: "mobilenumber",
                             operator: "EQ",
                             value: phone
                         }
                     ]
                 }
             ],
-            properties: ['firstname', 'lastname','mobilenumber', 'customerid', 'accountnumbers','highvalue', 'delinquencystatus','segmentation','outstandingbalance','missedpayment' ]
+            properties: ['firstname', 'lastname','email','mobilenumber', 'customerid', 'accountnumbers','highvalue', 'delinquencystatus','segmentation','outstandingbalance','missedpayment' ]
         };
 
         const response = await axios.post(url, query, {
