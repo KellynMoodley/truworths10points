@@ -125,14 +125,14 @@
           profileDiv.innerHTML = `
             <p><span>First Name:</span> ${contact.firstname || 'N/A'}</p>
             <p><span>Last Name:</span> ${contact.lastname || 'N/A'}</p>
-            <p><span>Phone number:</span> ${contact.phonenumber || 'N/A'}</p>
+            <p><span>Phone number:</span> ${contact.mobilenumber || 'N/A'}</p>
             <p><span>Customer ID:</span> ${contact.customerid || 'N/A'}</p>
             <p><span>Account Number:</span> ${contact.accountnumbers || 'N/A'}</p>
-            <p><span>High value customer:</span> ${contact.highvaluecustomer || 'N/A'}</p>
+            <p><span>High value customer:</span> ${contact.highvalue || 'N/A'}</p>
             <p><span>Delinquency status:</span> ${contact.delinquencystatus || 'N/A'}</p>
             <p><span>Segmentation:</span> ${contact.segmentation || 'N/A'}</p>
             <p><span>Outstanding balance:</span> ${contact.outstandingbalance || 'N/A'}</p>
-            <p><span>Reasons for missed payment:</span> ${contact.reasonsformissedpayment || 'N/A'}</p>       
+            <p><span>Reasons for missed payment:</span> ${contact.missedpayment || 'N/A'}</p>       
           `;
         }
       } catch (error) {
