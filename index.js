@@ -333,12 +333,6 @@ app.post('/process-issue', async (req, res) => {
           const { email } = contact.properties;
           botResponse = `An issue has been logged for the email ${email}.`;
 
-          // Store the past conversation entry with user phone, email, and conversation
-          app.locals.pastConversations.push({
-            phone: phone,
-            email: email,
-            conversation: [...app.locals.conversations],
-          });
         } else {
           botResponse = "I couldn't find your account details.";
         }
