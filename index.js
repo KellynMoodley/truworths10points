@@ -9,7 +9,6 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(bodyParser.urlencoded({ extended: false }));
-
 app.use(cors());
 app.use(express.json());
 
@@ -23,7 +22,7 @@ const ACCESS_TOKEN = process.env.access_token;
 app.locals.currentCall = null;
 app.locals.pastCalls = [];
 app.locals.conversations = [];
-app.locals.pastConversations = [];  // Store completed conversations
+app.locals.pastConversations = []; // Store completed conversations
 
 // Serve the index.html file at the root
 app.get('/', (req, res) => {
@@ -32,45 +31,54 @@ app.get('/', (req, res) => {
 
 // API Route to search contact by phone number
 app.post('/api/search', async (req, res) => {
-    const { phone } = req.body;
+  const { phone } = req.body;
 
-    if (!phone) {
-        return res.status(400).json({ error: 'Phone number is required.' });
-    }
+  if (!phone) {
+    return res.status(400).json({ error: 'Phone number is required.' });
+  }
 
-    try {
-        const url = 'https://api.hubapi.com/crm/v3/objects/contacts/search';
-        const query = {
-            filterGroups: [
-                {
-                    filters: [
-                        {
-                            propertyName: "mobilenumber",
-                            operator: "EQ",
-                            value: phone
-                        }
-                    ]
-                }
-            ],
-            properties: ['firstname', 'lastname','email','mobilenumber', 'customerid', 'accountnumbers','highvalue', 'delinquencystatus','segmentation','outstandingbalance','missedpayment' ]
-        };
+  try {
+    const url = 'https://api.hubapi.com/crm/v3/objects/contacts/search';
+    const query = {
+      filterGroups: [
+        {
+          filters: [
+            {
+              propertyName: 'mobilenumber',
+              operator: 'EQ',
+              value: phone,
+            },
+          ],
+        },
+      ],
+      properties: [
+        'firstname',
+        'lastname',
+        'email',
+        'mobilenumber',
+        'customerid',
+        'accountnumbers',
+        'highvalue',
+        'delinquencystatus',
+        'segmentation',
+        'outstandingbalance',
+        'missedpayment',
+      ],
+    };
 
-        const response = await axios.post(url, query, {
-            headers: {
-               Authorization: `Bearer ${ACCESS_TOKEN}`,
-               'Content-Type': 'application/json'
-            }
-       });
-    
-      console.log(response.data);  // Log the full response to check if the data structure is correct
+    const response = await axios.post(url, query, {
+      headers: {
+        Authorization: `Bearer ${ACCESS_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+    });
 
-
-      res.json(response.data.results);
-      
-    } catch (error) {
-        console.error('Error searching contacts:', error.response?.data || error.message);
-        res.status(500).json({ error: 'Failed to search contacts. Please try again later.' });
-    }
+    console.log(response.data); // Log the full response to check if the data structure is correct
+    res.json(response.data.results);
+  } catch (error) {
+    console.error('Error searching contacts:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Failed to search contacts. Please try again later.' });
+  }
 });
 
 // Handle incoming calls
@@ -81,13 +89,11 @@ app.post('/voice', (req, res) => {
 
   console.log(`Incoming call from ${caller} with CallSid ${callSid}`);
 
-  // Respond with TwiML
   const response = new twiml.VoiceResponse();
   response.say('Hello. Welcome to Truworths assistant.');
   response.say('Press 1 to create an account');
   response.say('Press 2 to open a ticket');
 
-  // Gather speech input
   response.gather({
     input: 'speech',
     action: '/process-speech',
@@ -99,7 +105,6 @@ app.post('/voice', (req, res) => {
   res.type('text/xml');
   res.send(response.toString());
 
-  // Store the new current call
   app.locals.currentCall = {
     caller,
     callSid,
@@ -107,32 +112,35 @@ app.post('/voice', (req, res) => {
     duration: 0,
     status: 'in-progress',
     timeoutId: setTimeout(() => {
-      // Timeout after 5 minutes (300000 ms)
       console.log(`Call from ${caller} timed out due to inactivity.`);
-      
-      const response = new twiml.VoiceResponse();
-      response.say('No input received. Goodbye!');
-      response.hangup();
 
-      // Update call status to "timed out" and log as "User did not speak"
+      const timeoutResponse = new twiml.VoiceResponse();
+      timeoutResponse.say('No input received. Goodbye!');
+      timeoutResponse.hangup();
+
       if (app.locals.currentCall) {
         app.locals.currentCall.status = 'timed-out';
-        app.locals.currentCall.duration = Math.floor((new Date() - app.locals.currentCall.startTime) / 1000);
-        app.locals.currentCall.conversations = [
-          { user: null, bot: 'User did not speak.' },
-        ];
+        app.locals.currentCall.duration = Math.floor(
+          (new Date() - app.locals.currentCall.startTime) / 1000
+        );
+        app.locals.currentCall.conversations = app.locals.conversations.length
+          ? app.locals.conversations
+          : [{ user: null, bot: 'User did not speak.' }];
 
         app.locals.pastCalls.push(app.locals.currentCall);
-        app.locals.pastConversations.push({
-          user: 'User did not speak.',
-          bot: 'No response detected.',
-        });
+        if (app.locals.conversations.length) {
+          app.locals.pastConversations.push(...app.locals.conversations);
+        } else {
+          app.locals.pastConversations.push({
+            user: 'User did not speak.',
+            bot: 'No response detected.',
+          });
+        }
 
-        // Clear current call and reset conversations
         app.locals.currentCall = null;
         app.locals.conversations = [];
       }
-    }, 8000), // 5 minutes
+    }, 8000), // 8 seconds
   };
 });
 
@@ -143,30 +151,27 @@ app.post('/process-speech', async (req, res) => {
 
   let botResponse = 'Thank you. Goodbye!';
 
-  // Clear the inactivity timeout
   if (app.locals.currentCall?.timeoutId) {
     clearTimeout(app.locals.currentCall.timeoutId);
   }
 
-  // Log the conversation
   app.locals.conversations.push({
     user: speechResult,
     bot: botResponse,
   });
 
-  // Respond with TwiML
   const response = new twiml.VoiceResponse();
   response.say(botResponse);
   response.hangup();
 
-  // Update call status to "completed"
   if (app.locals.currentCall) {
     const currentCall = app.locals.currentCall;
     currentCall.duration = Math.floor((new Date() - currentCall.startTime) / 1000);
     currentCall.status = 'completed';
-    currentCall.conversations = app.locals.conversations;
+    currentCall.conversations = [...app.locals.conversations];
 
     app.locals.pastCalls.push(currentCall);
+    app.locals.pastConversations.push(...app.locals.conversations);
     app.locals.currentCall = null;
     app.locals.conversations = [];
   }
@@ -175,11 +180,8 @@ app.post('/process-speech', async (req, res) => {
   res.send(response.toString());
 });
 
-
-
 // Endpoint to serve call and conversation data
 app.get('/call-data', (req, res) => {
-  // Calculate live duration for an ongoing call
   if (app.locals.currentCall && app.locals.currentCall.status === 'in-progress') {
     app.locals.currentCall.duration = Math.floor(
       (new Date() - app.locals.currentCall.startTime) / 1000
@@ -197,4 +199,3 @@ app.get('/call-data', (req, res) => {
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
-
