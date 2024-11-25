@@ -86,7 +86,7 @@ app.post('/api/search', async (req, res) => {
           ]
         }
       ],
-      properties: properties: ['firstname', 'lastname','email','mobilenumber', 'customerid', 'accountnumbers','highvalue', 'delinquencystatus','segmentation','outstandingbalance','missedpayment' ]
+      properties: ['firstname', 'lastname', 'outstandingbalance']
     };
 
     const response = await axios.post(url, query, {
