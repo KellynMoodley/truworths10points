@@ -132,7 +132,7 @@ app.post('/voice', (req, res) => {
         app.locals.currentCall = null;
         app.locals.conversations = [];
       }
-    }, 300000), // 5 minutes
+    }, 3000), // 5 minutes
   };
 });
 
