@@ -7,8 +7,6 @@ const cors = require('cors');
 const { IamAuthenticator } = require('ibm-watson/auth');
 const SpeechToTextV1 = require('ibm-watson/speech-to-text/v1');
 const twilio = require('twilio');
-const multer = require('multer');
-const stream = require('stream');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -20,7 +18,7 @@ app.use(express.json());
 
 require('dotenv').config();
 
-// Watson Speech to Text configuration
+// Watson configuration
 const speechToText = new SpeechToTextV1({
   authenticator: new IamAuthenticator({
     apikey: process.env.watson_speech_to_text_api_key,
@@ -34,14 +32,13 @@ const twilioClient = twilio(
   process.env.TWILIO_AUTH_TOKEN
 );
 
-// Configure multer for handling audio files
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
+const ACCESS_TOKEN = process.env.access_token;
 
 // Store calls and conversations in memory
 app.locals.currentCall = null;
 app.locals.pastCalls = [];
 app.locals.conversations = [];
+app.locals.pastConversations = [];
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -50,73 +47,64 @@ app.get('/', (req, res) => {
 
 // HubSpot contact search endpoint
 app.post('/api/search', async (req, res) => {
-  const { phone } = req.body;
+    const { phone } = req.body;
 
-  if (!phone) {
-    return res.status(400).json({ error: 'Phone number is required.' });
-  }
+    if (!phone) {
+        return res.status(400).json({ error: 'Phone number is required.' });
+    }
 
-  try {
-    const url = 'https://api.hubapi.com/crm/v3/objects/contacts/search';
-    const query = {
-      filterGroups: [
-        {
-          filters: [
-            {
-              propertyName: 'mobilenumber',
-              operator: 'EQ',
-              value: phone,
-            },
-          ],
-        },
-      ],
-      properties: [
-        'firstname',
-        'lastname',
-        'email',
-        'mobilenumber',
-        'customerid',
-        'accountnumbers',
-        'highvalue',
-        'delinquencystatus',
-        'segmentation',
-        'outstandingbalance',
-        'missedpayment',
-      ],
-    };
+    try {
+        const url = 'https://api.hubapi.com/crm/v3/objects/contacts/search';
+        const query = {
+            filterGroups: [
+                {
+                    filters: [
+                        {
+                            propertyName: "mobilenumber",
+                            operator: "EQ",
+                            value: phone
+                        }
+                    ]
+                }
+            ],
+            properties: ['firstname', 'lastname','email','mobilenumber', 'customerid', 'accountnumbers','highvalue', 'delinquencystatus','segmentation','outstandingbalance','missedpayment' ]
+        };
 
-    const response = await axios.post(url, query, {
-      headers: {
-        Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    res.json(response.data.results);
-  } catch (error) {
-    console.error('Error searching contacts:', error.message);
-    res.status(500).json({ error: 'Failed to search contacts. Please try again later.' });
-  }
+        const response = await axios.post(url, query, {
+            headers: {
+               Authorization: `Bearer ${ACCESS_TOKEN}`,
+               'Content-Type': 'application/json'
+            }
+        });
+    
+        console.log(response.data);
+        res.json(response.data.results);
+      
+    } catch (error) {
+        console.error('Error searching contacts:', error.response?.data || error.message);
+        res.status(500).json({ error: 'Failed to search contacts. Please try again later.' });
+    }
 });
 
 // Handle incoming calls
 app.post('/voice', (req, res) => {
-  const { CallSid, From: caller } = req.body;
+  const callSid = req.body.CallSid;
+  const caller = req.body.From;
   const startTime = new Date();
 
-  console.log(`Incoming call from ${caller} with CallSid ${CallSid}`);
+  console.log(`Incoming call from ${caller} with CallSid ${callSid}`);
 
   const response = new twiml.VoiceResponse();
   response.say('Hello, please tell me something.');
 
-  response.record({
+  // Use Gather with enhanced settings
+  response.gather({
+    input: 'speech',
     action: '/process-speech',
     method: 'POST',
-    maxLength: 10,
-    playBeep: true,
-    trim: 'trim-silence',
-    recordingStatusCallback: '/recording-status',
-    recordingStatusCallbackMethod: 'POST',
+    timeout: 5,
+    language: 'en-US',
+    enhanced: true  // Enable enhanced speech recognition
   });
 
   res.type('text/xml');
@@ -124,80 +112,66 @@ app.post('/voice', (req, res) => {
 
   app.locals.currentCall = {
     caller,
-    callSid: CallSid,
+    callSid,
     startTime,
     duration: 0,
     status: 'in-progress',
   };
 });
 
-// Process recorded speech
+// Process speech using Watson
 app.post('/process-speech', async (req, res) => {
   try {
-    const { RecordingUrl } = req.body;
-
-    if (!RecordingUrl) {
-      throw new Error('No recording URL received');
+    const speechResult = req.body.SpeechResult;
+    
+    if (!speechResult) {
+      throw new Error('No speech input received');
     }
 
-    console.log('Recording URL:', RecordingUrl);
+    console.log(`Speech input received: ${speechResult}`);
 
-    const audioResponse = await axios({
-      method: 'get',
-      url: RecordingUrl,
-      responseType: 'arraybuffer',
-      auth: {
-        username: process.env.TWILIO_ACCOUNT_SID,
-        password: process.env.TWILIO_AUTH_TOKEN,
-      },
+    // Generate bot response based on the transcription
+    let botResponse = 'Thank you for your message. Goodbye!';
+
+    // Log the conversation
+    app.locals.conversations.push({
+      user: speechResult,
+      bot: botResponse,
     });
 
-    const audioStream = new stream.PassThrough();
-    audioStream.end(audioResponse.data);
-
-    const recognizeParams = {
-      audio: audioStream,
-      contentType: 'audio/wav',
-      model: 'en-US_NarrowbandModel',
-      wordAlternativesThreshold: 0.9,
-      smartFormatting: true,
-    };
-
-    const watsonResponse = await speechToText.recognize(recognizeParams);
-    const transcription = watsonResponse.result.results
-      ?.map(result => result.alternatives[0]?.transcript || '')
-      .join(' ') || 'Unable to transcribe';
-
-    console.log('Watson transcription:', transcription);
-
-    app.locals.conversations.push({ user: transcription, bot: 'Thank you for your message. Goodbye!' });
-
+    // Create TwiML response
     const response = new twiml.VoiceResponse();
-    response.say('Thank you for your message. Goodbye!');
+    response.say(botResponse);
     response.hangup();
 
-    res.type('text/xml');
-    res.send(response.toString());
-
+    // Update call status
     if (app.locals.currentCall) {
       const currentCall = app.locals.currentCall;
-      currentCall.duration = Math.floor((new Date() - currentCall.startTime) / 1000);
+      const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
+      currentCall.duration = callDuration;
       currentCall.status = 'completed';
       currentCall.conversations = app.locals.conversations;
       app.locals.pastCalls.push(currentCall);
       app.locals.currentCall = null;
       app.locals.conversations = [];
     }
+
+    res.type('text/xml');
+    res.send(response.toString());
+
   } catch (error) {
-    console.error('Error processing speech:', error.message);
+    console.error('Error processing speech:', error);
     const response = new twiml.VoiceResponse();
     response.say('I did not catch that. Could you please repeat?');
-    response.record({
+    
+    // Gather speech input again
+    response.gather({
+      input: 'speech',
       action: '/process-speech',
       method: 'POST',
-      maxLength: 10,
-      playBeep: true,
-      trim: 'trim-silence',
+      timeout: 5,
+      language: 'en-US',
+      enhanced: true
     });
 
     res.type('text/xml');
@@ -207,7 +181,7 @@ app.post('/process-speech', async (req, res) => {
 
 // Serve call data
 app.get('/call-data', (req, res) => {
-  if (app.locals.currentCall?.status === 'in-progress') {
+  if (app.locals.currentCall && app.locals.currentCall.status === 'in-progress') {
     app.locals.currentCall.duration = Math.floor(
       (new Date() - app.locals.currentCall.startTime) / 1000
     );
@@ -217,6 +191,7 @@ app.get('/call-data', (req, res) => {
     currentCall: app.locals.currentCall,
     pastCalls: app.locals.pastCalls,
     conversations: app.locals.conversations,
+    pastConversations: app.locals.pastConversations,
   });
 });
 
