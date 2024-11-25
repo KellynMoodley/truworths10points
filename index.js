@@ -281,7 +281,7 @@ app.post('/process-issue', async (req, res) => {
       // Gather speech again if no valid input is provided
       response.gather({
         input: 'speech',
-        action: '/process-issue',
+        action: '/process-speech',
         method: 'POST',
         voice: 'Polly.Ayanda-Neural',
         timeout: 10,  // Increased timeout to allow more time for user to respond
