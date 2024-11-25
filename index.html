@@ -118,10 +118,10 @@
 
         const contacts = response.data;
         if (contacts.length === 0) {
-          profileDiv.innerHTML = `<p class="error-message">No contacts found with phone number: ${phone}</p>`;
+          profileDiv.innerHTML = <p class="error-message">No contacts found with phone number: ${phone}</p>;
         } else {
           const contact = contacts[0].properties;
-          profileDiv.innerHTML = `
+          profileDiv.innerHTML = 
             <p><span>First Name:</span> ${contact.firstname || 'N/A'}</p>
             <p><span>Last Name:</span> ${contact.lastname || 'N/A'}</p>
             <p><span>Email:</span> ${contact.email || 'N/A'}</p>
@@ -133,11 +133,11 @@
             <p><span>Segmentation:</span> ${contact.segmentation || 'N/A'}</p>
             <p><span>Outstanding balance:</span> ${contact.outstandingbalance || 'N/A'}</p>
             <p><span>Reasons for missed payment:</span> ${contact.missedpayment || 'N/A'}</p>       
-          `;
+          ;
         }
       } catch (error) {
         console.error('Error searching contacts:', error.message);
-        profileDiv.innerHTML = `<p class="error-message">Error loading profile. Please try again later.</p>`;
+        profileDiv.innerHTML = <p class="error-message">Error loading profile. Please try again later.</p>;
       }
     }
 
@@ -150,48 +150,50 @@
           const profileDiv = document.getElementById('profile');
 
           if (data.currentCall) {
-            currentCallDiv.innerHTML = ` 
+            currentCallDiv.innerHTML =  
               <h2>Current Call</h2>
               <p>Caller: ${data.currentCall.caller}</p>
               <p>Status: ${data.currentCall.status}</p>
               <p>Call SID: ${data.currentCall.callSid}</p>
               <p>Duration: ${data.currentCall.duration} seconds</p>
-            `;
+            ;
             searchByPhoneNumber(data.currentCall.caller);
           } else {
             currentCallDiv.innerHTML = '<p>No current call</p>';
             profileDiv.innerHTML = '<p>No profile detected at the moment</p>';
           }
 
-          if (data.pastCalls.length > 0) {
-            pastCallsList.innerHTML = data.pastCalls.map(call => {
-              const detailsDivId = `details-${call.callSid}`;
-              return `
+            if (data.pastCalls.length > 0) {
+  pastCallsList.innerHTML = data.pastCalls.map(call => {
+    const detailsDivId = `details-${call.callSid}`;
+    return `
+      <li>
+        <div>
+          <span class="caller" onclick="toggleDetails('${call.callSid}')">
+            ${call.caller}  <!-- Removed date/time display -->
+          </span>
+          <div id="${detailsDivId}" class="caller-details" style="${document.getElementById(detailsDivId)?.style.display === 'block' ? 'display: block;' : 'display: none;'}">
+            <p>Status: ${call.status}</p>
+            <p>Duration: ${call.duration} seconds</p>
+            <h3>Conversation history:</h3>
+            <ul>
+              ${call.conversations.map(convo => `
                 <li>
-                  <div>
-                    <span class="caller" onclick="toggleDetails('${call.callSid}')">
-                      ${call.caller}
-                    </span>
-                    <div id="${detailsDivId}" class="caller-details" style="display: none;">
-                      <p>Status: ${call.status}</p>
-                      <p>Duration: ${call.duration} seconds</p>
-                      <h3>Conversation history:</h3>
-                      <ul>
-                        ${call.conversations.map(convo => `
-                          <li>
-                            <p>User: ${convo.user}</p>
-                            <p>Bot: ${convo.bot}</p>
-                          </li>
-                        `).join('')}
-                      </ul>
-                    </div>
-                  </div>
+                  <p>User: ${convo.user}</p>
+                  <p>Bot: ${convo.bot}</p>
                 </li>
-              `;
-            }).join('');
-          } else {
-            pastCallsList.innerHTML = '<li>No past calls available</li>';
-          }
+              `).join('')}
+            </ul>
+          </div>
+        </div>
+      </li>
+    `;
+  }).join('');
+} else {
+  pastCallsList.innerHTML = '<li>No past calls available</li>';
+}
+
+
         })
         .catch(error => {
           console.error('Error fetching call data:', error);
@@ -199,7 +201,7 @@
     }, 5000);
 
     function toggleDetails(callSid) {
-      const detailsDiv = document.getElementById(`details-${callSid}`);
+      const detailsDiv = document.getElementById(details-${callSid});
       detailsDiv.style.display = detailsDiv.style.display === 'none' || detailsDiv.style.display === '' ? 'block' : 'none';
     }
   </script>
