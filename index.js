@@ -222,6 +222,8 @@ app.post('/process-speech', async (req, res) => {
   
   res.type('text/xml');
   res.send(response.toString());
+  // Store conversation entry after the bot response
+    storeConversation(speechResult, botResponse);
   return; // Exit this block to avoid unintended execution
 }
     // Store conversation entry after the bot response
