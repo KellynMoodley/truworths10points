@@ -205,22 +205,25 @@ app.post('/process-speech', async (req, res) => {
           botResponse = "There was an issue retrieving your account details. Please try again later.";
         }
       }
-    } 
-    // Check for Option 2 (log an issue)
-    else if (speechResult.toLowerCase().includes('option 2')) {
-      botResponse = 'Please tell us what the issue is.';
-      
-      const response = new twiml.VoiceResponse();
-      response.gather({
-        input: 'speech',
-        action: '/process-issue',
-        method: 'POST',
-        voice: 'Polly.Ayanda-Neural',
-        timeout: 5,
-        enhanced: true,
-      });
     }
-
+    else if (speechResult.toLowerCase().includes('option 2')) {
+  botResponse = 'Please tell us what the issue is.';
+  
+  const response = new twiml.VoiceResponse();
+  response.say(botResponse); // Tell the user what to do next
+  response.gather({
+    input: 'speech',
+    action: '/process-issue',
+    method: 'POST',
+    voice: 'Polly.Ayanda-Neural',
+    timeout: 5,
+    enhanced: true,
+  });
+  
+  res.type('text/xml');
+  res.send(response.toString());
+  return; // Exit this block to avoid unintended execution
+}
     // Store conversation entry after the bot response
     storeConversation(speechResult, botResponse);
 
