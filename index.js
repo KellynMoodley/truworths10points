@@ -90,8 +90,8 @@ app.post('/voice', (req, res) => {
     input: 'speech',
     action: '/process-speech',
     method: 'POST',
-    voice: 'Polly.Joanna'
-    timeout: 5,
+    voice: 'Polly.Joanna',
+    timeout: 5
   });
 
   res.type('text/xml');
