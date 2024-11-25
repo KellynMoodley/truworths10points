@@ -220,13 +220,17 @@ app.post('/call-status', (req, res) => {
     currentCall.duration = Duration || currentCall.duration;
 
     if (CallStatus === 'completed') {
+      // Store the conversation data here
       app.locals.pastCalls.push(currentCall);
+      app.locals.pastConversations.push(...app.locals.conversations); // Add current conversations to past
+      app.locals.conversations = []; // Reset the current conversation
       app.locals.currentCall = null; // Reset current call
     }
   }
 
   res.sendStatus(200);
 });
+
 
 // Endpoint to serve call and conversation data
 app.get('/call-data', (req, res) => {
