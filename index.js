@@ -118,7 +118,7 @@ app.post('/voice', (req, res) => {
   response.say('Press 3 to review account');
 
   response.gather({
-    input: 'speech',
+    input: 'speech dtmf',
     action: '/process-speech',
     method: 'POST',
     voice: 'Polly.Ayanda-Neural',
@@ -138,66 +138,98 @@ app.post('/voice', (req, res) => {
   };
 });
 
+app.locals.conversations = app.locals.conversations || [];
+
 // Process speech using Watson and handle options
 app.post('/process-speech', async (req, res) => {
   try {
     const speechResult = req.body.SpeechResult;
+  
+  if (!speechResult) {
+    return res.status(400).send('No speech input received');
+  }
+  
+  console.log(`Speech input received: ${speechResult}`);
+  
+  let botResponse = '';
+  
+  // Check for Option 2 (log an issue)
+  if (speechResult.toLowerCase().includes('option 2')) {
+    botResponse = 'Please tell us what the issue is.';
+    
+    // Store conversation entry
+    const conversationEntry = {
+      timestamp: new Date().toISOString(),
+      user: speechResult,
+      bot: botResponse,
+    };
+    app.locals.conversations.push(conversationEntry);
 
-    if (!speechResult) {
-      throw new Error('No speech input received');
-    }
+    // Respond to the user with Option 2 response
+    const response = new twiml.VoiceResponse();
+    response.say(botResponse);
+    
+    return res.send(response.toString());
+  }
 
-    console.log(`Speech input received: ${speechResult}`);
+  // Handle phone number logic for HubSpot integration
+  const phone = req.body.From;
 
-    let botResponse = '';
-
-    // Check for Option 2 (log an issue)
-    if (speechResult.toLowerCase().includes('option 2')) {
-      botResponse = 'Please tell us what the issue is.';
-
-      const phone = req.body.From;
-
-      if (!phone) {
-        botResponse = "I couldn't retrieve your phone number. Please provide it.";
-      } else {
-        try {
-          const url = 'https://api.hubapi.com/crm/v3/objects/contacts/search';
-          const query = {
-            filterGroups: [
+  if (!phone) {
+    botResponse = "I couldn't retrieve your phone number. Please provide it.";
+  } else {
+    try {
+      const url = 'https://api.hubapi.com/crm/v3/objects/contacts/search';
+      const query = {
+        filterGroups: [
+          {
+            filters: [
               {
-                filters: [
-                  {
-                    propertyName: 'mobilenumber',
-                    operator: 'EQ',
-                    value: phone
-                  }
-                ]
+                propertyName: 'mobilenumber',
+                operator: 'EQ',
+                value: phone
               }
-            ],
-            properties: ['email']
-          };
-
-          const response = await axios.post(url, query, {
-            headers: {
-              Authorization: `Bearer ${ACCESS_TOKEN}`,
-              'Content-Type': 'application/json'
-            }
-          });
-
-          const contact = response.data.results[0];
-
-          if (contact) {
-            const { email } = contact.properties;
-            botResponse = `Thank you for logging an issue. An email will shortly be sent to ${email}.`;
-          } else {
-            botResponse = "I couldn't find your account details.";
+            ]
           }
-        } catch (error) {
-          console.error('Error fetching contact details from HubSpot:', error.response?.data || error.message);
-          botResponse = "There was an issue retrieving your account details. Please try again later.";
+        ],
+        properties: ['email']
+      };
+
+      const response = await axios.post(url, query, {
+        headers: {
+          Authorization: `Bearer ${ACCESS_TOKEN}`,
+          'Content-Type': 'application/json'
         }
+      });
+
+      const contact = response.data.results[0];
+
+      if (contact) {
+        const { email } = contact.properties;
+        botResponse = `Thank you for logging an issue. An email will shortly be sent to ${email}.`;
+      } else {
+        botResponse = "I couldn't find your account details.";
       }
+    } catch (error) {
+      console.error('Error fetching contact details from HubSpot:', error.response?.data || error.message);
+      botResponse = "There was an issue retrieving your account details. Please try again later.";
     }
+  }
+  
+  // Store conversation entry after the bot response
+  const conversationEntry = {
+    timestamp: new Date().toISOString(),
+    user: speechResult,
+    bot: botResponse,
+  };
+  app.locals.conversations.push(conversationEntry);
+
+  // Respond to the user with the final bot response
+  const response = new twiml.VoiceResponse();
+  response.say(botResponse);
+  
+  res.send(response.toString());
+});
 
     // Check for Option 3 (review account)
     else if (speechResult.toLowerCase().includes('option 3')) {
