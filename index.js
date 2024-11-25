@@ -66,43 +66,41 @@ app.get('/download-conversation/:callSid', (req, res) => {
 
 // HubSpot contact search endpoint
 app.post('/api/search', async (req, res) => {
-    const { phone } = req.body;
+  const { phone } = req.body;
 
-    if (!phone) {
-        return res.status(400).json({ error: 'Phone number is required.' });
-    }
+  if (!phone) {
+    return res.status(400).json({ error: 'Phone number is required.' });
+  }
 
-    try {
-        const url = 'https://api.hubapi.com/crm/v3/objects/contacts/search';
-        const query = {
-            filterGroups: [
-                {
-                    filters: [
-                        {
-                            propertyName: "mobilenumber",
-                            operator: "EQ",
-                            value: phone
-                        }
-                    ]
-                }
-            ],
-            properties: ['firstname', 'lastname','email','mobilenumber', 'customerid', 'accountnumbers','highvalue', 'delinquencystatus','segmentation','outstandingbalance','missedpayment' ]
-        };
-
-        const response = await axios.post(url, query, {
-            headers: {
-               Authorization: `Bearer ${ACCESS_TOKEN}`,
-               'Content-Type': 'application/json'
+  try {
+    const url = 'https://api.hubapi.com/crm/v3/objects/contacts/search';
+    const query = {
+      filterGroups: [
+        {
+          filters: [
+            {
+              propertyName: "mobilenumber",
+              operator: "EQ",
+              value: phone
             }
-        });
-    
-        console.log(response.data);
-        res.json(response.data.results);
-      
-    } catch (error) {
-        console.error('Error searching contacts:', error.response?.data || error.message);
-        res.status(500).json({ error: 'Failed to search contacts. Please try again later.' });
-    }
+          ]
+        }
+      ],
+      properties: properties: ['firstname', 'lastname','email','mobilenumber', 'customerid', 'accountnumbers','highvalue', 'delinquencystatus','segmentation','outstandingbalance','missedpayment' ]
+    };
+
+    const response = await axios.post(url, query, {
+      headers: {
+        Authorization: `Bearer ${ACCESS_TOKEN}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    res.json(response.data.results);
+  } catch (error) {
+    console.error('Error searching contacts:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Failed to search contacts. Please try again later.' });
+  }
 });
 
 // Handle incoming calls
@@ -119,14 +117,13 @@ app.post('/voice', (req, res) => {
   response.say('Press 2 to log an issue');
   response.say('Press 3 to review account');
 
-  // Use Gather with enhanced settings
   response.gather({
     input: 'speech',
     action: '/process-speech',
     method: 'POST',
     voice: 'Polly.Ayanda-Neural',
     timeout: 5,
-    enhanced: true  // Enable enhanced speech recognition
+    enhanced: true
   });
 
   res.type('text/xml');
@@ -141,21 +138,64 @@ app.post('/voice', (req, res) => {
   };
 });
 
-// Process speech using Watson
+// Process speech using Watson and handle option 3
 app.post('/process-speech', async (req, res) => {
   try {
     const speechResult = req.body.SpeechResult;
-    
+
     if (!speechResult) {
       throw new Error('No speech input received');
     }
 
     console.log(`Speech input received: ${speechResult}`);
 
-    // Generate bot response based on the transcription
     let botResponse = 'Thank you for your message. Goodbye!';
 
-    // Log the conversation
+    if (speechResult.toLowerCase().includes('option 3')) {
+      const phone = req.body.From;
+
+      if (!phone) {
+        botResponse = "I couldn't retrieve your phone number. Please provide it.";
+      } else {
+        try {
+          const url = 'https://api.hubapi.com/crm/v3/objects/contacts/search';
+          const query = {
+            filterGroups: [
+              {
+                filters: [
+                  {
+                    propertyName: 'mobilenumber',
+                    operator: 'EQ',
+                    value: phone
+                  }
+                ]
+              }
+            ],
+            properties: ['firstname', 'lastname', 'outstandingbalance']
+          };
+
+          const response = await axios.post(url, query, {
+            headers: {
+              Authorization: `Bearer ${ACCESS_TOKEN}`,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          const contact = response.data.results[0];
+
+          if (contact) {
+            const { firstname, lastname, outstandingbalance } = contact.properties;
+            botResponse = `Based on your account, your name is ${firstname}, your surname is ${lastname}, and your balance is ${outstandingbalance}.`;
+          } else {
+            botResponse = "I couldn't find your account details. Please verify your phone number.";
+          }
+        } catch (error) {
+          console.error('Error fetching contact details from HubSpot:', error.response?.data || error.message);
+          botResponse = "There was an issue retrieving your account details. Please try again later.";
+        }
+      }
+    }
+
     const conversationEntry = {
       timestamp: new Date().toISOString(),
       user: speechResult,
@@ -163,34 +203,10 @@ app.post('/process-speech', async (req, res) => {
     };
     app.locals.conversations.push(conversationEntry);
 
-    // Write conversation to file
-    const conversationFilePath = 'C:\\Users\\KMoodley\\Desktop\\Truworths\\conversations.txt';
-    
-    // Ensure the directory exists
-    const directory = 'C:\\Users\\KMoodley\\Desktop\\Truworths';
-    if (!fs.existsSync(directory)){
-      fs.mkdirSync(directory, { recursive: true });
-    }
-
-    // Append conversation to file
-    fs.appendFile(conversationFilePath, 
-      `Timestamp: ${conversationEntry.timestamp}\n` +
-      `User: ${conversationEntry.user}\n` +
-      `Bot: ${conversationEntry.bot}\n` +
-      '---\n', 
-      (err) => {
-        if (err) {
-          console.error('Error writing to conversation file:', err);
-        }
-      }
-    );
-
-    // Create TwiML response
     const response = new twiml.VoiceResponse();
     response.say(botResponse);
     response.hangup();
 
-    // Update call status
     if (app.locals.currentCall) {
       const currentCall = app.locals.currentCall;
       const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
@@ -204,13 +220,12 @@ app.post('/process-speech', async (req, res) => {
 
     res.type('text/xml');
     res.send(response.toString());
-
   } catch (error) {
     console.error('Error processing speech:', error);
+
     const response = new twiml.VoiceResponse();
     response.say('I did not catch that. Could you please repeat?');
-    
-    // Gather speech input again
+
     response.gather({
       input: 'speech',
       action: '/process-speech',
