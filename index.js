@@ -165,17 +165,31 @@ app.post('/process-speech', async (req, res) => {
     };
 
     // Check for Option 2 (log an issue)
-    if (speechResult.toLowerCase().includes('option 2')) {
-      botResponse = 'Please tell us what the issue is.';
-      storeConversation(speechResult, botResponse);
+    // Create an array to track the conversation flow (or use a database if required)
+let conversationLog = [];
 
-      // Respond to the user with Option 2 response
-      const response = new twiml.VoiceResponse();
-      response.say(botResponse);
-      return res.send(response.toString());
-    }
+// Ensure the speech result is captured from the request body
+const speechResult = req.body.SpeechResult.toLowerCase();
 
-    // Check for Option 3 (review account)
+// Declare botResponse once and update it as needed
+let botResponse = '';
+
+if (speechResult.includes('option 2')) {
+  // Log the user's initial response (Option 2)
+  botResponse = 'Please tell us what the issue is.';
+  conversationLog.push({ user: speechResult, bot: botResponse });
+  storeConversation(speechResult, botResponse);
+
+  response.gather({
+      input: 'speech',
+      action: '/process-issue',
+      method: 'POST',
+      voice: 'Polly.Ayanda-Neural',
+      timeout: 5,
+      enhanced: true,
+    });
+  
+}   // Check for Option 3 (review account)
     else if (speechResult.toLowerCase().includes('option 3')) {
       botResponse = 'Please wait while I retrieve your account details.';
       if (!phone) {
@@ -262,6 +276,85 @@ app.post('/process-speech', async (req, res) => {
   }
 });
 
+// Process speech using Watson and handle options
+app.post('/process-issue', async (req, res) => {
+  try {
+    const speechResult = req.body.SpeechResult;
+
+    if (!speechResult) {
+      return res.status(400).send('No speech input received');
+    }
+
+    console.log(`Speech input received: ${speechResult}`);
+
+    let botResponse = '';
+
+    // Helper function to store conversation
+    const storeConversation = (userInput, botReply) => {
+      const conversationEntry = {
+        timestamp: new Date().toISOString(),
+        user: userInput,
+        bot: botReply,
+      };
+      app.locals.conversations.push(conversationEntry);
+    };
+
+    const phone = req.body.PhoneNumber;  // Assuming this is how the phone number is passed in
+
+  // Default bot response
+  botResponse = 'Please wait while I retrieve your account details.';
+  conversationLog.push({ user: speechResult, bot: botResponse });
+
+  if (!phone) {
+    botResponse = "I couldn't retrieve your phone number. Please provide it.";
+    conversationLog.push({ user: speechResult, bot: botResponse });
+  } else {
+    try {
+      const url = 'https://api.hubapi.com/crm/v3/objects/contacts/search';
+      const query = {
+        filterGroups: [
+          {
+            filters: [
+              {
+                propertyName: 'mobilenumber',
+                operator: 'EQ',
+                value: phone
+              }
+            ]
+          }
+        ],
+        properties: ['email']
+      };
+
+      const apiResponse = await axios.post(url, query, {
+        headers: {
+          Authorization: `Bearer ${ACCESS_TOKEN}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const contact = apiResponse.data.results[0];
+
+      if (contact) {
+        const { email } = contact.properties;
+        botResponse = ` An email will be sent to ${email} .`;
+        conversationLog.push({ user: speechResult, bot: botResponse });
+      } else {
+        botResponse = "I couldn't find your account details.";
+        conversationLog.push({ user: speechResult, bot: botResponse });
+      }
+    } catch (error) {
+      console.error('Error fetching contact details from HubSpot:', error.response?.data || error.message);
+      botResponse = "There was an issue retrieving your account details. Please try again later.";
+      conversationLog.push({ user: speechResult, bot: botResponse });
+    }
+  }
+
+  // Respond to the user with the final bot response
+  const response = new twiml.VoiceResponse();
+  response.say(botResponse);
+  return res.send(response.toString());
+  }
 
 
 // Serve call data
