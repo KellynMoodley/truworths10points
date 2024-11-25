@@ -242,7 +242,6 @@ app.get('/call-data', (req, res) => {
     conversations: app.locals.conversations,
     pastConversations: app.locals.pastConversations,
   });
-});
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
