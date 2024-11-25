@@ -266,7 +266,6 @@ app.post('/process-speech', async (req, res) => {
   }
 });
 
-// Process speech using Watson and handle options
 app.post('/process-issue', async (req, res) => {
   try {
     const speechResult = req.body.SpeechResult;
@@ -277,14 +276,8 @@ app.post('/process-issue', async (req, res) => {
 
     console.log(`Speech input received: ${speechResult}`);
 
-    let botResponse = '';
+    let botResponse = 'Your issue has been logged successfully. Thank you!';
     const phone = req.body.From;
-
-    // Store the entire conversation in pastConversations
-    const entireConversation = [...app.locals.conversations];
-
-    // Default bot response
-    botResponse = 'Please wait while I retrieve your account details.';
 
     if (!phone) {
       botResponse = "I couldn't retrieve your phone number. Please provide it.";
@@ -318,12 +311,11 @@ app.post('/process-issue', async (req, res) => {
         if (contact) {
           const { email } = contact.properties;
           botResponse = `An issue has been logged for the email ${email}.`;
-          
-          // Push the entire conversation to pastConversations
+
           app.locals.pastConversations.push({
             phone: phone,
             email: email,
-            conversation: entireConversation
+            conversation: [...app.locals.conversations],
           });
         } else {
           botResponse = "I couldn't find your account details.";
@@ -334,16 +326,23 @@ app.post('/process-issue', async (req, res) => {
       }
     }
 
-    // Respond to the user with the final bot response
     const response = new twiml.VoiceResponse();
     response.say(botResponse);
-    
-    // Reset conversations after pushing to pastConversations
-    app.locals.conversations = [];
+    response.hangup();
+
+    if (app.locals.currentCall) {
+      const currentCall = app.locals.currentCall;
+      const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
+      currentCall.duration = callDuration;
+      currentCall.status = 'completed';
+      currentCall.conversations = app.locals.conversations;
+      app.locals.pastCalls.push(currentCall);
+      app.locals.currentCall = null;
+      app.locals.conversations = [];
+    }
 
     res.type('text/xml');
     res.send(response.toString());
-
   } catch (error) {
     console.error('Error processing speech:', error);
 
