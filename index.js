@@ -113,9 +113,9 @@ app.post('/voice', (req, res) => {
 
   const response = new twiml.VoiceResponse();
   response.say('Welcome to Truworths.');
-  response.say('Press 1 to create an account');
-  response.say('Press 2 to log an issue');
-  response.say('Press 3 to review account');
+  response.say('Press 1 to log an issue');
+  response.say('Press 2 to review account');
+  response.say('Or you can just speak to let an agent know your issues.');
 
   // Gather both speech and keypad inputs
   response.gather({
@@ -150,41 +150,87 @@ app.post('/process-input', async (req, res) => {
 
     console.log(`User input received: ${userInput}`);
 
-    let botResponse = 'Thank you for your message. Goodbye!';
-    let contactDetails = null;
+    let botResponse = 'Thank you for your message. We will save your response and have an agent look at it. Goodbye!';
 
-    // Handle speech or keypad input for different options
-    if (userInput.toLowerCase().includes('option 1') || userInput === '1') {
-      // Account Creation Flow
-      const phone = req.body.From;
-      
-      botResponse = "To create an account, please provide your first name.";
-      
-      // Log the conversation entry
+    // Function to log the conversation
+    function logConversation(userInput, botResponse) {
       const conversationEntry = {
         timestamp: new Date().toISOString(),
         user: userInput,
-        bot: botResponse
+        bot: botResponse,
       };
       app.locals.currentCall.conversations.push(conversationEntry);
+    }
 
-      // Gather first name
+    // Function to handle responses and gather more input
+    function sendResponse(botResponse, gatherOptions = {}) {
       const response = new twiml.VoiceResponse();
       response.say(botResponse);
-      response.gather({
-        input: 'speech',
-        action: '/capture-account-details',
-        method: 'POST',
-        voice: 'Polly.Ayanda-Neural',
-        timeout: 10,
-        enhanced: true,
-        hints: 'first name'
-      });
-      
+      if (gatherOptions.retry) {
+        response.gather({
+          input: 'speech dtmf',
+          action: '/process-input',
+          method: 'POST',
+          voice: 'Polly.Ayanda-Neural',
+          timeout: 5,
+          enhanced: true
+        });
+      } else {
+        response.hangup();
+      }
+
       res.type('text/xml');
-      return res.send(response.toString());
+      res.send(response.toString());
+    }
+
+    if (userInput.toLowerCase().includes('option 1') || userInput === '1') {
+      const phone = req.body.From;
+      
+      if (!phone) {
+        botResponse = "I couldn't retrieve your phone number. Please provide it.";
+      } else {
+        try {
+          const url = 'https://api.hubapi.com/crm/v3/objects/contacts/search';
+          const query = {
+            filterGroups: [
+              {
+                filters: [
+                  {
+                    propertyName: 'mobilenumber',
+                    operator: 'EQ',
+                    value: phone
+                  }
+                ]
+              }
+            ],
+            properties: ['email']
+          };
+
+          const response = await axios.post(url, query, {
+            headers: {
+              Authorization: `Bearer ${ACCESS_TOKEN}`,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          const contact = response.data.results[0];
+
+          if (contact) {
+            const { email } = contact.properties;
+            botResponse = `An email will be sent to ${email}.`;
+          } else {
+            botResponse = "I couldn't find your account details.";
+          }
+        } catch (error) {
+          console.error('Error fetching contact details from HubSpot:', error.response?.data || error.message);
+          botResponse = "There was an issue retrieving your account details. Please try again later.";
+        }
+      }
+
+      logConversation(userInput, botResponse);
+      sendResponse(botResponse);
+
     } else if (userInput.toLowerCase().includes('option 3') || userInput === '3') {
-      // Existing option 3 code remains the same
       const phone = req.body.From;
 
       if (!phone) {
@@ -228,36 +274,9 @@ app.post('/process-input', async (req, res) => {
         }
       }
 
-      // Log the conversation for the current call
-      const conversationEntry = {
-        timestamp: new Date().toISOString(),
-        user: userInput,
-        bot: botResponse,
-      };
-      app.locals.currentCall.conversations.push(conversationEntry);
+      logConversation(userInput, botResponse);
+      sendResponse(botResponse);
 
-      // Respond to the user
-      const response = new twiml.VoiceResponse();
-      response.say(botResponse);
-      response.hangup();
-
-      // When the call ends, move the conversation to pastConversations
-      if (app.locals.currentCall) {
-        const currentCall = app.locals.currentCall;
-        const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
-        currentCall.duration = callDuration;
-        currentCall.status = 'completed';
-        
-        // Store the conversation history under pastConversations
-        app.locals.pastCalls.push(currentCall);
-        app.locals.pastConversations.push(...currentCall.conversations);  // Move conversation history to pastConversations
-
-        app.locals.currentCall = null;
-        app.locals.conversations = [];
-      }
-
-      res.type('text/xml');
-      res.send(response.toString());
     } else {
       // Default handling for other inputs
       const conversationEntry = {
@@ -266,41 +285,12 @@ app.post('/process-input', async (req, res) => {
         bot: "I'm sorry, I didn't understand that option. Please try again.",
       };
       app.locals.currentCall.conversations.push(conversationEntry);
-
-      const response = new twiml.VoiceResponse();
-      response.say(conversationEntry.bot);
-      
-      // Retry input
-      response.gather({
-        input: 'speech dtmf',
-        action: '/process-input',
-        method: 'POST',
-        voice: 'Polly.Ayanda-Neural',
-        timeout: 5,
-        enhanced: true
-      });
-
-      res.type('text/xml');
-      res.send(response.toString());
+      sendResponse(conversationEntry.bot, { retry: true });
     }
+
   } catch (error) {
     console.error('Error processing input:', error);
-
-    const response = new twiml.VoiceResponse();
-    response.say('I did not catch that. Could you please repeat?');
-
-    // Retry input
-    response.gather({
-      input: 'speech dtmf',
-      action: '/process-input',
-      method: 'POST',
-      voice: 'Polly.Ayanda-Neural',
-      timeout: 5,
-      enhanced: true
-    });
-
-    res.type('text/xml');
-    res.send(response.toString());
+    sendResponse('I did not catch that. Could you please repeat?', { retry: true });
   }
 });
 
