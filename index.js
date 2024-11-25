@@ -95,7 +95,7 @@ app.post('/voice', (req, res) => {
   console.log(`Incoming call from ${caller} with CallSid ${callSid}`);
 
   const response = new twiml.VoiceResponse();
-  response.say('Hello. Welcome to Truworths Assistant. Please indicate how we may assist you by choosing one of the following options. 1. Create a Truworths account 2. Query your account or 3. Log a ticket for further assistant.');
+  response.say('Hello. Welcome to Truworths Assistant. ');
 
   // Use Gather with enhanced settings
   response.gather({
