@@ -4,22 +4,21 @@ const { twiml } = require('twilio');
 const path = require('path');
 const axios = require('axios');
 const cors = require('cors');
+const fs = require('fs');
 const { IamAuthenticator } = require('ibm-watson/auth');
 const SpeechToTextV1 = require('ibm-watson/speech-to-text/v1');
 const twilio = require('twilio');
-const fs = require('fs');
+require('dotenv').config();
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Configure middleware
+// Middleware
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cors());
 app.use(express.json());
 
-require('dotenv').config();
-
-// Watson configuration
+// Watson Speech to Text Configuration
 const speechToText = new SpeechToTextV1({
   authenticator: new IamAuthenticator({
     apikey: process.env.watson_speech_to_text_api_key,
@@ -27,44 +26,64 @@ const speechToText = new SpeechToTextV1({
   serviceUrl: process.env.watson_speech_to_text_url,
 });
 
-// Twilio configuration
+// Twilio Configuration
 const twilioClient = twilio(
   process.env.TWILIO_ACCOUNT_SID,
   process.env.TWILIO_AUTH_TOKEN
 );
+const ACCESS_TOKEN = process.env.ACCESS_TOKEN;
 
-const ACCESS_TOKEN = process.env.access_token;
+// Persistent Data Storage Functions
+const saveData = (filePath, data) => {
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
+};
 
-// Store calls and conversations in memory
+const loadData = (filePath) => {
+  if (fs.existsSync(filePath)) {
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  }
+  return [];
+};
+
+// Initialize Data Storage
+const CALLS_FILE = 'pastCalls.json';
+app.locals.pastCalls = loadData(CALLS_FILE);
 app.locals.currentCall = null;
-app.locals.pastCalls = [];
 app.locals.conversations = [];
-app.locals.pastConversations = [];
 
-// Root endpoint
+// Root Endpoint
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Download conversation endpoint
+// Download Conversation Endpoint
 app.get('/download-conversation/:callSid', (req, res) => {
   const callSid = req.params.callSid;
-  const call = app.locals.pastCalls.find(c => c.callSid === callSid);
+  const call = app.locals.pastCalls.find((c) => c.callSid === callSid);
 
   if (!call || !call.conversations) {
     return res.status(404).send('Conversation not found');
   }
 
-  const conversationText = call.conversations.map(conv => 
-    `User: ${conv.user}\nBot: ${conv.bot}\n---\n`
-  ).join('');
+  const conversationText = call.conversations
+    .map(
+      (conv) => `User: ${conv.user || 'N/A'}\nBot: ${conv.bot || 'N/A'}\n---\n`
+    )
+    .join('');
+
+  if (!conversationText) {
+    return res.status(404).send('No conversations available for this call.');
+  }
 
   res.setHeader('Content-Type', 'text/plain');
-  res.setHeader('Content-Disposition', `attachment; filename=conversation_${callSid}.txt`);
+  res.setHeader(
+    'Content-Disposition',
+    `attachment; filename=conversation_${callSid}.txt`
+  );
   res.send(conversationText);
 });
 
-// HubSpot contact search endpoint
+// HubSpot Contact Search Endpoint
 app.post('/api/search', async (req, res) => {
   const { phone } = req.body;
 
@@ -79,21 +98,33 @@ app.post('/api/search', async (req, res) => {
         {
           filters: [
             {
-              propertyName: "mobilenumber",
-              operator: "EQ",
-              value: phone
-            }
-          ]
-        }
+              propertyName: 'mobilenumber',
+              operator: 'EQ',
+              value: phone,
+            },
+          ],
+        },
       ],
-      properties: ['firstname', 'lastname','email','mobilenumber', 'customerid', 'accountnumbers','highvalue', 'delinquencystatus','segmentation','outstandingbalance','missedpayment']
+      properties: [
+        'firstname',
+        'lastname',
+        'email',
+        'mobilenumber',
+        'customerid',
+        'accountnumbers',
+        'highvalue',
+        'delinquencystatus',
+        'segmentation',
+        'outstandingbalance',
+        'missedpayment',
+      ],
     };
 
     const response = await axios.post(url, query, {
       headers: {
         Authorization: `Bearer ${ACCESS_TOKEN}`,
-        'Content-Type': 'application/json'
-      }
+        'Content-Type': 'application/json',
+      },
     });
 
     res.json(response.data.results);
@@ -103,7 +134,7 @@ app.post('/api/search', async (req, res) => {
   }
 });
 
-// Handle incoming calls
+// Handle Incoming Calls
 app.post('/voice', (req, res) => {
   const callSid = req.body.CallSid;
   const caller = req.body.From;
@@ -123,7 +154,7 @@ app.post('/voice', (req, res) => {
     method: 'POST',
     voice: 'Polly.Ayanda-Neural',
     timeout: 5,
-    enhanced: true
+    enhanced: true,
   });
 
   // Add statusCallback for call status updates
@@ -141,14 +172,13 @@ app.post('/voice', (req, res) => {
   };
 });
 
-// Process speech using Watson and handle option 3
+// Process Speech Input
 app.post('/process-speech', async (req, res) => {
   try {
     const speechResult = req.body.SpeechResult;
 
     if (!speechResult) {
       throw new Error('No speech input received');
-      response.hangup();
     }
 
     console.log(`Speech input received: ${speechResult}`);
@@ -170,19 +200,19 @@ app.post('/process-speech', async (req, res) => {
                   {
                     propertyName: 'mobilenumber',
                     operator: 'EQ',
-                    value: phone
-                  }
-                ]
-              }
+                    value: phone,
+                  },
+                ],
+              },
             ],
-            properties: ['firstname', 'lastname', 'outstandingbalance']
+            properties: ['firstname', 'lastname', 'outstandingbalance'],
           };
 
           const response = await axios.post(url, query, {
             headers: {
               Authorization: `Bearer ${ACCESS_TOKEN}`,
-              'Content-Type': 'application/json'
-            }
+              'Content-Type': 'application/json',
+            },
           });
 
           const contact = response.data.results[0];
@@ -218,6 +248,7 @@ app.post('/process-speech', async (req, res) => {
       currentCall.status = 'completed';
       currentCall.conversations = app.locals.conversations;
       app.locals.pastCalls.push(currentCall);
+      saveData(CALLS_FILE, app.locals.pastCalls);
       app.locals.currentCall = null;
       app.locals.conversations = [];
     }
@@ -236,7 +267,7 @@ app.post('/process-speech', async (req, res) => {
       method: 'POST',
       voice: 'Polly.Ayanda-Neural',
       timeout: 5,
-      enhanced: true
+      enhanced: true,
     });
 
     res.type('text/xml');
@@ -244,15 +275,7 @@ app.post('/process-speech', async (req, res) => {
   }
 });
 
-// Serve call data
-app.get('/call-data', (req, res) => {
-  if (app.locals.currentCall && app.locals.currentCall.status === 'in-progress') {
-    app.locals.currentCall.duration = Math.floor(
-      (new Date() - app.locals.currentCall.startTime) / 1000
-    );
-  }
-  
-// Status callback to handle call status changes
+// Status Callback for Call Updates
 app.post('/status-callback', (req, res) => {
   const callSid = req.body.CallSid;
   const callStatus = req.body.CallStatus;
@@ -260,11 +283,12 @@ app.post('/status-callback', (req, res) => {
   console.log(`Status update for CallSid ${callSid}: ${callStatus}`);
 
   if (app.locals.currentCall && app.locals.currentCall.callSid === callSid) {
-    if (callStatus === 'completed' || callStatus === 'failed' || callStatus === 'no-answer') {
+    if (['completed', 'failed', 'no-answer'].includes(callStatus)) {
       const currentCall = app.locals.currentCall;
       currentCall.duration = Math.floor((new Date() - currentCall.startTime) / 1000);
       currentCall.status = callStatus;
       app.locals.pastCalls.push(currentCall);
+      saveData(CALLS_FILE, app.locals.pastCalls);
       app.locals.currentCall = null;
       app.locals.conversations = [];
     }
@@ -273,14 +297,7 @@ app.post('/status-callback', (req, res) => {
   res.sendStatus(200);
 });
 
-  res.json({
-    currentCall: app.locals.currentCall,
-    pastCalls: app.locals.pastCalls,
-    conversations: app.locals.conversations,
-    pastConversations: app.locals.pastConversations,
-  });
-});
-
+// Start Server
 app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+  console.log(`Server is running on http://localhost:${port}`);
 });
