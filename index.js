@@ -4,20 +4,23 @@ const { twiml } = require('twilio');
 const path = require('path');
 const axios = require('axios');
 const cors = require('cors');
-require('dotenv').config();
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(bodyParser.urlencoded({ extended: false }));
+
 app.use(cors());
 app.use(express.json());
+
+require('dotenv').config();
 
 // Watson Speech to Text credentials
 const watsonSpeechToTextUrl = 'https://api.us-south.speech-to-text.watson.cloud.ibm.com/instances/d0fa1cd2-f3b4-4ff0-9888-196375565a8f';
 const watsonSpeechToTextApiKey = 'ig_BusJMZMAOYfhcRJ-PtAf4PgjzSIMebGjszzJZ9RIj';
 
 const ACCESS_TOKEN = process.env.access_token;
+
 
 // Store calls and conversations in memory
 app.locals.currentCall = null;
@@ -60,11 +63,12 @@ app.post('/api/search', async (req, res) => {
                Authorization: `Bearer ${ACCESS_TOKEN}`,
                'Content-Type': 'application/json'
             }
-        });
+       });
     
-        console.log(response.data);  // Log the full response to check if the data structure is correct
+      console.log(response.data);  // Log the full response to check if the data structure is correct
 
-        res.json(response.data.results);
+
+      res.json(response.data.results);
       
     } catch (error) {
         console.error('Error searching contacts:', error.response?.data || error.message);
@@ -86,15 +90,14 @@ app.post('/voice', (req, res) => {
   response.say('Welcome I am a Truworths agent.');
   response.say('Press  1 to create an account');
   response.say('Press 2 to log an issue');
-  response.say('Press 3 to talk to an agent');
+  response.say('Press 3 to talk to a agent');
 
   // Gather speech input
   response.gather({
-    input: 'dtmf',
+    input: 'speech',
     action: '/process-speech',
     method: 'POST',
     voice: 'Polly.Ayanda-Neural',
-    numDigits: 1,
     timeout: 5
   });
 
@@ -111,56 +114,14 @@ app.post('/voice', (req, res) => {
   };
 });
 
-// Process speech and DTMF input
-app.post('/process-speech', (req, res) => {
-  const digit = req.body.Digits;
-  console.log(`Digit input received: ${digit}`);
-
-  const response = new twiml.VoiceResponse();
-  let botResponse = '';
-
-  if (digit === '1') {
-    botResponse = 'Please provide your first name.';
-    response.say(botResponse);
-    response.gather({
-      input: 'speech',
-      action: '/process-create-account',
-      method: 'POST',
-    });
-  } else if (digit === '2') {
-    botResponse = 'Please describe your issue after the beep.';
-    response.say(botResponse);
-    response.record({
-      action: '/process-issue',
-      method: 'POST',
-      maxLength: 120,
-    });
-  } else if (digit === '3') {
-    botResponse = 'Connecting you to an agent. Please hold.';
-    response.say(botResponse);
-  } else {
-    botResponse = 'Invalid option. Goodbye!';
-    response.say(botResponse);
-    response.hangup();
-  }
-
-  // Log the conversation
-  const speechResult = digit;  // This can be used as a placeholder
-  app.locals.conversations.push({
-    user: speechResult,
-    bot: botResponse,
-  });
-
-  res.type('text/xml');
-  res.send(response.toString());
-});
-
-// Handle account creation details
-app.post('/process-create-account', (req, res) => {
+// Process speech input
+// Process speech input
+app.post('/process-speech', async (req, res) => {
   const speechResult = req.body.SpeechResult;
-  const botResponse = `First name received: ${speechResult}`;
+  console.log(`Speech input received: ${speechResult}`);
 
-  console.log(`First name received: ${speechResult}`);
+  // Simulate a response based on user input
+  let botResponse = 'Thank you. Goodbye!';
 
   // Log the conversation
   app.locals.conversations.push({
@@ -168,8 +129,9 @@ app.post('/process-create-account', (req, res) => {
     bot: botResponse,
   });
 
+  // Respond with TwiML
   const response = new twiml.VoiceResponse();
-  response.say(botResponse);
+  response.say(botResponse);f
   response.hangup();
 
   // Update call status to "completed" and move to pastCalls
@@ -193,6 +155,8 @@ app.post('/process-create-account', (req, res) => {
   res.type('text/xml');
   res.send(response.toString());
 });
+
+
 
 // Endpoint to serve call and conversation data
 app.get('/call-data', (req, res) => {
