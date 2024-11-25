@@ -131,12 +131,14 @@ app.post('/voice', (req, res) => {
   res.type('text/xml');
   res.send(response.toString());
 
+  // Initialize the current call and its conversation history
   app.locals.currentCall = {
     caller,
     callSid,
     startTime,
     duration: 0,
     status: 'in-progress',
+    conversations: []  // Initialize an empty array to store current call conversations
   };
 });
 
@@ -198,26 +200,30 @@ app.post('/process-input', async (req, res) => {
       }
     }
 
-    // Log the conversation
+    // Log the conversation for the current call
     const conversationEntry = {
       timestamp: new Date().toISOString(),
       user: userInput,
       bot: botResponse,
     };
-    app.locals.conversations.push(conversationEntry);
+    app.locals.currentCall.conversations.push(conversationEntry);
 
     // Respond to the user
     const response = new twiml.VoiceResponse();
     response.say(botResponse);
     response.hangup();
 
+    // When the call ends, move the conversation to pastConversations
     if (app.locals.currentCall) {
       const currentCall = app.locals.currentCall;
       const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
       currentCall.duration = callDuration;
       currentCall.status = 'completed';
-      currentCall.conversations = app.locals.conversations;
+      
+      // Store the conversation history under pastConversations
       app.locals.pastCalls.push(currentCall);
+      app.locals.pastConversations.push(...currentCall.conversations);  // Move conversation history to pastConversations
+
       app.locals.currentCall = null;
       app.locals.conversations = [];
     }
