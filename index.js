@@ -113,9 +113,9 @@ app.post('/voice', (req, res) => {
 
   const response = new twiml.VoiceResponse();
   response.say('Welcome to Truworths.');
-  response.say('Press 1 to create an account');
-  response.say('Press 2 to log an issue');
-  response.say('Press 3 to review account');
+  response.say('How can I assist? Your issue will be transcribed and an agent will look into it');
+  response.say('Alternatively say review account to know your payment details');
+  response.say('or log an issue to urgently create a ticket.');
 
   response.gather({
     input: 'speech',
@@ -152,7 +152,7 @@ app.post('/process-speech', async (req, res) => {
 
     let botResponse = 'Thank you for your message. Goodbye!';
 
-    if (speechResult.toLowerCase().includes('option 3')) {
+    if (speechResult.toLowerCase().includes('review account')) {
       const phone = req.body.From;
 
       if (!phone) {
