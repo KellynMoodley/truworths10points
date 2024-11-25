@@ -163,26 +163,29 @@
           }
 
           if (data.pastCalls.length > 0) {
-            pastCallsList.innerHTML = data.pastCalls.map(call => `
-              <li>
-                <div>
-                  <span class="caller" onclick="toggleDetails('${call.callSid}')">${call.caller}</span>
-                  <div id="details-${call.callSid}" class="caller-details">
-                    <p>Status: ${call.status}</p>
-                    <p>Duration: ${call.duration} seconds</p>
-                    <h3>Conversation history:</h3>
-                    <ul>
-                      ${call.conversations.map(convo => `
-                        <li>
-                          <p>User: ${convo.user}</p>
-                          <p>Bot: ${convo.bot}</p>
-                        </li>
-                      `).join('')}
-                    </ul>
+            pastCallsList.innerHTML = data.pastCalls.map(call => {
+              const detailsDivId = `details-${call.callSid}`;
+              return `
+                <li>
+                  <div>
+                    <span class="caller" onclick="toggleDetails('${call.callSid}')">${call.caller}</span>
+                    <div id="${detailsDivId}" class="caller-details" style="${document.getElementById(detailsDivId)?.style.display === 'block' ? 'display: block;' : 'display: none;'}">
+                      <p>Status: ${call.status}</p>
+                      <p>Duration: ${call.duration} seconds</p>
+                      <h3>Conversation history:</h3>
+                      <ul>
+                        ${call.conversations.map(convo => `
+                          <li>
+                            <p>User: ${convo.user}</p>
+                            <p>Bot: ${convo.bot}</p>
+                          </li>
+                        `).join('')}
+                      </ul>
+                    </div>
                   </div>
-                </div>
-              </li>
-            `).join('');
+                </li>
+              `;
+            }).join('');
           } else {
             pastCallsList.innerHTML = '<li>No past calls available</li>';
           }
