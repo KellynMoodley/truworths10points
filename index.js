@@ -277,20 +277,10 @@ app.post('/process-create-account', (req, res) => {
 
   console.log(`Received name and surname: ${speechResult}`);
 
-  // Simulate saving data (e.g., database or in-memory storage)
-  const [firstName, lastName] = speechResult.split(' ');
-  if (!firstName || !lastName) {
-    const response = new twiml.VoiceResponse();
-    response.say('Please provide both your first name and last name.');
-    response.hangup();
-
-    res.type('text/xml');
-    res.send(response.toString());
-    return;
-  }
+  
 
   const response = new twiml.VoiceResponse();
-  response.say(`Thank you, ${firstName} ${lastName}. Your account has been created successfully.`);
+  response.say(`Thank you, ${speechResult} . Your account has been created successfully.`);
   response.hangup();
 
   const conversationEntry = {
