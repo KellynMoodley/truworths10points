@@ -83,13 +83,14 @@ app.post('/voice', (req, res) => {
 
   // Respond with TwiML
   const response = new twiml.VoiceResponse();
-  response.say('Hello How can I assist you?');
+  response.say('Welcome to the Truworths assistant');
 
   // Gather speech input
   response.gather({
     input: 'speech',
     action: '/process-speech',
     method: 'POST',
+    voice: 'Polly.Joanna'
     timeout: 5,
   });
 
