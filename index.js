@@ -117,6 +117,7 @@ app.post('/voice', (req, res) => {
   response.say('Welcome to Truworths');
   response.say('Press 1 to create an account');
   response.say('Press 2 to log an issue');
+  response.say('Press 3 to review account');
 
   // Use Gather with enhanced settings
   response.gather({
