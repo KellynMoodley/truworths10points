@@ -47,43 +47,54 @@ app.get('/', (req, res) => {
 
 // HubSpot contact search endpoint
 app.post('/api/search', async (req, res) => {
-    const { phone } = req.body;
+  const { phone } = req.body;
 
-    if (!phone) {
-        return res.status(400).json({ error: 'Phone number is required.' });
-    }
+  if (!phone) {
+    return res.status(400).json({ error: 'Phone number is required.' });
+  }
 
-    try {
-        const url = 'https://api.hubapi.com/crm/v3/objects/contacts/search';
-        const query = {
-            filterGroups: [
-                {
-                    filters: [
-                        {
-                            propertyName: "mobilenumber",
-                            operator: "EQ",
-                            value: phone
-                        }
-                    ]
-                }
-            ],
-            properties: ['firstname', 'lastname','email','mobilenumber', 'customerid', 'accountnumbers','highvalue', 'delinquencystatus','segmentation','outstandingbalance','missedpayment' ]
-        };
+  try {
+    const url = 'https://api.hubapi.com/crm/v3/objects/contacts/search';
+    const query = {
+      filterGroups: [
+        {
+          filters: [
+            {
+              propertyName: 'mobilenumber',
+              operator: 'EQ',
+              value: phone,
+            },
+          ],
+        },
+      ],
+      properties: [
+        'firstname',
+        'lastname',
+        'email',
+        'mobilenumber',
+        'customerid',
+        'accountnumbers',
+        'highvalue',
+        'delinquencystatus',
+        'segmentation',
+        'outstandingbalance',
+        'missedpayment',
+      ],
+    };
 
-        const response = await axios.post(url, query, {
-            headers: {
-               Authorization: `Bearer ${ACCESS_TOKEN}`,
-               'Content-Type': 'application/json'
-            }
-        });
-    
-        console.log(response.data);
-        res.json(response.data.results);
-      
-    } catch (error) {
-        console.error('Error searching contacts:', error.response?.data || error.message);
-        res.status(500).json({ error: 'Failed to search contacts. Please try again later.' });
-    }
+    const response = await axios.post(url, query, {
+      headers: {
+        Authorization: `Bearer ${ACCESS_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    console.log(response.data);
+    res.json(response.data.results);
+  } catch (error) {
+    console.error('Error searching contacts:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Failed to search contacts. Please try again later.' });
+  }
 });
 
 // Handle incoming calls
@@ -95,16 +106,19 @@ app.post('/voice', (req, res) => {
   console.log(`Incoming call from ${caller} with CallSid ${callSid}`);
 
   const response = new twiml.VoiceResponse();
-  response.say('Hello, please tell me something.');
+  response.say('Welcome to our service. Please choose an option:');
+  response.say('Press 1 or say Create Account to create an account.');
+  response.say('Press 2 or say Log an Issue to log an issue.');
+  response.say('Press 3 or say Open Query to open a query.');
 
-  // Use Gather with enhanced settings
   response.gather({
-    input: 'speech',
+    input: 'speech dtmf',
     action: '/process-speech',
     method: 'POST',
     timeout: 5,
+    numDigits: 1,
     language: 'en-US',
-    enhanced: true  // Enable enhanced speech recognition
+    enhanced: true, // Enhanced speech recognition
   });
 
   res.type('text/xml');
@@ -119,61 +133,56 @@ app.post('/voice', (req, res) => {
   };
 });
 
-// Process speech using Watson
+// Process speech input and redirect based on the option
 app.post('/process-speech', async (req, res) => {
   try {
-    const speechResult = req.body.SpeechResult;
-    
-    if (!speechResult) {
-      throw new Error('No speech input received');
+    const speechResult = req.body.SpeechResult?.toLowerCase();
+    const digitResult = req.body.Digits;
+
+    let selectedOption = '';
+    if (digitResult === '1' || speechResult?.includes('create account')) {
+      selectedOption = 'create account';
+    } else if (digitResult === '2' || speechResult?.includes('log an issue')) {
+      selectedOption = 'log an issue';
+    } else if (digitResult === '3' || speechResult?.includes('open query')) {
+      selectedOption = 'open query';
+    } else {
+      throw new Error('Invalid input');
     }
 
-    console.log(`Speech input received: ${speechResult}`);
+    console.log(`User selected: ${selectedOption}`);
 
-    // Generate bot response based on the transcription
-    let botResponse = 'Thank you for your message. Goodbye!';
-
-    // Log the conversation
-    app.locals.conversations.push({
-      user: speechResult,
-      bot: botResponse,
-    });
-
-    // Create TwiML response
     const response = new twiml.VoiceResponse();
-    response.say(botResponse);
-    response.hangup();
-
-    // Update call status
-    if (app.locals.currentCall) {
-      const currentCall = app.locals.currentCall;
-      const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
-      currentCall.duration = callDuration;
-      currentCall.status = 'completed';
-      currentCall.conversations = app.locals.conversations;
-      app.locals.pastCalls.push(currentCall);
-      app.locals.currentCall = null;
-      app.locals.conversations = [];
+    if (selectedOption === 'create account') {
+      response.say('You selected Create Account. Please provide your name, email, and phone number.');
+    } else if (selectedOption === 'log an issue') {
+      response.say('You selected Log an Issue. Please describe your issue.');
+    } else if (selectedOption === 'open query') {
+      response.say('You selected Open Query. Please state your query.');
     }
+
+    response.gather({
+      input: 'speech',
+      action: `/process-${selectedOption.replace(/\s/g, '-')}`,
+      method: 'POST',
+      timeout: 10,
+      language: 'en-US',
+    });
 
     res.type('text/xml');
     res.send(response.toString());
-
   } catch (error) {
     console.error('Error processing speech:', error);
     const response = new twiml.VoiceResponse();
     response.say('I did not catch that. Could you please repeat?');
-    
-    // Gather speech input again
     response.gather({
-      input: 'speech',
+      input: 'speech dtmf',
       action: '/process-speech',
       method: 'POST',
       timeout: 5,
       language: 'en-US',
-      enhanced: true
+      enhanced: true,
     });
-
     res.type('text/xml');
     res.send(response.toString());
   }
