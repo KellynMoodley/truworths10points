@@ -17,8 +17,7 @@ app.use(express.json());
 const watsonSpeechToTextUrl = 'https://api.us-south.speech-to-text.watson.cloud.ibm.com/instances/d0fa1cd2-f3b4-4ff0-9888-196375565a8f';
 const watsonSpeechToTextApiKey = 'ig_BusJMZMAOYfhcRJ-PtAf4PgjzSIMebGjszzJZ9RIj';
 
-const ACCESS_TOKEN = 'pat-na1-bc9ea2a9-e8e6-42a1-99ed-43276eadb3ac';
-
+const ACCESS_TOKEN = process.env.access_token;
 
 // Store calls and conversations in memory
 app.locals.currentCall = null;
@@ -31,48 +30,58 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// API Route to search contact by phone number
+// HubSpot contact search endpoint
 app.post('/api/search', async (req, res) => {
-    const { phone } = req.body;
+  const { phone } = req.body;
 
-    if (!phone) {
-        return res.status(400).json({ error: 'Phone number is required.' });
-    }
+  if (!phone) {
+    return res.status(400).json({ error: 'Phone number is required.' });
+  }
 
-    try {
-        const url = 'https://api.hubapi.com/crm/v3/objects/contacts/search';
-        const query = {
-            filterGroups: [
-                {
-                    filters: [
-                        {
-                            propertyName: "phonenumber",
-                            operator: "EQ",
-                            value: phone
-                        }
-                    ]
-                }
-            ],
-            properties: ['firstname', 'lastname', 'city', 'message', 'accountnumbers', 'phonenumber']
-        };
+  try {
+    const url = 'https://api.hubapi.com/crm/v3/objects/contacts/search';
+    const query = {
+      filterGroups: [
+        {
+          filters: [
+            {
+              propertyName: 'mobilenumber',
+              operator: 'EQ',
+              value: phone,
+            },
+          ],
+        },
+      ],
+      properties: [
+        'firstname',
+        'lastname',
+        'email',
+        'mobilenumber',
+        'customerid',
+        'accountnumbers',
+        'highvalue',
+        'delinquencystatus',
+        'segmentation',
+        'outstandingbalance',
+        'missedpayment',
+      ],
+    };
 
-        const response = await axios.post(url, query, {
-            headers: {
-               Authorization: `Bearer ${ACCESS_TOKEN}`,
-               'Content-Type': 'application/json'
-            }
-       });
-    
-      console.log(response.data);  // Log the full response to check if the data structure is correct
+    const response = await axios.post(url, query, {
+      headers: {
+        Authorization: `Bearer ${ACCESS_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+    });
 
-
-      res.json(response.data.results);
-      
-    } catch (error) {
-        console.error('Error searching contacts:', error.response?.data || error.message);
-        res.status(500).json({ error: 'Failed to search contacts. Please try again later.' });
-    }
+    console.log(response.data);
+    res.json(response.data.results);
+  } catch (error) {
+    console.error('Error searching contacts:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Failed to search contacts. Please try again later.' });
+  }
 });
+
 
 // Handle incoming calls
 app.post('/voice', (req, res) => {
