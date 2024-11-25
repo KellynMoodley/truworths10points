@@ -30,58 +30,48 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// HubSpot contact search endpoint
+// API Route to search contact by phone number
 app.post('/api/search', async (req, res) => {
-  const { phone } = req.body;
+    const { phone } = req.body;
 
-  if (!phone) {
-    return res.status(400).json({ error: 'Phone number is required.' });
-  }
+    if (!phone) {
+        return res.status(400).json({ error: 'Phone number is required.' });
+    }
 
-  try {
-    const url = 'https://api.hubapi.com/crm/v3/objects/contacts/search';
-    const query = {
-      filterGroups: [
-        {
-          filters: [
-            {
-              propertyName: 'mobilenumber',
-              operator: 'EQ',
-              value: phone,
-            },
-          ],
-        },
-      ],
-      properties: [
-        'firstname',
-        'lastname',
-        'email',
-        'mobilenumber',
-        'customerid',
-        'accountnumbers',
-        'highvalue',
-        'delinquencystatus',
-        'segmentation',
-        'outstandingbalance',
-        'missedpayment',
-      ],
-    };
+    try {
+        const url = 'https://api.hubapi.com/crm/v3/objects/contacts/search';
+        const query = {
+            filterGroups: [
+                {
+                    filters: [
+                        {
+                            propertyName: "mobilenumber",
+                            operator: "EQ",
+                            value: phone
+                        }
+                    ]
+                }
+            ],
+            properties: ['firstname', 'lastname','email','mobilenumber', 'customerid', 'accountnumbers','highvalue', 'delinquencystatus','segmentation','outstandingbalance','missedpayment' ]
+        };
 
-    const response = await axios.post(url, query, {
-      headers: {
-        Authorization: `Bearer ${ACCESS_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-    });
+        const response = await axios.post(url, query, {
+            headers: {
+               Authorization: `Bearer ${ACCESS_TOKEN}`,
+               'Content-Type': 'application/json'
+            }
+       });
+    
+      console.log(response.data);  // Log the full response to check if the data structure is correct
 
-    console.log(response.data);
-    res.json(response.data.results);
-  } catch (error) {
-    console.error('Error searching contacts:', error.response?.data || error.message);
-    res.status(500).json({ error: 'Failed to search contacts. Please try again later.' });
-  }
+
+      res.json(response.data.results);
+      
+    } catch (error) {
+        console.error('Error searching contacts:', error.response?.data || error.message);
+        res.status(500).json({ error: 'Failed to search contacts. Please try again later.' });
+    }
 });
-
 
 // Handle incoming calls
 app.post('/voice', (req, res) => {
@@ -89,7 +79,6 @@ app.post('/voice', (req, res) => {
   const caller = req.body.From;
   const startTime = new Date();
 
-  // Log the incoming call
   console.log(`Incoming call from ${caller} with CallSid ${callSid}`);
 
   // Respond with TwiML
@@ -103,31 +92,61 @@ app.post('/voice', (req, res) => {
     input: 'speech',
     action: '/process-speech',
     method: 'POST',
-    voice:'Polly.Ayanda-Neural',
-    timeout: 5
+    voice: 'Polly.Ayanda-Neural',
+    timeout: 5,
   });
 
   res.type('text/xml');
   res.send(response.toString());
 
-  // Store the new current call with "in-progress" status
+  // Store the new current call
   app.locals.currentCall = {
     caller,
     callSid,
     startTime,
     duration: 0,
     status: 'in-progress',
+    timeoutId: setTimeout(() => {
+      // Timeout after 5 minutes (300000 ms)
+      console.log(`Call from ${caller} timed out due to inactivity.`);
+      
+      const response = new twiml.VoiceResponse();
+      response.say('No input received. Goodbye!');
+      response.hangup();
+
+      // Update call status to "timed out" and log as "User did not speak"
+      if (app.locals.currentCall) {
+        app.locals.currentCall.status = 'timed-out';
+        app.locals.currentCall.duration = Math.floor((new Date() - app.locals.currentCall.startTime) / 1000);
+        app.locals.currentCall.conversations = [
+          { user: null, bot: 'User did not speak.' },
+        ];
+
+        app.locals.pastCalls.push(app.locals.currentCall);
+        app.locals.pastConversations.push({
+          user: 'User did not speak.',
+          bot: 'No response detected.',
+        });
+
+        // Clear current call and reset conversations
+        app.locals.currentCall = null;
+        app.locals.conversations = [];
+      }
+    }, 300000), // 5 minutes
   };
 });
 
-// Process speech input
 // Process speech input
 app.post('/process-speech', async (req, res) => {
   const speechResult = req.body.SpeechResult;
   console.log(`Speech input received: ${speechResult}`);
 
-  // Simulate a response based on user input
   let botResponse = 'Thank you. Goodbye!';
+
+  // Clear the inactivity timeout
+  if (app.locals.currentCall?.timeoutId) {
+    clearTimeout(app.locals.currentCall.timeoutId);
+  }
 
   // Log the conversation
   app.locals.conversations.push({
@@ -140,20 +159,14 @@ app.post('/process-speech', async (req, res) => {
   response.say(botResponse);
   response.hangup();
 
-  // Update call status to "completed" and move to pastCalls
+  // Update call status to "completed"
   if (app.locals.currentCall) {
     const currentCall = app.locals.currentCall;
-    const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
-    currentCall.duration = callDuration;
+    currentCall.duration = Math.floor((new Date() - currentCall.startTime) / 1000);
     currentCall.status = 'completed';
-
-    // Store conversation history with the completed call
     currentCall.conversations = app.locals.conversations;
 
-    // Add to past calls
     app.locals.pastCalls.push(currentCall);
-    
-    // Clear current call and conversations for the next one
     app.locals.currentCall = null;
     app.locals.conversations = [];
   }
@@ -184,3 +197,4 @@ app.get('/call-data', (req, res) => {
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
+
