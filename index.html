@@ -7,136 +7,233 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      line-height: 1.6;
       margin: 0;
       padding: 0;
-      background-color: #f4f4f4;
-      color: #333;
+      background-color: #f4f4f9;
     }
 
-    header {
-      background: #333;
-      color: #fff;
-      padding: 1rem 0;
-      text-align: center;
+    #container {
+      display: flex;
+      flex-wrap: wrap;
+      margin: 20px;
     }
 
-    main {
-      padding: 1rem;
-      max-width: 800px;
-      margin: auto;
-      background: #fff;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    #profile-container {
+      flex: 1;
+      min-width: 300px;
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      margin-right: 20px;
+    }
+
+    #current-call {
+      flex: 2;
+      min-width: 300px;
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    #past-calls {
+      flex: 1;
+      width: 100%;
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      margin-top: 20px;
     }
 
     h1, h2 {
-      color: #333;
+      margin-top: 0;
     }
 
-    #current-call, #past-calls {
-      margin-bottom: 2rem;
-    }
-
-    #past-calls-list {
-      list-style: none;
+    ul {
       padding: 0;
+      list-style: none;
     }
 
-    #past-calls-list li {
-      background: #f9f9f9;
-      margin: 0.5rem 0;
-      padding: 0.5rem;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-    }
-
-    .call-details {
-      font-size: 0.9rem;
-      color: #666;
-    }
-
-    .status-in-progress {
+    .caller {
+      cursor: pointer;
+      font-weight: bold;
       color: #007bff;
+      display: block;
+      margin: 10px 0;
     }
 
-    .status-completed {
-      color: #28a745;
+    .caller-details {
+      display: none;
+      padding: 10px;
+      background-color: #f9f9f9;
+      border-radius: 5px;
+      margin-top: 10px;
+    }
+
+    .profile-details span {
+      font-weight: bold;
+    }
+
+    .error-message {
+      color: red;
+      font-weight: bold;
+    }
+
+    .download-btn {
+      margin-left: 10px;
+      padding: 5px 10px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .download-btn:hover {
+      background-color: #0056b3;
     }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Phone Call Status</h1>
-  </header>
-  <main>
+  <h1 style="text-align: center;">Phone Call Status</h1>
+
+  <div id="container">
+    <!-- Profile Information -->
+    <div id="profile-container">
+      <h2>Contact Profile</h2>
+      <div id="profile" class="profile-details">
+        No caller details found.
+      </div>
+    </div>
+
+    <!-- Current Call -->
     <div id="current-call">
       <h2>Current Call</h2>
       <p>Waiting for a call...</p>
     </div>
-    <div id="past-calls">
-      <h2>Past Calls</h2>
-      <ul id="past-calls-list">
-        <li>No past calls available</li>
-      </ul>
-    </div>
-  </main>
+  </div>
+
+  <!-- Past Calls -->
+  <div id="past-calls">
+    <h2>Past Calls</h2>
+    <ul id="past-calls-list">
+      <li>No past calls available</li>
+    </ul>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script>
-    // Function to update the current call details
-    function updateCurrentCall(call) {
-      const currentCallDiv = document.getElementById('current-call');
-      if (!call) {
-        currentCallDiv.innerHTML = '<h2>Current Call</h2><p>Waiting for a call...</p>';
-      } else {
-        const statusClass = call.status === 'in-progress' ? 'status-in-progress' : 'status-completed';
-        currentCallDiv.innerHTML = `
-          <h2>Current Call</h2>
-          <p>Caller: ${call.caller}</p>
-          <p>Status: <span class="${statusClass}">${call.status}</span></p>
-          <p>Duration: ${call.duration}s</p>
-          <p>Started at: ${new Date(call.startTime).toLocaleTimeString()}</p>
-        `;
-      }
+    function downloadConversation(callSid) {
+      fetch(`/download-conversation/${callSid}`)
+        .then(response => response.blob())
+        .then(blob => {
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `conversation_${callSid}.txt`;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          a.remove();
+        })
+        .catch(error => console.error('Download error:', error));
     }
 
-    // Function to update the list of past calls
-    function updatePastCalls(calls) {
-      const pastCallsList = document.getElementById('past-calls-list');
-      if (calls.length === 0) {
-        pastCallsList.innerHTML = '<li>No past calls available</li>';
-      } else {
-        pastCallsList.innerHTML = calls
-          .map(call => {
-            const statusClass = call.status === 'in-progress' ? 'status-in-progress' : 'status-completed';
-            return `
-              <li>
-                <p>Caller: ${call.caller}</p>
-                <p>Status: <span class="${statusClass}">${call.status}</span></p>
-                <p>Duration: ${call.duration}s</p>
-                <p>Started at: ${new Date(call.startTime).toLocaleTimeString()}</p>
-              </li>
-            `;
-          })
-          .join('');
-      }
-    }
-
-    // Function to fetch and update call data
-    function fetchCallData() {
-      axios.get('/call-data')
+    function searchByPhoneNumber(phone) {
+      const profileDiv = document.getElementById('profile');
+      profileDiv.innerHTML = "Loading profile...";
+      axios.post('/api/search', { phone })
         .then(response => {
-          const data = response.data;
-          updateCurrentCall(data.currentCall);
-          updatePastCalls(data.pastCalls);
+          const contacts = response.data;
+          if (contacts.length === 0) {
+            profileDiv.innerHTML = `<p class="error-message">No contacts found with phone number: ${phone}</p>`;
+          } else {
+            const contact = contacts[0].properties;
+            profileDiv.innerHTML = `
+              <p><span>First Name:</span> ${contact.firstname || 'N/A'}</p>
+              <p><span>Last Name:</span> ${contact.lastname || 'N/A'}</p>
+              <p><span>Email:</span> ${contact.email || 'N/A'}</p>
+              <p><span>Phone number:</span> ${contact.mobilenumber || 'N/A'}</p>
+              <p><span>Customer ID:</span> ${contact.customerid || 'N/A'}</p>
+              <p><span>Account Number:</span> ${contact.accountnumbers || 'N/A'}</p>
+              <p><span>High value customer:</span> ${contact.highvalue || 'N/A'}</p>
+              <p><span>Delinquency status:</span> ${contact.delinquencystatus || 'N/A'}</p>
+              <p><span>Segmentation:</span> ${contact.segmentation || 'N/A'}</p>
+              <p><span>Outstanding balance:</span> ${contact.outstandingbalance || 'N/A'}</p>
+              <p><span>Reasons for missed payment:</span> ${contact.missedpayment || 'N/A'}</p>
+            `;
+          }
+        })
+        .catch(error => {
+          console.error('Error searching contacts:', error);
+          profileDiv.innerHTML = '<p class="error-message">Error loading profile. Please try again later.</p>';
+        });
+    }
+
+    setInterval(() => {
+      fetch('/call-data')
+        .then(response => response.json())
+        .then(data => {
+          const currentCallDiv = document.getElementById('current-call');
+          const profileDiv = document.getElementById('profile');
+          const pastCallsList = document.getElementById('past-calls-list');
+
+          if (data.currentCall) {
+            currentCallDiv.innerHTML = `
+              <h2>Current Call</h2>
+              <p>Caller: ${data.currentCall.caller}</p>
+              <p>Status: ${data.currentCall.status}</p>
+              <p>Call SID: ${data.currentCall.callSid}</p>
+              <p>Duration: ${data.currentCall.duration} seconds</p>
+            `;
+            searchByPhoneNumber(data.currentCall.caller);
+
+            profileDiv.style.display = 'block';
+          } else {
+            currentCallDiv.innerHTML = '<p>No current call</p>';
+            profileDiv.innerHTML = 'No caller details found.';
+          }
+
+          if (data.pastCalls.length > 0) {
+            pastCallsList.innerHTML = data.pastCalls.map(call => {
+              const detailsDivId = `details-${call.callSid}`;
+              return `
+                <li>
+                  <div>
+                    <span class="caller" onclick="toggleDetails('${call.callSid}')">${call.caller}</span>
+                    <button onclick="downloadConversation('${call.callSid}')" class="download-btn">Download Conversation</button>
+                    <div id="${detailsDivId}" class="caller-details" style="${document.getElementById(detailsDivId)?.style.display === 'block' ? 'display: block;' : 'display: none;'}">
+                      <p>Status: ${call.status}</p>
+                      <p>Duration: ${call.duration} seconds</p>
+                      <h3>Conversation history:</h3>
+                      <ul>
+                        ${call.conversations.map(convo => `
+                          <li>
+                            <p>User: ${convo.user}</p>
+                            <p>Bot: ${convo.bot}</p>
+                          </li>
+                        `).join('')}
+                      </ul>
+                    </div>
+                  </div>
+                </li>
+              `;
+            }).join('');
+          } else {
+            pastCallsList.innerHTML = '<li>No past calls available</li>';
+          }
         })
         .catch(error => {
           console.error('Error fetching call data:', error);
         });
-    }
+    }, 5000);
 
-    // Fetch call data every 5 seconds
-    setInterval(fetchCallData, 5000);
-    fetchCallData(); // Fetch initially
+    function toggleDetails(callSid) {
+      const detailsDiv = document.getElementById(`details-${callSid}`);
+      detailsDiv.style.display = detailsDiv.style.display === 'none' || detailsDiv.style.display === '' ? 'block' : 'none';
+    }
   </script>
 </body>
 </html>
