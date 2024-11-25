@@ -240,7 +240,7 @@ app.post('/process-speech', async (req, res) => {
 
       res.type('text/xml');
       res.send(response.toString());
-    }, 3000); // 3-second delay
+    }, 2000); // 3-second delay
   } catch (error) {
     console.error('Error processing speech:', error);
     const response = new twiml.VoiceResponse();
@@ -298,7 +298,7 @@ app.post('/finalize-response', (req, res) => {
 
     res.type('text/xml');
     res.send(response.toString());
-  }, 3000); // 3-second delay
+  }, 2000); // 2-second delay
 });
 
 
