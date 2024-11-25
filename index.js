@@ -95,7 +95,7 @@ app.post('/voice', (req, res) => {
   console.log(`Incoming call from ${caller} with CallSid ${callSid}`);
 
   const response = new twiml.VoiceResponse();
-  response.say('Hello. Welcome to Truworths Assistant. ');
+  response.say('Hello, please tell me something.');
 
   // Use Gather with enhanced settings
   response.gather({
@@ -126,13 +126,12 @@ app.post('/process-speech', async (req, res) => {
     
     if (!speechResult) {
       throw new Error('No speech input received');
-      response.hangup();
     }
 
     console.log(`Speech input received: ${speechResult}`);
 
     // Generate bot response based on the transcription
-    let botResponse = 'Thank you for picking that option';
+    let botResponse = 'Thank you for your message. Goodbye!';
 
     // Log the conversation
     app.locals.conversations.push({
