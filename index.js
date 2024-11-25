@@ -1,4 +1,4 @@
-const express = require('express'); 
+const express = require('express');
 const bodyParser = require('body-parser');
 const { twiml } = require('twilio');
 const path = require('path');
@@ -7,6 +7,7 @@ const cors = require('cors');
 const { IamAuthenticator } = require('ibm-watson/auth');
 const SpeechToTextV1 = require('ibm-watson/speech-to-text/v1');
 const twilio = require('twilio');
+const fs = require('fs');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -43,6 +44,24 @@ app.locals.pastConversations = [];
 // Root endpoint
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Download conversation endpoint
+app.get('/download-conversation/:callSid', (req, res) => {
+  const callSid = req.params.callSid;
+  const call = app.locals.pastCalls.find(c => c.callSid === callSid);
+
+  if (!call || !call.conversations) {
+    return res.status(404).send('Conversation not found');
+  }
+
+  const conversationText = call.conversations.map(conv => 
+    `User: ${conv.user}\nBot: ${conv.bot}\n---\n`
+  ).join('');
+
+  res.setHeader('Content-Type', 'text/plain');
+  res.setHeader('Content-Disposition', `attachment; filename=conversation_${callSid}.txt`);
+  res.send(conversationText);
 });
 
 // HubSpot contact search endpoint
@@ -134,10 +153,34 @@ app.post('/process-speech', async (req, res) => {
     let botResponse = 'Thank you for your message. Goodbye!';
 
     // Log the conversation
-    app.locals.conversations.push({
+    const conversationEntry = {
+      timestamp: new Date().toISOString(),
       user: speechResult,
       bot: botResponse,
-    });
+    };
+    app.locals.conversations.push(conversationEntry);
+
+    // Write conversation to file
+    const conversationFilePath = 'C:\\Users\\KMoodley\\Desktop\\Truworths\\conversations.txt';
+    
+    // Ensure the directory exists
+    const directory = 'C:\\Users\\KMoodley\\Desktop\\Truworths';
+    if (!fs.existsSync(directory)){
+      fs.mkdirSync(directory, { recursive: true });
+    }
+
+    // Append conversation to file
+    fs.appendFile(conversationFilePath, 
+      `Timestamp: ${conversationEntry.timestamp}\n` +
+      `User: ${conversationEntry.user}\n` +
+      `Bot: ${conversationEntry.bot}\n` +
+      '---\n', 
+      (err) => {
+        if (err) {
+          console.error('Error writing to conversation file:', err);
+        }
+      }
+    );
 
     // Create TwiML response
     const response = new twiml.VoiceResponse();
