@@ -114,8 +114,8 @@ app.post('/voice', (req, res) => {
   const response = new twiml.VoiceResponse();
   response.say('Welcome to Truworths.');
   response.say('Press 1 to log an issue');
-  response.say('Press 2 to review account');
-  response.say('Or you can just speak to let an agent know your issues.');
+  response.say('Press 2 to review account.');
+  response.say('Press 3 to speak freely. Start speaking.');
 
   // Gather both speech and keypad inputs
   response.gather({
@@ -143,7 +143,7 @@ app.post('/voice', (req, res) => {
 
 app.post('/process-input', async (req, res) => {
   try {
-    let userInput = req.body.SpeechResult || req.body.Digits;  // Check for speech or keypad input
+    let userInput = req.body.SpeechResult;  // Check for speech or keypad input
     if (!userInput) {
       throw new Error('No input received');
     }
@@ -217,7 +217,7 @@ app.post('/process-input', async (req, res) => {
 
           if (contact) {
             const { email } = contact.properties;
-            botResponse = `An email will be sent to ${email}.`;
+            botResponse = `Issue will be logged. An email will be sent to ${email}.`;
           } else {
             botResponse = "I couldn't find your account details.";
           }
@@ -230,7 +230,7 @@ app.post('/process-input', async (req, res) => {
       logConversation(userInput, botResponse);
       sendResponse(botResponse);
 
-    } else if (userInput.toLowerCase().includes('option 3') || userInput === '3') {
+    } else if (userInput.toLowerCase().includes('option 2') || userInput === '2') {
       const phone = req.body.From;
 
       if (!phone) {
@@ -291,163 +291,6 @@ app.post('/process-input', async (req, res) => {
   } catch (error) {
     console.error('Error processing input:', error);
     sendResponse('I did not catch that. Could you please repeat?', { retry: true });
-  }
-});
-
-// New route to capture account details
-app.post('/capture-account-details', async (req, res) => {
-  try {
-    const firstName = req.body.SpeechResult;
-    const phone = req.body.From;
-
-    // Log first name conversation
-    const firstNameConversation = {
-      timestamp: new Date().toISOString(),
-      user: firstName,
-      bot: "Thank you. Now, please provide your last name."
-    };
-    app.locals.currentCall.conversations.push(firstNameConversation);
-
-    // Gather last name
-    const response = new twiml.VoiceResponse();
-    response.gather({
-      input: 'speech',
-      action: '/capture-last-name',
-      method: 'POST',
-      voice: 'Polly.Ayanda-Neural',
-      timeout: 5,
-      enhanced: true,
-      hints: 'last name'
-    }, firstNameConversation.bot);
-    
-    res.type('text/xml');
-    res.send(response.toString());
-  } catch (error) {
-    console.error('Error capturing first name:', error);
-    const response = new twiml.VoiceResponse();
-    response.say('Sorry, I did not understand. Please try again.');
-    response.hangup();
-    res.type('text/xml');
-    res.send(response.toString());
-  }
-});
-
-// Route to capture last name and email
-app.post('/capture-last-name', async (req, res) => {
-  try {
-    const lastName = req.body.SpeechResult;
-    const phone = req.body.From;
-
-    // Log last name conversation
-    const lastNameConversation = {
-      timestamp: new Date().toISOString(),
-      user: lastName,
-      bot: "Thank you. Please provide your email address."
-    };
-    app.locals.currentCall.conversations.push(lastNameConversation);
-
-    // Gather email
-    const response = new twiml.VoiceResponse();
-    response.gather({
-      input: 'speech',
-      action: '/create-hubspot-contact',
-      method: 'POST',
-      voice: 'Polly.Ayanda-Neural',
-      timeout: 5,
-      enhanced: true,
-      hints: 'email address'
-    }, lastNameConversation.bot);
-    
-    res.type('text/xml');
-    res.send(response.toString());
-  } catch (error) {
-    console.error('Error capturing last name:', error);
-    const response = new twiml.VoiceResponse();
-    response.say('Sorry, I did not understand. Please try again.');
-    response.hangup();
-    res.type('text/xml');
-    res.send(response.toString());
-  }
-});
-
-// Route to create HubSpot contact
-app.post('/create-hubspot-contact', async (req, res) => {
-  try {
-    const email = req.body.SpeechResult;
-    const phone = req.body.From;
-
-    // Retrieve first name and last name from previous conversations
-    const firstName = app.locals.currentCall.conversations.find(conv => 
-      conv.bot.includes("last name")
-    ).user;
-    const lastName = app.locals.currentCall.conversations.find(conv => 
-      conv.bot.includes("email address")
-    ).user;
-
-    // Log email conversation
-    const emailConversation = {
-      timestamp: new Date().toISOString(),
-      user: email,
-      bot: "Thank you. Creating your account."
-    };
-    app.locals.currentCall.conversations.push(emailConversation);
-
-    // Create contact in HubSpot
-    const url = 'https://api.hubapi.com/crm/v3/objects/contacts';
-    const contactData = {
-      properties: {
-        firstname: firstName,
-        lastname: lastName,
-        email: email,
-        mobilenumber: phone
-      }
-    };
-
-    const response = await axios.post(url, contactData, {
-      headers: {
-        Authorization: `Bearer ${ACCESS_TOKEN}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    // Prepare final response
-    const finalConversation = {
-      timestamp: new Date().toISOString(),
-      user: null,
-      bot: "Your account has been successfully created. Thank you for choosing Truworths."
-    };
-    app.locals.currentCall.conversations.push(finalConversation);
-
-    // Voice response
-    const twimlResponse = new twiml.VoiceResponse();
-    twimlResponse.say(finalConversation.bot);
-    twimlResponse.hangup();
-
-    // Similar to other call end logic
-    if (app.locals.currentCall) {
-      const currentCall = app.locals.currentCall;
-      const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
-      currentCall.duration = callDuration;
-      currentCall.status = 'completed';
-      
-      app.locals.pastCalls.push(currentCall);
-      app.locals.pastConversations.push(...currentCall.conversations);
-
-      app.locals.currentCall = null;
-      app.locals.conversations = [];
-    }
-
-    res.type('text/xml');
-    res.send(twimlResponse.toString());
-  } catch (error) {
-    console.error('Error creating HubSpot contact:', error.response?.data || error.message);
-    
-    const twimlResponse = new twiml.VoiceResponse();
-    twimlResponse.say('Sorry, we could not create your account at this time. Please try again later.');
-    twimlResponse.hangup();
-
-    res.type('text/xml');
-    res.send(twimlResponse.toString());
   }
 });
 
