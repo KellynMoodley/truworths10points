@@ -4,36 +4,48 @@ const { twiml } = require('twilio');
 const path = require('path');
 const axios = require('axios');
 const cors = require('cors');
+const { IamAuthenticator } = require('ibm-watson/auth');
+const SpeechToTextV1 = require('ibm-watson/speech-to-text/v1');
+const twilio = require('twilio');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Configure middleware
 app.use(bodyParser.urlencoded({ extended: false }));
-
 app.use(cors());
 app.use(express.json());
 
 require('dotenv').config();
 
-// Watson Speech to Text credentials
-const watsonSpeechToTextUrl = 'https://api.us-south.speech-to-text.watson.cloud.ibm.com/instances/d0fa1cd2-f3b4-4ff0-9888-196375565a8f';
-const watsonSpeechToTextApiKey = 'ig_BusJMZMAOYfhcRJ-PtAf4PgjzSIMebGjszzJZ9RIj';
+// Watson configuration
+const speechToText = new SpeechToTextV1({
+  authenticator: new IamAuthenticator({
+    apikey: process.env.watson_speech_to_text_api_key,
+  }),
+  serviceUrl: process.env.watson_speech_to_text_url,
+});
+
+// Twilio configuration
+const twilioClient = twilio(
+  process.env.TWILIO_ACCOUNT_SID,
+  process.env.TWILIO_AUTH_TOKEN
+);
 
 const ACCESS_TOKEN = process.env.access_token;
-
 
 // Store calls and conversations in memory
 app.locals.currentCall = null;
 app.locals.pastCalls = [];
 app.locals.conversations = [];
-app.locals.pastConversations = [];  // Store completed conversations
+app.locals.pastConversations = [];
 
-// Serve the index.html file at the root
+// Root endpoint
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// API Route to search contact by phone number
+// HubSpot contact search endpoint
 app.post('/api/search', async (req, res) => {
     const { phone } = req.body;
 
@@ -63,12 +75,10 @@ app.post('/api/search', async (req, res) => {
                Authorization: `Bearer ${ACCESS_TOKEN}`,
                'Content-Type': 'application/json'
             }
-       });
+        });
     
-      console.log(response.data);  // Log the full response to check if the data structure is correct
-
-
-      res.json(response.data.results);
+        console.log(response.data);
+        res.json(response.data.results);
       
     } catch (error) {
         console.error('Error searching contacts:', error.response?.data || error.message);
@@ -82,29 +92,24 @@ app.post('/voice', (req, res) => {
   const caller = req.body.From;
   const startTime = new Date();
 
-  // Log the incoming call
   console.log(`Incoming call from ${caller} with CallSid ${callSid}`);
 
-  // Respond with TwiML
   const response = new twiml.VoiceResponse();
-  response.say('Welcome I am a Truworths agent.');
-  response.say('Press  1 to create an account');
-  response.say('Press 2 to log an issue');
-  response.say('Press 3 to talk to a agent');
+  response.say('Hello, please tell me something.');
 
-  // Gather speech input
+  // Use Gather with enhanced settings
   response.gather({
     input: 'speech',
     action: '/process-speech',
     method: 'POST',
-    voice: 'Polly.Ayanda-Neural',
-    timeout: 5
+    timeout: 5,
+    language: 'en-US',
+    enhanced: true  // Enable enhanced speech recognition
   });
 
   res.type('text/xml');
   res.send(response.toString());
 
-  // Store the new current call with "in-progress" status
   app.locals.currentCall = {
     caller,
     callSid,
@@ -114,53 +119,68 @@ app.post('/voice', (req, res) => {
   };
 });
 
-// Process speech input
-// Process speech input
+// Process speech using Watson
 app.post('/process-speech', async (req, res) => {
-  const speechResult = req.body.SpeechResult;
-  console.log(`Speech input received: ${speechResult}`);
-
-  // Simulate a response based on user input
-  let botResponse = 'Thank you. Goodbye!';
-
-  // Log the conversation
-  app.locals.conversations.push({
-    user: speechResult,
-    bot: botResponse,
-  });
-
-  // Respond with TwiML
-  const response = new twiml.VoiceResponse();
-  response.say(botResponse);f
-  response.hangup();
-
-  // Update call status to "completed" and move to pastCalls
-  if (app.locals.currentCall) {
-    const currentCall = app.locals.currentCall;
-    const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
-    currentCall.duration = callDuration;
-    currentCall.status = 'completed';
-
-    // Store conversation history with the completed call
-    currentCall.conversations = app.locals.conversations;
-
-    // Add to past calls
-    app.locals.pastCalls.push(currentCall);
+  try {
+    const speechResult = req.body.SpeechResult;
     
-    // Clear current call and conversations for the next one
-    app.locals.currentCall = null;
-    app.locals.conversations = [];
-  }
+    if (!speechResult) {
+      throw new Error('No speech input received');
+    }
 
-  res.type('text/xml');
-  res.send(response.toString());
+    console.log(`Speech input received: ${speechResult}`);
+
+    // Generate bot response based on the transcription
+    let botResponse = 'Thank you for your message. Goodbye!';
+
+    // Log the conversation
+    app.locals.conversations.push({
+      user: speechResult,
+      bot: botResponse,
+    });
+
+    // Create TwiML response
+    const response = new twiml.VoiceResponse();
+    response.say(botResponse);
+    response.hangup();
+
+    // Update call status
+    if (app.locals.currentCall) {
+      const currentCall = app.locals.currentCall;
+      const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
+      currentCall.duration = callDuration;
+      currentCall.status = 'completed';
+      currentCall.conversations = app.locals.conversations;
+      app.locals.pastCalls.push(currentCall);
+      app.locals.currentCall = null;
+      app.locals.conversations = [];
+    }
+
+    res.type('text/xml');
+    res.send(response.toString());
+
+  } catch (error) {
+    console.error('Error processing speech:', error);
+    const response = new twiml.VoiceResponse();
+    response.say('I did not catch that. Could you please repeat?');
+    
+    // Gather speech input again
+    response.gather({
+      input: 'speech',
+      action: '/process-speech',
+      method: 'POST',
+      timeout: 5,
+      language: 'en-US',
+      enhanced: true
+    });
+
+    res.type('text/xml');
+    res.send(response.toString());
+  }
 });
 
-
-
-// Endpoint to serve call and conversation data
+// Serve call data
 app.get('/call-data', (req, res) => {
-  // Calculate live duration for an ongoing call
   if (app.locals.currentCall && app.locals.currentCall.status === 'in-progress') {
     app.locals.currentCall.duration = Math.floor(
       (new Date() - app.locals.currentCall.startTime) / 1000
