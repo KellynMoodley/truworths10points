@@ -168,7 +168,7 @@ app.post('/process-speech', async (req, res) => {
       input: 'speech',
       action: '/finalize-response',
       method: 'POST',
-      timeout: 10,
+      timeout: 2,
       language: 'en-US',
     });
 
@@ -182,7 +182,7 @@ app.post('/process-speech', async (req, res) => {
       input: 'speech dtmf',
       action: '/process-speech',
       method: 'POST',
-      timeout: 5,
+      timeout: 2,
       language: 'en-US',
       enhanced: true,
     });
