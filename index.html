@@ -165,13 +165,12 @@
 
           if (data.pastCalls.length > 0) {
             pastCallsList.innerHTML = data.pastCalls.map(call => {
-              const timeString = call.time ? new Date(call.time.replace(' ', 'T')).toLocaleTimeString() : 'Invalid Date';
               const detailsDivId = `details-${call.callSid}`;
               return `
                 <li>
                   <div>
                     <span class="caller" onclick="toggleDetails('${call.callSid}')">
-                      ${call.caller} (${timeString})
+                      ${call.caller}
                     </span>
                     <div id="${detailsDivId}" class="caller-details" style="display: none;">
                       <p>Status: ${call.status}</p>
