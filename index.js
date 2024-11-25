@@ -83,7 +83,7 @@ app.post('/voice', (req, res) => {
 
   // Respond with TwiML
   const response = new twiml.VoiceResponse();
-  response.say('Hello, please tell me something.');
+  response.say('Hello Welcome to Truworths. Select an option 1. Create an account. 2 Log an issue');
 
   // Gather speech input
   response.gather({
