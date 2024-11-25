@@ -91,33 +91,11 @@ app.post('/voice', (req, res) => {
   const callSid = req.body.CallSid;
   const caller = req.body.From;
   const startTime = new Date();
-  const speechResult = req.body.SpeechResult?.toLowerCase();
-  const digitResult = req.body.Digits;
 
   console.log(`Incoming call from ${caller} with CallSid ${callSid}`);
 
   const response = new twiml.VoiceResponse();
-  let selectedOption = '';
-    if (digitResult === '1' || speechResult?.includes('create account')) {
-      selectedOption = 'create account';
-    } else if (digitResult === '2' || speechResult?.includes('log an issue')) {
-      selectedOption = 'log an issue';
-    } else if (digitResult === '3' || speechResult?.includes('open query')) {
-      selectedOption = 'open query';
-    } else {
-      throw new Error('Invalid input');
-    }
-
-    console.log(`User selected: ${selectedOption}`);
-
-    const response = new twiml.VoiceResponse();
-    if (selectedOption === 'create account') {
-      response.say('You selected Create Account. Please provide name.');
-    } else if (selectedOption === 'log an issue') {
-      response.say('You selected Log an Issue. Please describe your issue.');
-    } else if (selectedOption === 'open query') {
-      response.say('You selected Open Query. Please state your query.');
-    }
+  response.say('Hello, please tell me something.');
 
   // Use Gather with enhanced settings
   response.gather({
