@@ -146,30 +146,33 @@ app.post('/process-speech', async (req, res) => {
     if (!speechResult) {
       throw new Error('No speech input received');
       response.hangup();
-    }
-
-    console.log(`Speech input received: ${speechResult}`);
-
-    let botResponse = 'Thank you for your message. Goodbye!';
-
-    if (speechResult.toLowerCase().includes('option 1') || 
-    speechResult.toLowerCase().includes('option one')) {
-  const response = new twiml.VoiceResponse();
-  response.say('Please provide your first name and last name.');
-  
-  response.gather({
-    input: 'speech',
-    action: '/process-create-account',
-    method: 'POST',
-    voice: 'Polly.Ayanda-Neural',
-    timeout: 5,
-    enhanced: true
-  });
+      const conversationEntry = {
+      timestamp: new Date().toISOString(),
+      user: speechResult,
+      bot: botResponse,
+    };
+    app.locals.conversations.push(conversationEntry);
 
   res.type('text/xml');
   res.send(response.toString());
-  return;
-}
+    }
+
+    if (speechResult.toLowerCase().includes('option 1') || 
+        speechResult.toLowerCase().includes('option one')) {
+      const response = new twiml.VoiceResponse();
+      response.say('Please say your first name.');
+      response.gather({
+        input: 'speech',
+        action: '/process-create-account',
+        method: 'POST',
+        voice: 'Polly.Ayanda-Neural',
+        timeout: 5,
+        enhanced: true,
+      });
+      res.type('text/xml');
+      res.send(response.toString());
+      return;
+    }
 
 
     if (speechResult.toLowerCase().includes('option 3') || 
@@ -262,37 +265,123 @@ app.post('/process-speech', async (req, res) => {
   }
 });
 
+// Process Option 1: Create an account
 app.post('/process-create-account', (req, res) => {
-  const speechResult = req.body.SpeechResult;
+  const callSid = req.body.CallSid;
+  const speechResult = req.body.SpeechResult?.trim();
+  const currentStep = app.locals.currentCall?.currentStep || 'askFirstname';
+  let botResponse;
 
   if (!speechResult) {
-    const response = new twiml.VoiceResponse();
-    response.say('I did not catch your name. Please try again.');
-    response.hangup();
+    botResponse = 'I did not catch that. Could you please repeat?';
+    saveConversation(callSid, speechResult, botResponse);
 
+    const response = new twiml.VoiceResponse();
+    response.say(botResponse);
+    response.gather({
+      input: 'speech',
+      action: '/process-create-account',
+      method: 'POST',
+      voice: 'Polly.Ayanda-Neural',
+      timeout: 5,
+    });
     res.type('text/xml');
     res.send(response.toString());
     return;
   }
 
-  console.log(`Received name and surname: ${speechResult}`);
+  switch (currentStep) {
+    case 'askFirstname':
+      botResponse = `Thank you. Please say your last name.`;
+      app.locals.currentCall = {
+        ...app.locals.currentCall,
+        firstname: speechResult,
+        currentStep: 'askLastname',
+      };
+      break;
 
-  
+    case 'askLastname':
+      botResponse = `Thank you. Now, please say your email address.`;
+      app.locals.currentCall = {
+        ...app.locals.currentCall,
+        lastname: speechResult,
+        currentStep: 'askEmail',
+      };
+      break;
 
+    case 'askEmail':
+      botResponse = `Thank you for providing your details. Your account creation process is complete.`;
+      app.locals.currentCall = {
+        ...app.locals.currentCall,
+        email: speechResult,
+        currentStep: 'completed',
+      };
+
+      // Save completed data to past conversations
+      app.locals.pastConversations.push({
+        firstname: app.locals.currentCall.firstname,
+        lastname: app.locals.currentCall.lastname,
+        email: app.locals.currentCall.email,
+        timestamp: new Date().toISOString(),
+      });
+      break;
+
+    default:
+      botResponse = 'I did not understand. Could you repeat that?';
+      break;
+  }
+
+  // Save conversation step
+  saveConversation(callSid, speechResult, botResponse);
+
+  // Generate Twilio VoiceResponse
   const response = new twiml.VoiceResponse();
-  response.say(`Thank you, ${speechResult} . Your account has been created successfully.`);
-  response.hangup();
+  response.say(botResponse);
 
-  const conversationEntry = {
-      timestamp: new Date().toISOString(),
-      user: speechResult,
-      bot: botResponse,
-    };
-    app.locals.conversations.push(conversationEntry);
+  if (app.locals.currentCall.currentStep !== 'completed') {
+    response.gather({
+      input: 'speech',
+      action: '/process-create-account',
+      method: 'POST',
+      voice: 'Polly.Ayanda-Neural',
+      timeout: 5,
+    });
+  } else {
+    response.hangup();
+  }
 
   res.type('text/xml');
   res.send(response.toString());
 });
+
+// Helper function to save conversation
+function saveConversation(callSid, userResponse, botResponse) {
+  const conversationEntry = {
+    timestamp: new Date().toISOString(),
+    user: userResponse,
+    bot: botResponse,
+  };
+
+  if (!app.locals.currentCall) return;
+
+  // Save current call conversation
+  if (!app.locals.currentCall.conversations) {
+    app.locals.currentCall.conversations = [];
+  }
+  app.locals.currentCall.conversations.push(conversationEntry);
+
+  // Save to past calls for tracking
+  const existingCall = app.locals.pastCalls.find((c) => c.callSid === callSid);
+  if (existingCall) {
+    existingCall.conversations.push(conversationEntry);
+  } else {
+    app.locals.pastCalls.push({
+      callSid,
+      conversations: [conversationEntry],
+    });
+  }
+}
+
 
 
 // Serve call data
