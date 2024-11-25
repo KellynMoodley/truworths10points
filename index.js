@@ -4,7 +4,8 @@ const { twiml } = require('twilio');
 const path = require('path');
 const axios = require('axios');
 const cors = require('cors');
-const request = require('request');
+const { IamAuthenticator } = require('ibm-watson/auth');
+const SpeechToTextV1 = require('ibm-watson/speech-to-text/v1');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -15,22 +16,26 @@ app.use(express.json());
 
 require('dotenv').config();
 
-const watsonSpeechToTextUrl = process.env.watson_speech_to_text_url;
-const watsonSpeechToTextApiKey = process.env.watson_speech_to_text_api_key;
+// Watson configuration
+const speechToText = new SpeechToTextV1({
+  authenticator: new IamAuthenticator({
+    apikey: process.env.watson_speech_to_text_api_key,
+  }),
+  serviceUrl: process.env.watson_speech_to_text_url,
+});
+
 const ACCESS_TOKEN = process.env.access_token;
 
 // Store calls and conversations in memory
 app.locals.currentCall = null;
 app.locals.pastCalls = [];
 app.locals.conversations = [];
-app.locals.pastConversations = [];  // Store completed conversations
+app.locals.pastConversations = [];
 
-// Serve the index.html file at the root
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// API Route to search contact by phone number
 app.post('/api/search', async (req, res) => {
     const { phone } = req.body;
 
@@ -60,10 +65,10 @@ app.post('/api/search', async (req, res) => {
                Authorization: `Bearer ${ACCESS_TOKEN}`,
                'Content-Type': 'application/json'
             }
-       });
+        });
     
-      console.log(response.data);  // Log the full response to check if the data structure is correct
-      res.json(response.data.results);
+        console.log(response.data);
+        res.json(response.data.results);
       
     } catch (error) {
         console.error('Error searching contacts:', error.response?.data || error.message);
@@ -77,25 +82,23 @@ app.post('/voice', (req, res) => {
   const caller = req.body.From;
   const startTime = new Date();
 
-  // Log the incoming call
   console.log(`Incoming call from ${caller} with CallSid ${callSid}`);
 
-  // Respond with TwiML
   const response = new twiml.VoiceResponse();
   response.say('Hello, please tell me something.');
 
-  // Gather speech input
-  response.gather({
-    input: 'speech',
+  // Use Twilio's Record verb instead of Gather for Watson integration
+  response.record({
     action: '/process-speech',
     method: 'POST',
-    timeout: 5,
+    maxLength: 10,
+    transcribe: false, // Disable Twilio transcription since we'll use Watson
+    playBeep: true
   });
 
   res.type('text/xml');
   res.send(response.toString());
 
-  // Store the new current call with "in-progress" status
   app.locals.currentCall = {
     caller,
     callSid,
@@ -105,42 +108,40 @@ app.post('/voice', (req, res) => {
   };
 });
 
-// Process speech input
+// Process speech using Watson
 app.post('/process-speech', async (req, res) => {
-  const speechResult = req.body.SpeechResult;
-  console.log(`Speech input received: ${speechResult}`);
-
-  // Send speech result to Watson Speech to Text for transcription and processing
   try {
-    const watsonResponse = await new Promise((resolve, reject) => {
-      request.post(
-        {
-          url: watsonSpeechToTextUrl,
-          auth: { user: 'apikey', pass: watsonSpeechToTextApiKey },
-          json: true,
-          body: {
-            audio: speechResult,
-            content_type: 'audio/wav', // You may need to change this depending on the format
-          },
-        },
-        (error, response, body) => {
-          if (error) {
-            reject(error);
-          }
-          resolve(body);
-        }
-      );
+    const recordingUrl = req.body.RecordingUrl;
+    
+    // Download the recording from Twilio
+    const audioResponse = await axios({
+      method: 'get',
+      url: recordingUrl,
+      responseType: 'stream'
     });
 
-    // Assuming the Watson API response contains the transcription
-    const transcribedText = watsonResponse.transcription || 'Unable to process speech';
+    // Configure Watson recognition parameters
+    const params = {
+      audio: audioResponse.data,
+      contentType: 'audio/wav',
+      model: 'en-US_NarrowbandModel', // Appropriate for phone calls
+      wordAlternativesThreshold: 0.9,
+      keywords: ['help', 'support', 'problem'], // Add relevant keywords
+      keywordsThreshold: 0.5
+    };
 
-    // Simulate a response based on transcribed input
-    let botResponse = `You said: ${transcribedText}. Thank you. Goodbye!`;
+    // Perform speech recognition
+    const watsonResponse = await speechToText.recognize(params);
+    const transcription = watsonResponse.result.results?.[0]?.alternatives?.[0]?.transcript || '';
+    
+    console.log(`Watson transcription: ${transcription}`);
+
+    // Generate bot response (you can enhance this based on the transcription)
+    let botResponse = 'Thank you. Goodbye!';
 
     // Log the conversation
     app.locals.conversations.push({
-      user: transcribedText,
+      user: transcription,
       bot: botResponse,
     });
 
@@ -149,35 +150,32 @@ app.post('/process-speech', async (req, res) => {
     response.say(botResponse);
     response.hangup();
 
-    // Update call status to "completed" and move to pastCalls
+    // Update call status
     if (app.locals.currentCall) {
       const currentCall = app.locals.currentCall;
       const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
       currentCall.duration = callDuration;
       currentCall.status = 'completed';
-
-      // Store conversation history with the completed call
       currentCall.conversations = app.locals.conversations;
-
-      // Add to past calls
       app.locals.pastCalls.push(currentCall);
-
-      // Clear current call and conversations for the next one
       app.locals.currentCall = null;
       app.locals.conversations = [];
     }
 
     res.type('text/xml');
     res.send(response.toString());
+
   } catch (error) {
-    console.error('Error processing speech with Watson:', error);
-    res.status(500).send('Failed to process speech input.');
+    console.error('Error processing speech:', error);
+    const response = new twiml.VoiceResponse();
+    response.say('Sorry, there was an error processing your message. Goodbye.');
+    response.hangup();
+    res.type('text/xml');
+    res.send(response.toString());
   }
 });
 
-// Endpoint to serve call and conversation data
 app.get('/call-data', (req, res) => {
-  // Calculate live duration for an ongoing call
   if (app.locals.currentCall && app.locals.currentCall.status === 'in-progress') {
     app.locals.currentCall.duration = Math.floor(
       (new Date() - app.locals.currentCall.startTime) / 1000
