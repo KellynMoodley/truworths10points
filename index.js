@@ -140,7 +140,7 @@ app.post('/voice', (req, res) => {
         app.locals.currentCall = null;
         app.locals.conversations = [];
       }
-    }, 8000), // 8 seconds
+    }, 20000), // 8 seconds
   };
 });
 
