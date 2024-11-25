@@ -19,6 +19,7 @@ const watsonSpeechToTextApiKey = 'ig_BusJMZMAOYfhcRJ-PtAf4PgjzSIMebGjszzJZ9RIj';
 
 const ACCESS_TOKEN = 'pat-na1-bc9ea2a9-e8e6-42a1-99ed-43276eadb3ac';
 
+
 // Store calls and conversations in memory
 app.locals.currentCall = null;
 app.locals.pastCalls = [];
@@ -52,7 +53,7 @@ app.post('/api/search', async (req, res) => {
                     ]
                 }
             ],
-            properties: ['firstname', 'lastname','email','mobilenumber', 'customerid', 'accountnumbers','highvalue', 'delinquencystatus','segmentation','outstandingbalance','missedpayment']
+            properties: ['firstname', 'lastname','email','mobilenumber', 'customerid', 'accountnumbers','highvalue', 'delinquencystatus','segmentation','outstandingbalance','missedpayment' ]
         };
 
         const response = await axios.post(url, query, {
@@ -84,9 +85,7 @@ app.post('/voice', (req, res) => {
 
   // Respond with TwiML
   const response = new twiml.VoiceResponse();
-  response.say('Welcome to Truworths account.');
-  response.say('Press 1 to create an account);
-  response.say('Press 2 to log an issue);
+  response.say('Hello, please tell me something.');
 
   // Gather speech input
   response.gather({
@@ -110,6 +109,7 @@ app.post('/voice', (req, res) => {
   };
 });
 
+// Process speech input
 // Process speech input
 app.post('/process-speech', async (req, res) => {
   const speechResult = req.body.SpeechResult;
