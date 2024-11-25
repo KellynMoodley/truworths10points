@@ -184,8 +184,11 @@ app.post('/process-email', (req, res) => {
   const email = req.body.SpeechResult;
   console.log(`Email received: ${email}`);
 
+  // Save the collected details (assuming you'd use some database or logic here)
+  console.log('Collected user details for account creation.');
+
   const response = new twiml.VoiceResponse();
-  response.say('Thank you for providing your details. Your account creation process is complete.');
+  response.say('Thank you. Your account creation request has been received. Goodbye!');
   response.hangup();
 
   res.type('text/xml');
@@ -205,19 +208,21 @@ app.post('/process-issue', (req, res) => {
   res.send(response.toString());
 });
 
-// Handle call status updates
+// Handle call status update
 app.post('/call-status', (req, res) => {
-  const callSid = req.body.CallSid;
-  const callStatus = req.body.CallStatus;
+  const { CallSid, CallStatus, Duration } = req.body;
+  console.log(`Call update for CallSid ${CallSid}: Status = ${CallStatus}, Duration = ${Duration}`);
 
-  console.log(`Call status updated for ${callSid}: ${callStatus}`);
+  const currentCall = app.locals.currentCall;
 
-  if (callStatus === 'completed' && app.locals.currentCall?.callSid === callSid) {
-    const completedCall = { ...app.locals.currentCall, status: 'completed' };
-    app.locals.pastCalls.push(completedCall);
-    app.locals.currentCall = null;
-    app.locals.pastConversations.push(app.locals.conversations);
-    app.locals.conversations = [];
+  if (currentCall && currentCall.callSid === CallSid) {
+    currentCall.status = CallStatus;
+    currentCall.duration = Duration || currentCall.duration;
+
+    if (CallStatus === 'completed') {
+      app.locals.pastCalls.push(currentCall);
+      app.locals.currentCall = null; // Reset current call
+    }
   }
 
   res.sendStatus(200);
@@ -225,11 +230,11 @@ app.post('/call-status', (req, res) => {
 
 // Endpoint to serve call and conversation data
 app.get('/call-data', (req, res) => {
-  if (app.locals.currentCall && app.locals.currentCall.status === 'in-progress') {
-    app.locals.currentCall.duration = Math.floor(
-      (new Date() - app.locals.currentCall.startTime) / 1000
-    );
-  }
+  res.json({
+    currentCall: app.locals.currentCall,
+    pastCalls: app.locals.pastCalls,
+  });
+});
 
   res.json({
     currentCall: app.locals.currentCall,
