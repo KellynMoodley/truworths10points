@@ -358,7 +358,7 @@ app.post('/process-issue', async (req, res) => {
 
     response.gather({
       input: 'speech',
-      action: '/process-speech',
+      action: '/process-issue',
       method: 'POST',
       voice: 'Polly.Ayanda-Neural',
       timeout: 5,
