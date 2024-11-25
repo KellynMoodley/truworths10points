@@ -102,8 +102,8 @@ app.post('/voice', (req, res) => {
     input: 'speech',
     action: '/process-speech',
     method: 'POST',
+    voice: 'Polly.Ayanda-Neural',
     timeout: 5,
-    language: 'en-US',
     enhanced: true  // Enable enhanced speech recognition
   });
 
@@ -169,8 +169,8 @@ app.post('/process-speech', async (req, res) => {
       input: 'speech',
       action: '/process-speech',
       method: 'POST',
+      voice: 'Polly.Ayanda-Neural',
       timeout: 5,
-      language: 'en-US',
       enhanced: true
     });
 
