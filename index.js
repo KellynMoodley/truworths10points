@@ -152,7 +152,7 @@ app.post('/process-speech', async (req, res) => {
 
     let botResponse = 'Thank you for your message. Goodbye!';
 
-    if (speechResult.toLowerCase().includes('one')) {
+    if (speechResult.toLowerCase().includes('option one')) {
   const response = new twiml.VoiceResponse();
   response.say('Please provide your first name and last name.');
   
