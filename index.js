@@ -326,10 +326,15 @@ app.post('/process-issue', async (req, res) => {
       }
     }
 
+    // Store conversation entry after the bot response
+    storeConversation(speechResult, botResponse);
+
+    // Respond to the user with the final bot response
     const response = new twiml.VoiceResponse();
     response.say(botResponse);
     response.hangup();
 
+    // Update call data
     if (app.locals.currentCall) {
       const currentCall = app.locals.currentCall;
       const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
@@ -351,7 +356,7 @@ app.post('/process-issue', async (req, res) => {
 
     response.gather({
       input: 'speech',
-      action: '/process-issue',
+      action: '/process-speech',
       method: 'POST',
       voice: 'Polly.Ayanda-Neural',
       timeout: 5,
