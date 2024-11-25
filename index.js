@@ -64,6 +64,47 @@ app.get('/download-conversation/:callSid', (req, res) => {
   res.send(conversationText);
 });
 
+// HubSpot contact search endpoint
+app.post('/api/search', async (req, res) => {
+    const { phone } = req.body;
+
+    if (!phone) {
+        return res.status(400).json({ error: 'Phone number is required.' });
+    }
+
+    try {
+        const url = 'https://api.hubapi.com/crm/v3/objects/contacts/search';
+        const query = {
+            filterGroups: [
+                {
+                    filters: [
+                        {
+                            propertyName: "mobilenumber",
+                            operator: "EQ",
+                            value: phone
+                        }
+                    ]
+                }
+            ],
+            properties: ['firstname', 'lastname','email','mobilenumber', 'customerid', 'accountnumbers','highvalue', 'delinquencystatus','segmentation','outstandingbalance','missedpayment' ]
+        };
+
+        const response = await axios.post(url, query, {
+            headers: {
+               Authorization: `Bearer ${ACCESS_TOKEN}`,
+               'Content-Type': 'application/json'
+            }
+        });
+    
+        console.log(response.data);
+        res.json(response.data.results);
+      
+    } catch (error) {
+        console.error('Error searching contacts:', error.response?.data || error.message);
+        res.status(500).json({ error: 'Failed to search contacts. Please try again later.' });
+    }
+});
+
 // Handle incoming calls
 app.post('/voice', (req, res) => {
   const callSid = req.body.CallSid;
@@ -74,18 +115,18 @@ app.post('/voice', (req, res) => {
 
   const response = new twiml.VoiceResponse();
   response.say('Welcome to Truworths');
-  response.say('Press 1 or say "create account" to create an account');
-  response.say('Press 2 or say "log issue" to log an issue');
-  response.say('Press 3 or say "review account" to review your account');
+  response.say('Press 1 to create an account');
+  response.say('Press 2 to log an issue');
+  response.say('Press 3 to review account');
 
+  // Use Gather with enhanced settings
   response.gather({
-    input: 'dtmf speech',
+    input: 'speech',
     action: '/process-speech',
     method: 'POST',
-    numDigits: 1,
+    voice: 'Polly.Ayanda-Neural',
     timeout: 5,
-    hints: 'create account, log issue, review account',
-    enhanced: true,
+    enhanced: true  // Enable enhanced speech recognition
   });
 
   res.type('text/xml');
@@ -100,137 +141,104 @@ app.post('/voice', (req, res) => {
   };
 });
 
-// Process speech or keypad input
+// Process speech using Watson
 app.post('/process-speech', async (req, res) => {
   try {
-    const speechResult = req.body.SpeechResult || '';
-    const dtmfResult = req.body.Digits || '';
-    const userInput = dtmfResult || speechResult.toLowerCase();
-
-    console.log(`User input received: ${userInput}`);
-
-    let botResponse = '';
-    const response = new twiml.VoiceResponse();
-
-    if (userInput.includes('1') || userInput.includes('create account')) {
-      botResponse = 'Please provide your name and surname after the beep.';
-      response.say(botResponse);
-      response.record({
-        action: '/handle-name-surname',
-        method: 'POST',
-        maxLength: 10,
-        playBeep: true,
-      });
-    } else if (userInput.includes('2') || userInput.includes('log issue')) {
-      botResponse = 'Please describe your issue after the beep.';
-      response.say(botResponse);
-      response.record({
-        action: '/handle-log-issue',
-        method: 'POST',
-        maxLength: 60,
-        playBeep: true,
-      });
-    } else if (userInput.includes('3') || userInput.includes('review account')) {
-      botResponse = 'Your account details will be reviewed shortly.';
-      response.say(botResponse);
-      response.hangup();
-    } else {
-      botResponse = 'I did not catch that. Please try again.';
-      response.say(botResponse);
-      response.gather({
-        input: 'dtmf speech',
-        action: '/process-speech',
-        method: 'POST',
-        numDigits: 1,
-        timeout: 5,
-        hints: 'create account, log issue, review account',
-        enhanced: true,
-      });
+    const speechResult = req.body.SpeechResult;
+    
+    if (!speechResult) {
+      throw new Error('No speech input received');
     }
+
+    console.log(`Speech input received: ${speechResult}`);
+
+    // Generate bot response based on the transcription
+    let botResponse = 'Thank you for your message. Goodbye!';
 
     // Log the conversation
     const conversationEntry = {
       timestamp: new Date().toISOString(),
-      user: userInput,
+      user: speechResult,
       bot: botResponse,
     };
     app.locals.conversations.push(conversationEntry);
 
-    res.type('text/xml');
-    res.send(response.toString());
-  } catch (error) {
-    console.error('Error processing input:', error);
+    // Write conversation to file
+    const conversationFilePath = 'C:\\Users\\KMoodley\\Desktop\\Truworths\\conversations.txt';
+    
+    // Ensure the directory exists
+    const directory = 'C:\\Users\\KMoodley\\Desktop\\Truworths';
+    if (!fs.existsSync(directory)){
+      fs.mkdirSync(directory, { recursive: true });
+    }
+
+    // Append conversation to file
+    fs.appendFile(conversationFilePath, 
+      `Timestamp: ${conversationEntry.timestamp}\n` +
+      `User: ${conversationEntry.user}\n` +
+      `Bot: ${conversationEntry.bot}\n` +
+      '---\n', 
+      (err) => {
+        if (err) {
+          console.error('Error writing to conversation file:', err);
+        }
+      }
+    );
+
+    // Create TwiML response
     const response = new twiml.VoiceResponse();
-    response.say('An error occurred. Please try again later.');
+    response.say(botResponse);
+    response.hangup();
+
+    // Update call status
+    if (app.locals.currentCall) {
+      const currentCall = app.locals.currentCall;
+      const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
+      currentCall.duration = callDuration;
+      currentCall.status = 'completed';
+      currentCall.conversations = app.locals.conversations;
+      app.locals.pastCalls.push(currentCall);
+      app.locals.currentCall = null;
+      app.locals.conversations = [];
+    }
+
+    res.type('text/xml');
+    res.send(response.toString());
+
+  } catch (error) {
+    console.error('Error processing speech:', error);
+    const response = new twiml.VoiceResponse();
+    response.say('I did not catch that. Could you please repeat?');
+    
+    // Gather speech input again
+    response.gather({
+      input: 'speech',
+      action: '/process-speech',
+      method: 'POST',
+      voice: 'Polly.Ayanda-Neural',
+      timeout: 5,
+      enhanced: true
+    });
+
     res.type('text/xml');
     res.send(response.toString());
   }
 });
 
-// Handle recorded name and surname
-app.post('/handle-name-surname', (req, res) => {
-  const recordingUrl = req.body.RecordingUrl;
-
-  console.log('Recorded name and surname:', recordingUrl);
-
-  const botResponse = 'Thank you for providing your details. Goodbye!';
-  const response = new twiml.VoiceResponse();
-  response.say(botResponse);
-  response.hangup();
-
-  const conversationEntry = {
-    timestamp: new Date().toISOString(),
-    user: 'Name and surname provided (recorded)',
-    bot: botResponse,
-    recording: recordingUrl,
-  };
-  app.locals.conversations.push(conversationEntry);
-
-  res.type('text/xml');
-  res.send(response.toString());
-
-  if (app.locals.currentCall) {
-    const currentCall = app.locals.currentCall;
-    currentCall.duration = Math.floor((new Date() - currentCall.startTime) / 1000);
-    currentCall.status = 'completed';
-    currentCall.conversations = app.locals.conversations;
-    app.locals.pastCalls.push(currentCall);
-    app.locals.currentCall = null;
-    app.locals.conversations = [];
+// Serve call data
+app.get('/call-data', (req, res) => {
+  if (app.locals.currentCall && app.locals.currentCall.status === 'in-progress') {
+    app.locals.currentCall.duration = Math.floor(
+      (new Date() - app.locals.currentCall.startTime) / 1000
+    );
   }
-});
 
-// Handle log issue recording
-app.post('/handle-log-issue', (req, res) => {
-  const recordingUrl = req.body.RecordingUrl;
-
-  console.log('Recorded issue:', recordingUrl);
-
-  const botResponse = 'Thank you for describing your issue. Goodbye!';
-  const response = new twiml.VoiceResponse();
-  response.say(botResponse);
-  response.hangup();
-
-  const conversationEntry = {
-    timestamp: new Date().toISOString(),
-    user: 'Issue description provided (recorded)',
-    bot: botResponse,
-    recording: recordingUrl,
-  };
-  app.locals.conversations.push(conversationEntry);
-
-  res.type('text/xml');
-  res.send(response.toString());
-
-  if (app.locals.currentCall) {
-    const currentCall = app.locals.currentCall;
-    currentCall.duration = Math.floor((new Date() - currentCall.startTime) / 1000);
-    currentCall.status = 'completed';
-    currentCall.conversations = app.locals.conversations;
-    app.locals.pastCalls.push(currentCall);
-    app.locals.currentCall = null;
-    app.locals.conversations = [];
-  }
+  res.json({
+    currentCall: app.locals.currentCall,
+    pastCalls: app.locals.pastCalls,
+    conversations: app.locals.conversations,
+    pastConversations: app.locals.pastConversations,
+  });
 });
 
 app.listen(port, () => {
