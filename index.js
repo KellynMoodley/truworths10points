@@ -270,21 +270,39 @@ app.post('/process-speech', async (req, res) => {
 
 app.post('/process-issue', async (req, res) => {
   try {
+    // Capture the speech input from the user
     const speechResult = req.body.SpeechResult;
 
-    if (!speechResult) {
-      return res.status(400).send('No speech input received');
+    // If no speech result is received, handle it
+    if (!speechResult || speechResult.trim() === '') {
+      const response = new twiml.VoiceResponse();
+      response.say('I didn’t hear anything. Can you please tell me what the issue is?');
+
+      // Gather speech again if no valid input is provided
+      response.gather({
+        input: 'speech',
+        action: '/process-issue',
+        method: 'POST',
+        voice: 'Polly.Ayanda-Neural',
+        timeout: 10,  // Increased timeout to allow more time for user to respond
+        enhanced: true
+      });
+
+      res.type('text/xml');
+      return res.send(response.toString());
     }
 
-    console.log(`Speech input received: ${speechResult}`);
+    console.log(`Issue input received: ${speechResult}`);
 
     let botResponse = 'Your issue has been logged successfully. Thank you!';
     const phone = req.body.From;
 
+    // Ensure that phone number is retrieved for further processing
     if (!phone) {
       botResponse = "I couldn't retrieve your phone number. Please provide it.";
     } else {
       try {
+        // Query HubSpot for user details using the phone number
         const url = 'https://api.hubapi.com/crm/v3/objects/contacts/search';
         const query = {
           filterGroups: [
@@ -310,10 +328,12 @@ app.post('/process-issue', async (req, res) => {
 
         const contact = apiResponse.data.results[0];
 
+        // If the contact is found, retrieve their email and log the issue
         if (contact) {
           const { email } = contact.properties;
           botResponse = `An issue has been logged for the email ${email}.`;
 
+          // Store the past conversation entry with user phone, email, and conversation
           app.locals.pastConversations.push({
             phone: phone,
             email: email,
@@ -336,7 +356,7 @@ app.post('/process-issue', async (req, res) => {
     response.say(botResponse);
     response.hangup();
 
-    // Update call data
+    // Update the call data if it's available
     if (app.locals.currentCall) {
       const currentCall = app.locals.currentCall;
       const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
@@ -353,16 +373,18 @@ app.post('/process-issue', async (req, res) => {
   } catch (error) {
     console.error('Error processing speech:', error);
 
+    // Handle errors by prompting the user to repeat their input
     const response = new twiml.VoiceResponse();
     response.say('I did not catch that. Could you please repeat?');
 
+    // Gather speech again to try and capture input from the user
     response.gather({
       input: 'speech',
       action: '/process-issue',
       method: 'POST',
       voice: 'Polly.Ayanda-Neural',
-      timeout: 5,
-      enhanced: true,
+      timeout: 10,  // Increased timeout to give more time for user input
+      enhanced: true
     });
 
     res.type('text/xml');
