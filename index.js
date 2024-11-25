@@ -7,6 +7,10 @@ const cors = require('cors');
 const { IamAuthenticator } = require('ibm-watson/auth');
 const SpeechToTextV1 = require('ibm-watson/speech-to-text/v1');
 const twilio = require('twilio');
+const multer = require('multer');
+const ffmpeg = require('fluent-ffmpeg');
+const fs = require('fs');
+const stream = require('stream');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -33,6 +37,10 @@ const twilioClient = twilio(
 );
 
 const ACCESS_TOKEN = process.env.access_token;
+
+// Configure multer for handling audio files
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
 // Store calls and conversations in memory
 app.locals.currentCall = null;
@@ -97,14 +105,15 @@ app.post('/voice', (req, res) => {
   const response = new twiml.VoiceResponse();
   response.say('Hello, please tell me something.');
 
-  // Use Gather with enhanced settings
-  response.gather({
-    input: 'speech',
+  // Record the audio for Watson processing
+  response.record({
     action: '/process-speech',
     method: 'POST',
-    timeout: 5,
-    language: 'en-US',
-    enhanced: true  // Enable enhanced speech recognition
+    maxLength: 10,
+    playBeep: true,
+    trim: 'trim-silence',
+    recordingStatusCallback: '/recording-status',
+    recordingStatusCallbackMethod: 'POST'
   });
 
   res.type('text/xml');
@@ -119,23 +128,61 @@ app.post('/voice', (req, res) => {
   };
 });
 
+// Handle recording status updates
+app.post('/recording-status', (req, res) => {
+  console.log('Recording status:', req.body);
+  res.sendStatus(200);
+});
+
 // Process speech using Watson
 app.post('/process-speech', async (req, res) => {
   try {
-    const speechResult = req.body.SpeechResult;
-    
-    if (!speechResult) {
-      throw new Error('No speech input received');
+    const recordingUrl = req.body.RecordingUrl;
+    if (!recordingUrl) {
+      throw new Error('No recording URL received');
     }
 
-    console.log(`Speech input received: ${speechResult}`);
+    console.log('Recording URL:', recordingUrl);
+
+    // Download the audio file from Twilio
+    const audioResponse = await axios({
+      method: 'get',
+      url: recordingUrl,
+      responseType: 'arraybuffer',
+      auth: {
+        username: process.env.TWILIO_ACCOUNT_SID,
+        password: process.env.TWILIO_AUTH_TOKEN
+      }
+    });
+
+    // Create a readable stream from the audio buffer
+    const audioStream = new stream.PassThrough();
+    audioStream.end(audioResponse.data);
+
+    // Configure Watson recognition parameters
+    const recognizeParams = {
+      audio: audioStream,
+      contentType: 'audio/wav',
+      model: 'en-US_NarrowbandModel',
+      wordAlternativesThreshold: 0.9,
+      smartFormatting: true,
+      speakerLabels: true
+    };
+
+    // Perform speech recognition
+    const watsonResponse = await speechToText.recognize(recognizeParams);
+    const transcription = watsonResponse.result.results
+      ?.map(result => result.alternatives[0]?.transcript || '')
+      .join(' ') || '';
+
+    console.log('Watson transcription:', transcription);
 
     // Generate bot response based on the transcription
     let botResponse = 'Thank you for your message. Goodbye!';
 
     // Log the conversation
     app.locals.conversations.push({
-      user: speechResult,
+      user: transcription,
       bot: botResponse,
     });
 
@@ -164,14 +211,13 @@ app.post('/process-speech', async (req, res) => {
     const response = new twiml.VoiceResponse();
     response.say('I did not catch that. Could you please repeat?');
     
-    // Gather speech input again
-    response.gather({
-      input: 'speech',
+    // Record again
+    response.record({
       action: '/process-speech',
       method: 'POST',
-      timeout: 5,
-      language: 'en-US',
-      enhanced: true
+      maxLength: 10,
+      playBeep: true,
+      trim: 'trim-silence'
     });
 
     res.type('text/xml');
