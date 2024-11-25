@@ -60,7 +60,7 @@ app.get('/download-conversation/:callSid', (req, res) => {
   ).join('');
 
   res.setHeader('Content-Type', 'text/plain');
-  res.setHeader('Content-Disposition', `attachment; filename=conversation_${callSid}.txt`);
+  res.setHeader('Content-Disposition', `attachment; filename=conversation_${caller}.txt`);
   res.send(conversationText);
 });
 
@@ -114,7 +114,10 @@ app.post('/voice', (req, res) => {
   console.log(`Incoming call from ${caller} with CallSid ${callSid}`);
 
   const response = new twiml.VoiceResponse();
-  response.say('Hello, please tell me something.');
+  response.say('Welcome to Truworths');
+  response.say('Press 1 to create an account');
+  response.say('Press 2 to log an issue');
+  response.say('Press 3 to report an issue and an agent will phone you back');
 
   // Use Gather with enhanced settings
   response.gather({
