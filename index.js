@@ -114,9 +114,8 @@ app.post('/voice', (req, res) => {
 
   const response = new twiml.VoiceResponse();
   response.say('Welcome to Truworths.');
-  response.say('How can I assist? Start speaking.');
-  response.say('Or say REVIEW ACCOUNT to know your payment details');
-  response.say('Or say create ticket');
+  response.say('Say REVIEW account to receive your profile.');
+  response.say('or start speaking and an agent will review your case.');
 
   response.gather({
     input: 'speech',
