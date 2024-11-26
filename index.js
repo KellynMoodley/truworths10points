@@ -55,9 +55,11 @@ app.get('/download-conversation/:callSid', (req, res) => {
     return res.status(404).send('Conversation not found');
   }
 
-  const conversationText = call.conversations.map(conv => 
-    User: ${conv.user}\nBot: ${conv.bot}\n---\n
-  ).join('');
+  const conversationText = call.conversations.map(conv => `
+     Truworths customer: ${conv.user}
+     Truworths agent: ${conv.bot} 
+  `).join('');
+
 
   res.setHeader('Content-Type', 'text/plain');
   res.setHeader('Content-Disposition', attachment; filename=conversation_${callSid}.txt);
