@@ -1,3 +1,4 @@
+Index.html:
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -18,7 +19,7 @@
       margin: 20px;
     }
 
-    #profile-container, #current-call, #kpi-container {
+    #profile-container {
       flex: 1;
       min-width: 300px;
       background: #ffffff;
@@ -26,6 +27,15 @@
       border-radius: 8px;
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
       margin-right: 20px;
+    }
+
+    #current-call {
+      flex: 2;
+      min-width: 300px;
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     }
 
     #past-calls {
@@ -71,25 +81,6 @@
       color: red;
       font-weight: bold;
     }
-
-    #kpi-container {
-      display: flex;
-      justify-content: space-between;
-    }
-
-    .kpi {
-      background: #e0f7fa;
-      padding: 10px;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-      text-align: center;
-      width: 48%;
-    }
-
-    .kpi h3 {
-      margin: 0;
-    }
-
   </style>
 </head>
 <body>
@@ -111,18 +102,6 @@
     </div>
   </div>
 
-  <!-- KPIs Section -->
-  <div id="kpi-container">
-    <div class="kpi">
-      <h3>Total Calls</h3>
-      <p id="total-calls">0</p>
-    </div>
-    <div class="kpi">
-      <h3>Average Call Time</h3>
-      <p id="avg-call-time">0</p>
-    </div>
-  </div>
-
   <!-- Past Calls -->
   <div id="past-calls">
     <h2>Past Calls</h2>
@@ -133,47 +112,98 @@
 
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script>
-    async function fetchCallData() {
+    async function searchByPhoneNumber(phone) {
+      const profileDiv = document.getElementById('profile');
+      profileDiv.innerHTML = "Loading profile...";
       try {
-        const response = await axios.get('https://truworths-5d9b0467377c.herokuapp.com/call-data');
-        const data = response.data;
+        const response = await axios.post('https://truworths-5d9b0467377c.herokuapp.com/api/search', { phone });
 
-        // Update KPI
-        document.getElementById('total-calls').textContent = data.totalCalls;
-        document.getElementById('avg-call-time').textContent = (data.avgCallTime / 60).toFixed(2) + ' mins';
-
-        // Update Current Call
-        if (data.currentCall) {
-          document.getElementById('current-call').innerHTML = `
-            <h2>Current Call</h2>
-            <p>Caller: ${data.currentCall.caller}</p>
-            <p>Status: ${data.currentCall.status}</p>
-            <p>Duration: ${Math.floor(data.currentCall.duration / 60)} mins ${data.currentCall.duration % 60} secs</p>
+        const contacts = response.data;
+        if (contacts.length === 0) {
+          profileDiv.innerHTML = `<p class="error-message">No contacts found with phone number: ${phone}</p>`;
+        } else {
+          const contact = contacts[0].properties;
+          profileDiv.innerHTML = ` 
+            <p><span>First Name:</span> ${contact.firstname || 'N/A'}</p>
+            <p><span>Last Name:</span> ${contact.lastname || 'N/A'}</p>
+            <p><span>Email:</span> ${contact.email || 'N/A'}</p>
+            <p><span>Phone number:</span> ${contact.mobilenumber || 'N/A'}</p>
+            <p><span>Customer ID:</span> ${contact.customerid || 'N/A'}</p>
+            <p><span>Account Number:</span> ${contact.accountnumbers || 'N/A'}</p>
+            <p><span>High value customer:</span> ${contact.highvalue || 'N/A'}</p>
+            <p><span>Delinquency status:</span> ${contact.delinquencystatus || 'N/A'}</p>
+            <p><span>Segmentation:</span> ${contact.segmentation || 'N/A'}</p>
+            <p><span>Outstanding balance:</span> ${contact.outstandingbalance || 'N/A'}</p>
+            <p><span>Reasons for missed payment:</span> ${contact.missedpayment || 'N/A'}</p>       
           `;
-        } else {
-          document.getElementById('current-call').innerHTML = '<h2>Current Call</h2><p>No call in progress</p>';
-        }
-
-        // Update Past Calls
-        const pastCallsList = document.getElementById('past-calls-list');
-        pastCallsList.innerHTML = '';
-        if (data.pastCalls.length > 0) {
-          data.pastCalls.forEach(call => {
-            const li = document.createElement('li');
-            li.textContent = `Call from ${call.caller} (Duration: ${Math.floor(call.duration / 60)} mins ${call.duration % 60} secs)`;
-            pastCallsList.appendChild(li);
-          });
-        } else {
-          pastCallsList.innerHTML = '<li>No past calls available</li>';
         }
       } catch (error) {
-        console.error('Error fetching call data:', error);
+        console.error('Error searching contacts:', error.message);
+        profileDiv.innerHTML = `<p class="error-message">Error loading profile. Please try again later.</p>`;
       }
     }
 
-    // Fetch the data on page load
-    fetchCallData();
-    setInterval(fetchCallData, 5000); // Refresh every 5 seconds
+    setInterval(() => {
+      fetch('/call-data')
+        .then(response => response.json())
+        .then(data => {
+          const currentCallDiv = document.getElementById('current-call');
+          const profileDiv = document.getElementById('profile');
+          const pastCallsList = document.getElementById('past-calls-list');
+
+          if (data.currentCall) {
+            currentCallDiv.innerHTML = ` 
+              <h2>Current Call</h2>
+              <p>Caller: ${data.currentCall.caller}</p>
+              <p>Status: ${data.currentCall.status}</p>
+              <p>Call SID: ${data.currentCall.callSid}</p>
+              <p>Duration: ${data.currentCall.duration} seconds</p>
+            `;
+            searchByPhoneNumber(data.currentCall.caller);
+
+            profileDiv.style.display = 'block';  // Show profile when there is an active call
+          } else {
+            currentCallDiv.innerHTML = '<p>No current call</p>';
+            profileDiv.innerHTML = 'No caller details found.'; // Display this message when no call is active
+          }
+
+          if (data.pastCalls.length > 0) {
+            pastCallsList.innerHTML = data.pastCalls.map(call => {
+              const detailsDivId = `details-${call.callSid}`;
+              return ` 
+                <li>
+                  <div>
+                    <span class="caller" onclick="toggleDetails('${call.callSid}')">${call.caller}</span>
+                    <div id="${detailsDivId}" class="caller-details" style="${document.getElementById(detailsDivId)?.style.display === 'block' ? 'display: block;' : 'display: none;'}">
+                      <p>Status: ${call.status}</p>
+                      <p>Duration: ${call.duration} seconds</p>
+                      <h3>Conversation history:</h3>
+                      <ul>
+                        ${call.conversations.map(convo => ` 
+                          <li>
+                            <p>User: ${convo.user}</p>
+                            <p>Bot: ${convo.bot}</p>
+                          </li>
+                        `).join('')}
+                      </ul>
+                    </div>
+                  </div>
+                </li>
+              `;
+            }).join('');
+          } else {
+            pastCallsList.innerHTML = '<li>No past calls available</li>';
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching call data:', error);
+        });
+    }, 5000);
+
+    function toggleDetails(callSid) {
+      const detailsDiv = document.getElementById(`details-${callSid}`);
+      detailsDiv.style.display = detailsDiv.style.display === 'none' || detailsDiv.style.display === '' ? 'block' : 'none';
+    }
   </script>
 </body>
 </html>
