@@ -56,9 +56,9 @@ app.get('/download-conversation/:callSid', (req, res) => {
   }
 
   const conversationText = call.conversations.map(conv => 
-     Truworths customer: ${conv.user}
-     Truworths agent: ${conv.bot} 
-  ).join('');
+    `Truworths customer: ${conv.user}\nTruworths agent: ${conv.bot}`
+  ).join('\n');
+
 
   res.setHeader('Content-Type', 'text/plain');
   res.setHeader('Content-Disposition', attachment; filename=conversation_${callSid}.txt);
