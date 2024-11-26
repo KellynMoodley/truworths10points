@@ -233,7 +233,16 @@
           const currentCallDiv = document.getElementById('current-call');
           const profileDiv = document.getElementById('profile');
           const pastCallsList = document.getElementById('past-calls-list');
-          const avgCallTimeValue = document.getElementById('avg-call-time-value');
+          // Update KPI values
+      document.getElementById('avg-call-time-value').textContent = data.avgCallTime || 'Calculating...';
+      document.getElementById('total-calls-value').textContent = data.totalCalls || 'Calculating...';
+      document.getElementById('total-duration-value').textContent = (data.totalDuration || 'Calculating...') + ' seconds';
+      document.getElementById('call-completion-rate-value').textContent = (data.callCompletionRate?.toFixed(2) || 'Calculating...') + '%';
+      document.getElementById('call-failure-rate-value').textContent = (data.callFailureRate?.toFixed(2) || 'Calculating...') + '%';
+
+  })
+  .catch(error => console.error('Error fetching call data:', error));
+
 
           if (data.currentCall) {
             currentCallDiv.innerHTML = `
@@ -279,9 +288,6 @@
           } else {
             pastCallsList.innerHTML = '<li>No past calls available</li>';
           }
-
-          const avgCallTime = data.avgCallTime || 'Calculating...';
-          avgCallTimeValue.textContent = avgCallTime;
         })
         .catch(error => console.error('Error fetching call data:', error));
     }, 5000);
