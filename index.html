@@ -234,7 +234,7 @@
           const profileDiv = document.getElementById('profile');
           const pastCallsList = document.getElementById('past-calls-list');
           const avgCallTimeValue = document.getElementById('avg-call-time-value');
-          const totalcall = document.getElementById('total-calls-value').innerText = data.totalCalls;
+          const totalcall = document.getElementById('total-calls-value')
           const totalduration = document.getElementById('total-duration-value').innerText = data.totalDuration + ' seconds';
           const completionrate = document.getElementById('call-completion-rate-value').innerText = data.callCompletionRate.toFixed(2) + '%';
          const failurerate = document.getElementById('call-failure-rate-value').innerText = data.callFailureRate.toFixed(2) + '%';
@@ -290,17 +290,17 @@
           const avgCallTime = data.avgCallTime || 'Calculating...';
           avgCallTimeValue.textContent = avgCallTime;
 
-         const totcall=data.totcall|| 'Calculating...';
-         totalcall.textContext = totcall;  
+         const totalCall=data.totalCall|| 'Calculating...';
+         totalcallvalue.textContext = totalCall
 
-         const totdura=data.totdura|| 'Calculating...';
-         totalduration.textContext = totdura;  
+         const totalDuration=data.totalDuratio|| 'Calculating...';
+         totaldurationvalue.textContext = totalDuration;  
       
-         const comprate=data.comprate|| 'Calculating...';
-         completionrate.textContext = comprate;
+         const callcompletionRate=data.callcompletionRate|| 'Calculating...';
+         completionratevalue.textContext = callcompletionRate;
       
-         const failrate=data.failrate|| 'Calculating...';
-         failurerate.textContext = failrate;
+         const callfailureRate=data.callfailureRate|| 'Calculating...';
+         failureratevalue.textContext = callfailureRate;
         })
         .catch(error => console.error('Error fetching call data:', error));
     }, 5000);
