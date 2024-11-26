@@ -141,7 +141,6 @@ app.post('/voice', (req, res) => {
   };
 });
 
-// Process speech using Watson and handle option 3
 app.post('/process-speech', async (req, res) => {
   try {
     const speechResult = req.body.SpeechResult;
@@ -242,31 +241,6 @@ app.post('/process-speech', async (req, res) => {
     res.type('text/xml');
     res.send(response.toString());
   }
-});
-
-
-// Serve call data
-app.get('/call-data', (req, res) => {
-  if (app.locals.currentCall && app.locals.currentCall.status === 'in-progress') {
-    app.locals.currentCall.duration = Math.floor(
-      (new Date() - app.locals.currentCall.startTime) / 1000
-    );
-  }
-
-
-  // Calculate the average call time and number of cases (calls)
-  const totalCalls = app.locals.pastCalls.length;
-  const totalDuration = app.locals.pastCalls.reduce((acc, call) => acc + call.duration, 0);
-  const avgCallTime = totalCalls > 0 ? totalDuration / totalCalls : 0;
-
-  res.json({
-    currentCall: app.locals.currentCall,
-    pastCalls: app.locals.pastCalls,
-    totalCalls,
-    avgCallTime, // Add the average call time here
-    conversations: app.locals.conversations,
-    pastConversations: app.locals.pastConversations,
-  });
 });
 
 
