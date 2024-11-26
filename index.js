@@ -217,9 +217,10 @@ app.post('/process-speech', async (req, res) => {
       currentCall.duration = callDuration;
       currentCall.status = 'completed';
       currentCall.conversations = app.locals.conversations;
-      app.locals.pastCalls.push(currentCall);
-      app.locals.currentCall = null;
-      app.locals.conversations = [];
+      app.locals.pastCalls.push(currentCall); // Push the current call to pastCalls
+      app.locals.pastConversations.push(...app.locals.conversations); // Ensure all conversations are added to pastConversations
+      app.locals.currentCall = null; // Clear current call
+      app.locals.conversations = []; // Clear the current conversations array for the next call
     }
 
     res.type('text/xml');
@@ -243,6 +244,7 @@ app.post('/process-speech', async (req, res) => {
     res.send(response.toString());
   }
 });
+
 
 // Serve call data
 app.get('/call-data', (req, res) => {
