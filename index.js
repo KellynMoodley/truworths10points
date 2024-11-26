@@ -55,13 +55,13 @@ app.get('/download-conversation/:callSid', (req, res) => {
     return res.status(404).send('Conversation not found');
   }
 
-  const conversationText = call.conversations.map(conv => `
+  const conversationText = call.conversations.map(conv => 
      Truworths customer: ${conv.user}
      Truworths agent: ${conv.bot} 
-  `).join('');
+  ).join('');
 
   res.setHeader('Content-Type', 'text/plain');
-  res.setHeader('Content-Disposition', `attachment; filename=conversation_${callSid}.txt`);
+  res.setHeader('Content-Disposition', attachment; filename=conversation_${callSid}.txt);
   res.send(conversationText);
 });
 
@@ -92,7 +92,7 @@ app.post('/api/search', async (req, res) => {
 
     const response = await axios.post(url, query, {
       headers: {
-        Authorization: `Bearer ${ACCESS_TOKEN}`,
+        Authorization: Bearer ${ACCESS_TOKEN},
         'Content-Type': 'application/json'
       }
     });
@@ -110,7 +110,7 @@ app.post('/voice', (req, res) => {
   const caller = req.body.From;
   const startTime = new Date();
 
-  console.log(`Incoming call from ${caller} with CallSid ${callSid}`);
+  console.log(Incoming call from ${caller} with CallSid ${callSid});
 
   const response = new twiml.VoiceResponse();
   response.say('Welcome to Truworths.');
@@ -150,9 +150,9 @@ app.post('/process-speech', async (req, res) => {
       throw new Error('No speech input received');
     }
 
-    console.log(`Speech input received: ${speechResult}`);
+    console.log(Speech input received: ${speechResult});
 
-    let botResponse = 'Thank you for raising your issue with Truworths collections. An agent will review your case.';
+    let botResponse = 'Thank you for your message. Goodbye!';
 
     if (speechResult.toLowerCase().includes('review account')) {
       const phone = req.body.From;
@@ -179,7 +179,7 @@ app.post('/process-speech', async (req, res) => {
 
           const response = await axios.post(url, query, {
             headers: {
-              Authorization: `Bearer ${ACCESS_TOKEN}`,
+              Authorization: Bearer ${ACCESS_TOKEN},
               'Content-Type': 'application/json'
             }
           });
@@ -188,7 +188,7 @@ app.post('/process-speech', async (req, res) => {
 
           if (contact) {
             const { firstname, lastname, outstandingbalance } = contact.properties;
-            botResponse = `Based on your account, your name is ${firstname}, your surname is ${lastname}, and your balance is ${outstandingbalance}.`;
+            botResponse = Based on your account, your name is ${firstname}, your surname is ${lastname}, and your balance is ${outstandingbalance}.;
           } else {
             botResponse = "I couldn't find your account details.";
           }
@@ -252,30 +252,21 @@ app.get('/call-data', (req, res) => {
       (new Date() - app.locals.currentCall.startTime) / 1000
     );
   }
-
-
-  // Calculate the average call time and number of cases (calls)
-  const totalCalls = app.locals.pastCalls.length;
-  const totalDuration = app.locals.pastCalls.reduce((acc, call) => acc + call.duration, 0);
-  const avgCallTime = totalCalls > 0 ? totalDuration / totalCalls : 0;
-
+  
   res.json({
     currentCall: app.locals.currentCall,
     pastCalls: app.locals.pastCalls,
-    totalCalls,
-    avgCallTime, // Add the average call time here
     conversations: app.locals.conversations,
     pastConversations: app.locals.pastConversations,
   });
 });
-
 
 // Status callback to handle call status changes
 app.post('/status-callback', (req, res) => {
   const callSid = req.body.CallSid;
   const callStatus = req.body.CallStatus;
 
-  console.log(`Status update for CallSid ${callSid}: ${callStatus}`);
+  console.log(Status update for CallSid ${callSid}: ${callStatus});
 
   if (app.locals.currentCall && app.locals.currentCall.callSid === callSid) {
     if (callStatus === 'completed' || callStatus === 'failed' || callStatus === 'no-answer') {
@@ -292,5 +283,5 @@ app.post('/status-callback', (req, res) => {
 
 // Start the server
 app.listen(port, () => {
-  console.log(`Server started on port ${port}`);
+  console.log(Server started on port ${port});
 });
