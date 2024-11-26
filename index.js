@@ -253,7 +253,6 @@ app.get('/call-data', (req, res) => {
     );
   }
 
-
   // Calculate the average call time and number of cases (calls)
   const totalCalls = app.locals.pastCalls.length;
   const totalDuration = app.locals.pastCalls.reduce((acc, call) => acc + call.duration, 0);
@@ -263,7 +262,8 @@ app.get('/call-data', (req, res) => {
     currentCall: app.locals.currentCall,
     pastCalls: app.locals.pastCalls,
     totalCalls,
-    avgCallTime, // Add the average call time here
+    avgCallTime, 
+    totalDurations,
     conversations: app.locals.conversations,
     pastConversations: app.locals.pastConversations,
   });
