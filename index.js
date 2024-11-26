@@ -56,12 +56,11 @@ app.get('/download-conversation/:callSid', (req, res) => {
   }
 
   const conversationText = call.conversations.map(conv => 
-     Truworths customer: ${conv.user}
-     Truworths agent: ${conv.bot} 
+    `Truworths customer: ${conv.user}\nTruworths agent: ${conv.bot}\n`
   ).join('');
 
   res.setHeader('Content-Type', 'text/plain');
-  res.setHeader('Content-Disposition', attachment; filename=conversation_${callSid}.txt);
+  res.setHeader('Content-Disposition', `attachment; filename=conversation_${callSid}.txt`);
   res.send(conversationText);
 });
 
@@ -92,7 +91,7 @@ app.post('/api/search', async (req, res) => {
 
     const response = await axios.post(url, query, {
       headers: {
-        Authorization: Bearer ${ACCESS_TOKEN},
+        Authorization: `Bearer ${ACCESS_TOKEN}`,
         'Content-Type': 'application/json'
       }
     });
@@ -110,7 +109,7 @@ app.post('/voice', (req, res) => {
   const caller = req.body.From;
   const startTime = new Date();
 
-  console.log(Incoming call from ${caller} with CallSid ${callSid});
+  console.log(`Incoming call from ${caller} with CallSid ${callSid}`);
 
   const response = new twiml.VoiceResponse();
   response.say('Welcome to Truworths.');
@@ -150,7 +149,7 @@ app.post('/process-speech', async (req, res) => {
       throw new Error('No speech input received');
     }
 
-    console.log(Speech input received: ${speechResult});
+    console.log(`Speech input received: ${speechResult}`);
 
     let botResponse = 'Thank you for your message. Goodbye!';
 
@@ -179,7 +178,7 @@ app.post('/process-speech', async (req, res) => {
 
           const response = await axios.post(url, query, {
             headers: {
-              Authorization: Bearer ${ACCESS_TOKEN},
+              Authorization: `Bearer ${ACCESS_TOKEN}`,
               'Content-Type': 'application/json'
             }
           });
@@ -188,7 +187,7 @@ app.post('/process-speech', async (req, res) => {
 
           if (contact) {
             const { firstname, lastname, outstandingbalance } = contact.properties;
-            botResponse = Based on your account, your name is ${firstname}, your surname is ${lastname}, and your balance is ${outstandingbalance}.;
+            botResponse = `Based on your account, your name is ${firstname}, your surname is ${lastname}, and your balance is ${outstandingbalance}.`;
           } else {
             botResponse = "I couldn't find your account details.";
           }
@@ -244,7 +243,6 @@ app.post('/process-speech', async (req, res) => {
   }
 });
 
-
 // Serve call data
 app.get('/call-data', (req, res) => {
   if (app.locals.currentCall && app.locals.currentCall.status === 'in-progress') {
@@ -266,22 +264,21 @@ app.post('/status-callback', (req, res) => {
   const callSid = req.body.CallSid;
   const callStatus = req.body.CallStatus;
 
-  console.log(Status update for CallSid ${callSid}: ${callStatus});
+  console.log(`Status update for CallSid ${callSid}: ${callStatus}`);
 
-  if (app.locals.currentCall && app.locals.currentCall.callSid === callSid) {
-    if (callStatus === 'completed' || callStatus === 'failed' || callStatus === 'no-answer') {
-      const currentCall = app.locals.currentCall;
-      currentCall.duration = Math.floor((new Date() - currentCall.startTime) / 1000);
-      currentCall.status = callStatus;
-      app.locals.pastCalls.push(currentCall);
-      app.locals.currentCall = null;
-    }
+  if (callStatus === 'completed' && app.locals.currentCall) {
+    const currentCall = app.locals.currentCall;
+    const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
+    currentCall.duration = callDuration;
+    currentCall.status = 'completed';
+    app.locals.pastCalls.push(currentCall); // Push the current call to pastCalls
+    app.locals.conversations = []; // Clear conversations for the next call
+    app.locals.currentCall = null; // Clear current call
   }
 
-  res.send('');
+  res.status(200).send('OK');
 });
 
-// Start the server
 app.listen(port, () => {
-  console.log(Server started on port ${port});
+  console.log(`Server running on port ${port}`);
 });
