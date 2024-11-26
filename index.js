@@ -60,9 +60,8 @@ app.get('/download-conversation/:callSid', (req, res) => {
      Truworths agent: ${conv.bot} 
   `).join('');
 
-
   res.setHeader('Content-Type', 'text/plain');
-  res.setHeader('Content-Disposition', attachment; filename=conversation_${callSid}.txt);
+  res.setHeader('Content-Disposition', `attachment; filename=conversation_${callSid}.txt`);
   res.send(conversationText);
 });
 
@@ -88,12 +87,12 @@ app.post('/api/search', async (req, res) => {
           ]
         }
       ],
-      properties: ['firstname', 'lastname','email','mobilenumber', 'customerid', 'accountnumbers','highvalue', 'delinquencystatus','segmentation','outstandingbalance','missedpayment']
+      properties: ['firstname', 'lastname', 'email', 'mobilenumber', 'customerid', 'accountnumbers', 'highvalue', 'delinquencystatus', 'segmentation', 'outstandingbalance', 'missedpayment']
     };
 
     const response = await axios.post(url, query, {
       headers: {
-        Authorization: Bearer ${ACCESS_TOKEN},
+        Authorization: `Bearer ${ACCESS_TOKEN}`,
         'Content-Type': 'application/json'
       }
     });
@@ -111,7 +110,7 @@ app.post('/voice', (req, res) => {
   const caller = req.body.From;
   const startTime = new Date();
 
-  console.log(Incoming call from ${caller} with CallSid ${callSid});
+  console.log(`Incoming call from ${caller} with CallSid ${callSid}`);
 
   const response = new twiml.VoiceResponse();
   response.say('Welcome to Truworths.');
@@ -150,10 +149,9 @@ app.post('/process-speech', async (req, res) => {
 
     if (!speechResult) {
       throw new Error('No speech input received');
-      response.hangup();
     }
 
-    console.log(Speech input received: ${speechResult});
+    console.log(`Speech input received: ${speechResult}`);
 
     let botResponse = 'Thank you for your message. Goodbye!';
 
@@ -182,7 +180,7 @@ app.post('/process-speech', async (req, res) => {
 
           const response = await axios.post(url, query, {
             headers: {
-              Authorization: Bearer ${ACCESS_TOKEN},
+              Authorization: `Bearer ${ACCESS_TOKEN}`,
               'Content-Type': 'application/json'
             }
           });
@@ -191,7 +189,7 @@ app.post('/process-speech', async (req, res) => {
 
           if (contact) {
             const { firstname, lastname, outstandingbalance } = contact.properties;
-            botResponse = Based on your account, your name is ${firstname}, your surname is ${lastname}, and your balance is ${outstandingbalance}.;
+            botResponse = `Based on your account, your name is ${firstname}, your surname is ${lastname}, and your balance is ${outstandingbalance}.`;
           } else {
             botResponse = "I couldn't find your account details.";
           }
@@ -254,27 +252,6 @@ app.get('/call-data', (req, res) => {
     );
   }
   
-// Status callback to handle call status changes
-app.post('/status-callback', (req, res) => {
-  const callSid = req.body.CallSid;
-  const callStatus = req.body.CallStatus;
-
-  console.log(Status update for CallSid ${callSid}: ${callStatus});
-
-  if (app.locals.currentCall && app.locals.currentCall.callSid === callSid) {
-    if (callStatus === 'completed' || callStatus === 'failed' || callStatus === 'no-answer') {
-      const currentCall = app.locals.currentCall;
-      currentCall.duration = Math.floor((new Date() - currentCall.startTime) / 1000);
-      currentCall.status = callStatus;
-      app.locals.pastCalls.push(currentCall);
-      app.locals.currentCall = null;
-      app.locals.conversations = [];
-    }
-  }
-
-  res.sendStatus(200);
-});
-
   res.json({
     currentCall: app.locals.currentCall,
     pastCalls: app.locals.pastCalls,
@@ -283,6 +260,27 @@ app.post('/status-callback', (req, res) => {
   });
 });
 
+// Status callback to handle call status changes
+app.post('/status-callback', (req, res) => {
+  const callSid = req.body.CallSid;
+  const callStatus = req.body.CallStatus;
+
+  console.log(`Status update for CallSid ${callSid}: ${callStatus}`);
+
+  if (app.locals.currentCall && app.locals.currentCall.callSid === callSid) {
+    if (callStatus === 'completed' || callStatus === 'failed' || callStatus === 'no-answer') {
+      const currentCall = app.locals.currentCall;
+      currentCall.duration = Math.floor((new Date() - currentCall.startTime) / 1000);
+      currentCall.status = callStatus;
+      app.locals.pastCalls.push(currentCall);
+      app.locals.currentCall = null;
+    }
+  }
+
+  res.send('');
+});
+
+// Start the server
 app.listen(port, () => {
-  console.log(Server running on port ${port});
+  console.log(`Server started on port ${port}`);
 });
