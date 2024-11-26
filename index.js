@@ -55,9 +55,10 @@ app.get('/download-conversation/:callSid', (req, res) => {
     return res.status(404).send('Conversation not found');
   }
 
-  const conversationText = call.conversations.map(conv => 
-    `Truworths customer: ${conv.user}\nTruworths agent: ${conv.bot}\n`
-  ).join('');
+  const conversationText = call.conversations.map(conv => `
+     Truworths customer: ${conv.user}
+     Truworths agent: ${conv.bot} 
+  `).join('');
 
   res.setHeader('Content-Type', 'text/plain');
   res.setHeader('Content-Disposition', `attachment; filename=conversation_${callSid}.txt`);
@@ -243,6 +244,7 @@ app.post('/process-speech', async (req, res) => {
   }
 });
 
+
 // Serve call data
 app.get('/call-data', (req, res) => {
   if (app.locals.currentCall && app.locals.currentCall.status === 'in-progress') {
@@ -250,14 +252,23 @@ app.get('/call-data', (req, res) => {
       (new Date() - app.locals.currentCall.startTime) / 1000
     );
   }
-  
+
+
+  // Calculate the average call time and number of cases (calls)
+  const totalCalls = app.locals.pastCalls.length;
+  const totalDuration = app.locals.pastCalls.reduce((acc, call) => acc + call.duration, 0);
+  const avgCallTime = totalCalls > 0 ? totalDuration / totalCalls : 0;
+
   res.json({
     currentCall: app.locals.currentCall,
     pastCalls: app.locals.pastCalls,
+    totalCalls,
+    avgCallTime, // Add the average call time here
     conversations: app.locals.conversations,
     pastConversations: app.locals.pastConversations,
   });
 });
+
 
 // Status callback to handle call status changes
 app.post('/status-callback', (req, res) => {
@@ -266,19 +277,20 @@ app.post('/status-callback', (req, res) => {
 
   console.log(`Status update for CallSid ${callSid}: ${callStatus}`);
 
-  if (callStatus === 'completed' && app.locals.currentCall) {
-    const currentCall = app.locals.currentCall;
-    const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
-    currentCall.duration = callDuration;
-    currentCall.status = 'completed';
-    app.locals.pastCalls.push(currentCall); // Push the current call to pastCalls
-    app.locals.conversations = []; // Clear conversations for the next call
-    app.locals.currentCall = null; // Clear current call
+  if (app.locals.currentCall && app.locals.currentCall.callSid === callSid) {
+    if (callStatus === 'completed' || callStatus === 'failed' || callStatus === 'no-answer') {
+      const currentCall = app.locals.currentCall;
+      currentCall.duration = Math.floor((new Date() - currentCall.startTime) / 1000);
+      currentCall.status = callStatus;
+      app.locals.pastCalls.push(currentCall);
+      app.locals.currentCall = null;
+    }
   }
 
-  res.status(200).send('OK');
+  res.send('');
 });
 
+// Start the server
 app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+  console.log(`Server started on port ${port}`);
 });
