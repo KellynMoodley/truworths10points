@@ -146,13 +146,36 @@
   </div>
 
   <!-- KPI Container -->
-  <div id="kpi-container">
-    <h3>Key Performance Indicators (KPIs)</h3>
-    <div id="avg-call-time" class="kpi">
-      <span class="kpi-title">Average Call Handling Time:</span> <span id="avg-call-time-value">Calculating...</span>
-    </div>
-    <!-- Add other KPIs here if needed -->
+<div id="kpi-container">
+  <h3>Key Performance Indicators (KPIs)</h3>
+  
+  <!-- Average Call Handling Time -->
+  <div id="avg-call-time" class="kpi">
+    <span class="kpi-title">Average Call Handling Time:</span> <span id="avg-call-time-value">Calculating...</span>
   </div>
+  
+  <!-- Total Calls -->
+  <div id="total-calls" class="kpi">
+    <span class="kpi-title">Total Calls:</span> <span id="total-calls-value">Calculating...</span>
+  </div>
+  
+  <!-- Total Call Duration -->
+  <div id="total-duration" class="kpi">
+    <span class="kpi-title">Total Call Duration (Seconds):</span> <span id="total-duration-value">Calculating...</span>
+  </div>
+  
+  <!-- Call Completion Rate -->
+  <div id="call-completion-rate" class="kpi">
+    <span class="kpi-title">Call Completion Rate (%):</span> <span id="call-completion-rate-value">Calculating...</span>
+  </div>
+  
+  <!-- Call Failure Rate -->
+  <div id="call-failure-rate" class="kpi">
+    <span class="kpi-title">Call Failure Rate (%):</span> <span id="call-failure-rate-value">Calculating...</span>
+  </div>
+
+</div>
+
 
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script>
