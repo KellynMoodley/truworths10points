@@ -1,129 +1,179 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Call KPI Dashboard</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        h1 {
-            text-align: center;
-        }
-        .kpi {
-            display: flex;
-            justify-content: space-around;
-            margin-bottom: 30px;
-        }
-        .kpi div {
-            text-align: center;
-            padding: 15px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            width: 200px;
-        }
-        .kpi div h3 {
-            margin: 0;
-            font-size: 24px;
-        }
-        .kpi div p {
-            font-size: 18px;
-        }
-        #conversation-list {
-            margin-top: 30px;
-        }
-        #conversation-list table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        #conversation-list table, th, td {
-            border: 1px solid #ddd;
-        }
-        th, td {
-            padding: 10px;
-            text-align: center;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phone Call Status</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f9;
+    }
+
+    #container {
+      display: flex;
+      flex-wrap: wrap;
+      margin: 20px;
+    }
+
+    #profile-container, #current-call, #kpi-container {
+      flex: 1;
+      min-width: 300px;
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      margin-right: 20px;
+    }
+
+    #past-calls {
+      flex: 1;
+      width: 100%;
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      margin-top: 20px;
+    }
+
+    h1, h2 {
+      margin-top: 0;
+    }
+
+    ul {
+      padding: 0;
+      list-style: none;
+    }
+
+    .caller {
+      cursor: pointer;
+      font-weight: bold;
+      color: #007bff;
+      display: block;
+      margin: 10px 0;
+    }
+
+    .caller-details {
+      display: none;
+      padding: 10px;
+      background-color: #f9f9f9;
+      border-radius: 5px;
+      margin-top: 10px;
+    }
+
+    .profile-details span {
+      font-weight: bold;
+    }
+
+    .error-message {
+      color: red;
+      font-weight: bold;
+    }
+
+    #kpi-container {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .kpi {
+      background: #e0f7fa;
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      width: 48%;
+    }
+
+    .kpi h3 {
+      margin: 0;
+    }
+
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Call Data KPI Dashboard</h1>
+  <h1 style="text-align: center;">Phone Call Status</h1>
 
-        <div class="kpi">
-            <div>
-                <h3>Total Calls</h3>
-                <p id="total-calls">0</p>
-            </div>
-            <div>
-                <h3>Avg. Call Time (s)</h3>
-                <p id="avg-call-time">0</p>
-            </div>
-            <div>
-                <h3>Current Call</h3>
-                <p id="current-call">None</p>
-            </div>
-        </div>
-
-        <div id="conversation-list">
-            <h2>Recent Conversations</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Timestamp</th>
-                        <th>User Input</th>
-                        <th>Bot Response</th>
-                    </tr>
-                </thead>
-                <tbody id="conversation-table-body">
-                    <!-- Conversations will be added here dynamically -->
-                </tbody>
-            </table>
-        </div>
+  <div id="container">
+    <!-- Profile Information -->
+    <div id="profile-container">
+      <h2>Contact Profile</h2>
+      <div id="profile" class="profile-details">
+        No caller details found.
+      </div>
     </div>
 
-    <script>
-        // Function to fetch call data from the backend
-        async function fetchCallData() {
-            try {
-                const response = await fetch('/call-data');
-                const data = await response.json();
+    <!-- Current Call -->
+    <div id="current-call">
+      <h2>Current Call</h2>
+      <p>Waiting for a call...</p>
+    </div>
+  </div>
 
-                // Update KPI values
-                document.getElementById('total-calls').innerText = data.totalCalls;
-                document.getElementById('avg-call-time').innerText = data.avgCallTime.toFixed(2);
-                document.getElementById('current-call').innerText = data.currentCall ? data.currentCall.caller : 'None';
+  <!-- KPIs Section -->
+  <div id="kpi-container">
+    <div class="kpi">
+      <h3>Total Calls</h3>
+      <p id="total-calls">0</p>
+    </div>
+    <div class="kpi">
+      <h3>Average Call Time</h3>
+      <p id="avg-call-time">0</p>
+    </div>
+  </div>
 
-                // Update conversations table
-                const conversationTableBody = document.getElementById('conversation-table-body');
-                conversationTableBody.innerHTML = ''; // Clear current table body
-                data.pastConversations.forEach(convo => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${new Date(convo.timestamp).toLocaleString()}</td>
-                        <td>${convo.user}</td>
-                        <td>${convo.bot}</td>
-                    `;
-                    conversationTableBody.appendChild(row);
-                });
-            } catch (error) {
-                console.error('Error fetching call data:', error);
-            }
+  <!-- Past Calls -->
+  <div id="past-calls">
+    <h2>Past Calls</h2>
+    <ul id="past-calls-list">
+      <li>No past calls available</li>
+    </ul>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script>
+    async function fetchCallData() {
+      try {
+        const response = await axios.get('https://truworths-5d9b0467377c.herokuapp.com/call-data');
+        const data = response.data;
+
+        // Update KPI
+        document.getElementById('total-calls').textContent = data.totalCalls;
+        document.getElementById('avg-call-time').textContent = (data.avgCallTime / 60).toFixed(2) + ' mins';
+
+        // Update Current Call
+        if (data.currentCall) {
+          document.getElementById('current-call').innerHTML = `
+            <h2>Current Call</h2>
+            <p>Caller: ${data.currentCall.caller}</p>
+            <p>Status: ${data.currentCall.status}</p>
+            <p>Duration: ${Math.floor(data.currentCall.duration / 60)} mins ${data.currentCall.duration % 60} secs</p>
+          `;
+        } else {
+          document.getElementById('current-call').innerHTML = '<h2>Current Call</h2><p>No call in progress</p>';
         }
 
-        // Fetch data every 5 seconds
-        setInterval(fetchCallData, 5000);
+        // Update Past Calls
+        const pastCallsList = document.getElementById('past-calls-list');
+        pastCallsList.innerHTML = '';
+        if (data.pastCalls.length > 0) {
+          data.pastCalls.forEach(call => {
+            const li = document.createElement('li');
+            li.textContent = `Call from ${call.caller} (Duration: ${Math.floor(call.duration / 60)} mins ${call.duration % 60} secs)`;
+            pastCallsList.appendChild(li);
+          });
+        } else {
+          pastCallsList.innerHTML = '<li>No past calls available</li>';
+        }
+      } catch (error) {
+        console.error('Error fetching call data:', error);
+      }
+    }
 
-        // Initial data fetch
-        fetchCallData();
-    </script>
+    // Fetch the data on page load
+    fetchCallData();
+    setInterval(fetchCallData, 5000); // Refresh every 5 seconds
+  </script>
 </body>
 </html>
