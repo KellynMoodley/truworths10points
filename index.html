@@ -257,21 +257,19 @@
             pastCallsList.innerHTML = '<li>No past calls available</li>';
           }
 
-          // Calculate and update the average call time
-          if (data.pastCalls.length > 0) {
-            const totalDuration = data.pastCalls.reduce((sum, call) => sum + call.duration, 0);
-            const avgDuration = totalDuration / data.pastCalls.length;
-            avgCallTimeValue.textContent = `${avgDuration.toFixed(2)} seconds`;
-          }
+          const avgCallTime = data.avgCallTime || 'Calculating...';
+          avgCallTimeValue.textContent = avgCallTime;
         })
-        .catch(error => {
-          console.error('Error fetching call data:', error);
-        });
+        .catch(error => console.error('Error fetching call data:', error));
     }, 5000);
 
     function toggleDetails(callSid) {
       const detailsDiv = document.getElementById(`details-${callSid}`);
-      detailsDiv.style.display = detailsDiv.style.display === 'block' ? 'none' : 'block';
+      if (detailsDiv.style.display === 'none') {
+        detailsDiv.style.display = 'block';
+      } else {
+        detailsDiv.style.display = 'none';
+      }
     }
   </script>
 </body>
