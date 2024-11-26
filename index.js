@@ -279,20 +279,20 @@ app.post('/status-callback', (req, res) => {
 
   // Check if there's a current call and if it matches the CallSid from Twilio
   if (app.locals.currentCall && app.locals.currentCall.callSid === callSid) {
-    // Handle completed, failed, or no-answer call statuses
+    // If the call is completed, failed, or no-answer, we process the conversation
     if (callStatus === 'completed' || callStatus === 'failed' || callStatus === 'no-answer') {
       const currentCall = app.locals.currentCall;
       const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000); // Calculate call duration
 
-      // Update the call's duration and status
+      // Update the current call's duration and status
       currentCall.duration = callDuration;
       currentCall.status = callStatus;
 
-      // Push the current call to the pastCalls array
-      app.locals.pastCalls.push(currentCall);
-
-      // Also move conversations to pastConversations
+      // Move conversations to the past conversations array
       app.locals.pastConversations.push(...app.locals.conversations);
+
+      // Push the current call to pastCalls
+      app.locals.pastCalls.push(currentCall);
 
       // Clear current call and conversations for the next call
       app.locals.currentCall = null;
@@ -300,9 +300,10 @@ app.post('/status-callback', (req, res) => {
     }
   }
 
-  // Always respond with an empty message (200 OK)
+  // Send an empty response to acknowledge the callback
   res.send('');
 });
+
 
 
 // Start the server
