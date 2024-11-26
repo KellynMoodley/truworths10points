@@ -87,7 +87,7 @@ app.post('/api/search', async (req, res) => {
           ]
         }
       ],
-      properties: ['firstname', 'lastname', 'email', 'mobilenumber', 'customerid', 'accountnumbers', 'highvalue', 'delinquencystatus', 'segmentation', 'outstandingbalance', 'missedpayment']
+      properties: ['firstname', 'lastname', 'email', 'mobilenumber', 'customerid', 'accountnumbers', 'highvalue', 'delinquencystatus', 'segmentation', 'outstandingbalance', 'missedpayment','promisetopay','paymentmethodhistory','lastmissedpaymentdate','ptpdate','bestpaymentdate','amounttopay']
     };
 
     const response = await axios.post(url, query, {
