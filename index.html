@@ -211,6 +211,10 @@
           const profileDiv = document.getElementById('profile');
           const pastCallsList = document.getElementById('past-calls-list');
           const avgCallTimeValue = document.getElementById('avg-call-time-value');
+          document.getElementById('total-calls').textContent = `Total Calls: ${data.totalCalls}`;
+          document.getElementById('avg-call-time').textContent = `Avg Call Time: ${Math.round(data.avgCallTime)} seconds`;
+          document.getElementById('num-cases').textContent = `Number of Cases: ${data.numCases}`;
+
 
           if (data.currentCall) {
             currentCallDiv.innerHTML = `
@@ -243,8 +247,8 @@
                       <ul>
                         ${call.conversations.map(convo => `
                           <li>
-                            <p>User: ${convo.user}</p>
-                            <p>Bot: ${convo.bot}</p>
+                            <p>Truworths client: ${convo.user}</p>
+                            <p>Agent: ${convo.bot}</p>
                           </li>
                         `).join('')}
                       </ul>
