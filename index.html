@@ -277,6 +277,19 @@
         detailsDiv.style.display = 'none';
       }
     }
+
+  window.watsonAssistantChatOptions = {
+    integrationID: "ed428f23-61fb-42c7-b5ad-45995b4c2d92", // The ID of this integration.
+    region: "us-south", // The region your integration is hosted in.
+    serviceInstanceID: "65990e2d-697c-473b-9033-da43beb1a8ee", // The ID of your service instance.
+    onLoad: async (instance) => { await instance.render(); }
+  };
+  setTimeout(function(){
+    const t=document.createElement('script');
+    t.src="https://web-chat.global.assistant.watson.appdomain.cloud/versions/" + (window.watsonAssistantChatOptions.clientVersion || 'latest') + "/WatsonAssistantChatEntry.js";
+    document.head.appendChild(t);
+  });
+    
   </script>
 </body>
 </html>
