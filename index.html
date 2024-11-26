@@ -94,6 +94,28 @@
     .download-btn:hover {
       background-color: #0056b3;
     }
+
+    /* KPI Section */
+    #kpi-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #ffffff;
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      width: 250px;
+    }
+
+    .kpi {
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+
+    .kpi-title {
+      font-weight: bold;
+    }
+
   </style>
 </head>
 <body>
@@ -121,6 +143,15 @@
     <ul id="past-calls-list">
       <li>No past calls available</li>
     </ul>
+  </div>
+
+  <!-- KPI Container -->
+  <div id="kpi-container">
+    <h3>Key Performance Indicators (KPIs)</h3>
+    <div id="avg-call-time" class="kpi">
+      <span class="kpi-title">Average Call Handling Time:</span> <span id="avg-call-time-value">Calculating...</span>
+    </div>
+    <!-- Add other KPIs here if needed -->
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
@@ -179,6 +210,7 @@
           const currentCallDiv = document.getElementById('current-call');
           const profileDiv = document.getElementById('profile');
           const pastCallsList = document.getElementById('past-calls-list');
+          const avgCallTimeValue = document.getElementById('avg-call-time-value');
 
           if (data.currentCall) {
             currentCallDiv.innerHTML = `
@@ -224,6 +256,13 @@
           } else {
             pastCallsList.innerHTML = '<li>No past calls available</li>';
           }
+
+          // Calculate and update the average call time
+          if (data.pastCalls.length > 0) {
+            const totalDuration = data.pastCalls.reduce((sum, call) => sum + call.duration, 0);
+            const avgDuration = totalDuration / data.pastCalls.length;
+            avgCallTimeValue.textContent = `${avgDuration.toFixed(2)} seconds`;
+          }
         })
         .catch(error => {
           console.error('Error fetching call data:', error);
@@ -232,7 +271,7 @@
 
     function toggleDetails(callSid) {
       const detailsDiv = document.getElementById(`details-${callSid}`);
-      detailsDiv.style.display = detailsDiv.style.display === 'none' || detailsDiv.style.display === '' ? 'block' : 'none';
+      detailsDiv.style.display = detailsDiv.style.display === 'block' ? 'none' : 'block';
     }
   </script>
 </body>
