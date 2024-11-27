@@ -166,8 +166,14 @@ app.post('/process-speech', async (req, res) => {
     const speechResult = req.body.SpeechResult;
     const callStatus = req.body.CallStatus; // Tracks call state, e.g., 'completed', 'no-answer'
 
-    if (!speechResult || speechResult.trim() === '' || callStatus === 'completed') {
+    if (!speechResult || speechResult.trim() === '' || callStatus === 'in-progress') {
         // Respond with 204 No Content for no speech or abrupt call disconnection
+
+      console.log('No speech detected');
+
+  const response = new twiml.VoiceResponse();
+  response.say('No speech was detected. Goodbye.');
+  response.hangup();
         return res.status(204).send();
     }
 
