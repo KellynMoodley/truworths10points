@@ -166,21 +166,16 @@ app.post('/voice', (req, res) => {
 app.post('/process-speech', async (req, res) => {
   try {
     const speechResult = req.body.SpeechResult;
-    const callStatus = req.body.CallStatus; // Tracks call state, e.g., 'completed', 'no-answer'
 
-   if (!speechResult || speechResult.trim() === '' && callStatus === 'in-progress') {
-    // Log the issue for debugging purposes
-     console.log('No speech detected');
+    // Ignore the call if no speech is detected
+    if (!speechResult || speechResult.trim() === '') {
+      console.log('No speech detected or user remained silent.');
+      const response = new twiml.VoiceResponse();
+      response.say('No speech was detected. Goodbye.');
+      response.hangup();
 
-    // Generate TwiML to respond to the caller
-     const response = new twiml.VoiceResponse();
-     response.say('No speech was detected. Goodbye.');
-     response.hangup();
-
-    // Respond with 200 OK and valid TwiML
-     return res.status(200).header('Content-Type', 'text/xml').send(response.toString());
+      return res.status(200).header('Content-Type', 'text/xml').send(response.toString());
     }
-
 
     console.log(`Speech input received: ${speechResult}`);
 
@@ -304,7 +299,6 @@ app.get('/call-data', (req, res) => {
 });
 
 
-// Status callback to handle call status changes
 app.post('/status-callback', (req, res) => {
   const callSid = req.body.CallSid;
   const callStatus = req.body.CallStatus;
@@ -312,8 +306,12 @@ app.post('/status-callback', (req, res) => {
   console.log(`Status update for CallSid ${callSid}: ${callStatus}`);
 
   if (app.locals.currentCall && app.locals.currentCall.callSid === callSid) {
-    // Check if the call ended for any reason
-    if (['completed', 'failed', 'no-answer', 'canceled', 'no-speech'].includes(callStatus)) {
+    // Ignore calls that are cut abruptly or have no meaningful interaction
+    if (['no-answer', 'canceled', 'no-speech', 'failed'].includes(callStatus)) {
+      console.log(`Call ${callSid} was cut abruptly or no speech detected. Ignoring.`);
+      app.locals.currentCall = null;
+      app.locals.conversations = [];
+    } else if (callStatus === 'completed') {
       const currentCall = app.locals.currentCall;
       const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
 
