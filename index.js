@@ -65,6 +65,25 @@ app.get('/download-conversation/:callSid', (req, res) => {
   res.send(conversationText);
 });
 
+// Download KPIs endpoint
+app.get('/download-kpis', (req, res) => {
+  const totalCalls = app.locals.pastCalls.length;
+  const totalDuration = app.locals.pastCalls.reduce((acc, call) => acc + call.duration, 0);
+  const avgCallTime = totalCalls > 0 ? (totalDuration / totalCalls).toFixed(2) : 0;
+
+  // Generate KPI text
+  let kpiText = `Truworths KPI Report\n\n`;
+  kpiText += `Total Calls: ${totalCalls}\n`;
+  kpiText += `Total Duration: ${totalDuration} seconds\n`;
+  kpiText += `Average Call Duration: ${avgCallTime} seconds\n\n`;
+
+  // Set headers for file download
+  res.setHeader('Content-Type', 'text/plain');
+  res.setHeader('Content-Disposition', 'attachment; filename=Truworths_KPI_Report.txt');
+  res.send(kpiText);
+});
+
+
 // HubSpot contact search endpoint
 app.post('/api/search', async (req, res) => {
   const { phone } = req.body;
