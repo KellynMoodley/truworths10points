@@ -165,27 +165,28 @@ app.post('/process-speech', async (req, res) => {
   try {
     const speechResult = req.body.SpeechResult;
 
-    if (!speechResult) {
-      console.log('No speech detected');
+    if (!req.body.SpeechResult || req.body.SpeechResult.trim() === '') {
+  console.log('No speech detected');
 
-      const response = new twiml.VoiceResponse();
-      response.say('No speech was detected. Goodbye.');
-      response.hangup();
+  const response = new twiml.VoiceResponse();
+  response.say('No speech was detected. Goodbye.');
+  response.hangup();
 
-      // Mark the current call as completed
-      if (app.locals.currentCall) {
-        const currentCall = app.locals.currentCall;
-        const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
-        currentCall.duration = callDuration;
-        currentCall.status = 'completed';
-        app.locals.pastCalls.push(currentCall);
-        app.locals.currentCall = null;
-        app.locals.conversations = [];
-    }
-      res.type('text/xml');
-      res.send(response.toString());
-      return;
-    }
+  // Mark the current call as completed
+  if (app.locals.currentCall) {
+    const currentCall = app.locals.currentCall;
+    const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
+    currentCall.duration = callDuration;
+    currentCall.status = 'no-speech';
+    app.locals.pastCalls.push(currentCall);
+    app.locals.currentCall = null;
+    app.locals.conversations = [];
+  }
+
+  res.type('text/xml');
+  res.send(response.toString());
+  return;
+}
 
     console.log(`Speech input received: ${speechResult}`);
 
@@ -272,7 +273,7 @@ app.post('/process-speech', async (req, res) => {
       action: '/process-speech',
       method: 'POST',
       voice: 'Polly.Ayanda-Neural',
-      timeout: 5,
+      timeout: 3,
       enhanced: true
     });
 
@@ -314,33 +315,25 @@ app.post('/status-callback', (req, res) => {
 
   console.log(`Status update for CallSid ${callSid}: ${callStatus}`);
 
-  // Check if there's a current call and if it matches the CallSid from Twilio
   if (app.locals.currentCall && app.locals.currentCall.callSid === callSid) {
-    // If the call is completed, failed, or no-answer, we process the conversation
-    if (callStatus === 'completed' || callStatus === 'failed' || callStatus === 'no-answer'|| callStatus === 'no-speech') {
+    // Check if the call ended for any reason
+    if (['completed', 'failed', 'no-answer', 'canceled', 'no-speech'].includes(callStatus)) {
       const currentCall = app.locals.currentCall;
-      const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000); // Calculate call duration
+      const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
 
-      // Update the current call's duration and status
       currentCall.duration = callDuration;
       currentCall.status = callStatus;
 
-      // Move conversations to the past conversations array
+      app.locals.pastCalls.push(currentCall);
       app.locals.pastConversations.push(...app.locals.conversations);
 
-      // Push the current call to pastCalls
-      app.locals.pastCalls.push(currentCall);
-
-      // Clear current call and conversations for the next call
       app.locals.currentCall = null;
       app.locals.conversations = [];
     }
   }
 
-  // Send an empty response to acknowledge the callback
-  res.send('');
+  res.status(200).send(''); // Acknowledge Twilio's callback
 });
-
 
 
 // Start the server
