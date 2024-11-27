@@ -164,29 +164,19 @@ app.post('/voice', (req, res) => {
 app.post('/process-speech', async (req, res) => {
   try {
     const speechResult = req.body.SpeechResult;
+    const callStatus = req.body.CallStatus; // Tracks call state, e.g., 'completed', 'no-answer'
 
-    if (!req.body.SpeechResult || req.body.SpeechResult.trim() === '') {
-  console.log('No speech detected');
+    if (!speechResult || speechResult.trim() === '' || callStatus === 'completed') {
+        // Respond with 204 No Content for no speech or abrupt call disconnection
+        return res.status(204).send();
+    }
 
-  const response = new twiml.VoiceResponse();
-  response.say('No speech was detected. Goodbye.');
-  response.hangup();
+   //console.log('No speech detected');
 
-  // Mark the current call as completed
-  if (app.locals.currentCall) {
-    const currentCall = app.locals.currentCall;
-    const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
-    currentCall.duration = callDuration;
-    currentCall.status = 'no-speech';
-    app.locals.pastCalls.push(currentCall);
-    app.locals.currentCall = null;
-    app.locals.conversations = [];
-  }
+  //const response = new twiml.VoiceResponse();
+  //response.say('No speech was detected. Goodbye.');
+  //response.hangup();
 
-  res.type('text/xml');
-  res.send(response.toString());
-  return;
-}
 
     console.log(`Speech input received: ${speechResult}`);
 
