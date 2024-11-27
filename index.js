@@ -141,7 +141,8 @@ app.post('/voice', (req, res) => {
     action: '/process-speech',
     method: 'POST',
     voice: 'Polly.Ayanda-Neural',
-    timeout: 5,
+    speechTimeout: 3,
+    timeout: 3,
     enhanced: true
   });
 
@@ -265,6 +266,7 @@ app.post('/process-speech', async (req, res) => {
       action: '/process-speech',
       method: 'POST',
       voice: 'Polly.Ayanda-Neural',
+      speechTimeout: 3,
       timeout: 3,
       enhanced: true
     });
