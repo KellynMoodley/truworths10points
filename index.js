@@ -143,7 +143,8 @@ app.post('/voice', (req, res) => {
     voice: 'Polly.Ayanda-Neural',
     speechTimeout: 3,
     timeout: 3,
-    enhanced: true
+    enhanced: true,
+    model: 'phone_call'  
   });
 
   // Add statusCallback for call status updates
@@ -268,7 +269,8 @@ app.post('/process-speech', async (req, res) => {
       voice: 'Polly.Ayanda-Neural',
       speechTimeout: 3,
       timeout: 3,
-      enhanced: true
+      enhanced: true,
+      model: 'phone_call'  
     });
 
     res.type('text/xml');
