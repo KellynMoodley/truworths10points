@@ -166,12 +166,30 @@ app.post('/process-speech', async (req, res) => {
     const speechResult = req.body.SpeechResult;
 
     if (!speechResult) {
-      throw new Error('No speech input received');
+      console.log('No speech detected');
+
+      const response = new twiml.VoiceResponse();
+      response.say('No speech detected. Goodbye.');
+      response.hangup();
+
+      // Mark the current call as completed
+      if (app.locals.currentCall) {
+        const currentCall = app.locals.currentCall;
+        const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
+        currentCall.duration = callDuration;
+        currentCall.status = 'no-speech';
+        app.locals.pastCalls.push(currentCall);
+        app.locals.currentCall = null;
+        app.locals.conversations = [];
+    }
+      res.type('text/xml');
+      res.send(response.toString());
+      return;
     }
 
     console.log(`Speech input received: ${speechResult}`);
 
-    let botResponse = 'Thank you for your message. Goodbye!';
+    let botResponse = 'Issue has been saved. An agent will review it and call you back. Goodbye!';
 
     if (speechResult.toLowerCase().includes('review account')) {
       const phone = req.body.From;
