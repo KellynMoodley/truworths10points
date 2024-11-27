@@ -141,10 +141,10 @@ app.post('/voice', (req, res) => {
     action: '/process-speech',
     method: 'POST',
     voice: 'Polly.Ayanda-Neural',
+    model: 'phone_call',
     speechTimeout: 'auto',
     //timeout: 3,
-    enhanced: true,
-    model: 'phone_call'  
+    enhanced: true, 
   });
 
   // Add statusCallback for call status updates
@@ -267,10 +267,10 @@ app.post('/process-speech', async (req, res) => {
       action: '/process-speech',
       method: 'POST',
       voice: 'Polly.Ayanda-Neural',
+      model: 'phone_call',
       speechTimeout: 'auto',
       //timeout: 3,
-      enhanced: true,
-      model: 'phone_call'  
+      enhanced: true, 
     });
 
     res.type('text/xml');
