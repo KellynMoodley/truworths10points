@@ -90,7 +90,6 @@
       border-radius: 4px;
       cursor: pointer;
     }
-
     .download-btn:hover {
       background-color: #0056b3;
     }
@@ -114,6 +113,19 @@
 
     .kpi-title {
       font-weight: bold;
+    }
+    .download-btn {
+      margin-left: 10px;
+      padding: 5px 10px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .download-btn:hover {
+      background-color: #0056b3;
     }
 
   </style>
@@ -168,6 +180,22 @@
           const a = document.createElement('a');
           a.href = url;
           a.download = `conversation_${callSid}.txt`;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          a.remove();
+        })
+        .catch(error => console.error('Download error:', error));
+    }
+
+    function downloadKpis() {
+      fetch('/download-kpis')
+        .then(response => response.blob())
+        .then(blob => {
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'Truworths_KPI_Report.txt';
           document.body.appendChild(a);
           a.click();
           window.URL.revokeObjectURL(url);
