@@ -177,7 +177,7 @@ app.post('/process-speech', async (req, res) => {
         const currentCall = app.locals.currentCall;
         const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
         currentCall.duration = callDuration;
-        currentCall.status = 'no-speech';
+        currentCall.status = 'completed';
         app.locals.pastCalls.push(currentCall);
         app.locals.currentCall = null;
         app.locals.conversations = [];
