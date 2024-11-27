@@ -166,22 +166,18 @@ app.post('/process-speech', async (req, res) => {
     const speechResult = req.body.SpeechResult;
     const callStatus = req.body.CallStatus; // Tracks call state, e.g., 'completed', 'no-answer'
 
-    if (!speechResult || speechResult.trim() === '' || callStatus === 'in-progress') {
-        // Respond with 204 No Content for no speech or abrupt call disconnection
+   if (!speechResult || speechResult.trim() === '' && callStatus === 'in-progress') {
+    // Log the issue for debugging purposes
+     console.log('No speech detected');
 
-      console.log('No speech detected');
+    // Generate TwiML to respond to the caller
+     const response = new twiml.VoiceResponse();
+     response.say('No speech was detected. Goodbye.');
+     response.hangup();
 
-  const response = new twiml.VoiceResponse();
-  response.say('No speech was detected. Goodbye.');
-  response.hangup();
-        return res.status(204).send();
+    // Respond with 200 OK and valid TwiML
+     return res.status(200).header('Content-Type', 'text/xml').send(response.toString());
     }
-
-   //console.log('No speech detected');
-
-  //const response = new twiml.VoiceResponse();
-  //response.say('No speech was detected. Goodbye.');
-  //response.hangup();
 
 
     console.log(`Speech input received: ${speechResult}`);
