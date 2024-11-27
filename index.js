@@ -258,21 +258,12 @@ app.get('/call-data', (req, res) => {
   const totalDuration = app.locals.pastCalls.reduce((acc, call) => acc + call.duration, 0);
   const avgCallTime = totalCalls > 0 ? totalDuration / totalCalls : 0;
 
-  // Call Completion Rate and Failure Rate
-  const completedCalls = app.locals.pastCalls.filter(call => call.status === 'completed').length;
-  const failedCalls = app.locals.pastCalls.filter(call => call.status === 'failed' || call.status === 'no-answer').length;
-
-  const callCompletionRate = totalCalls > 0 ? (completedCalls / totalCalls) * 100 : 0;
-  const callFailureRate = totalCalls > 0 ? (failedCalls / totalCalls) * 100 : 0;
-
   res.json({
     currentCall: app.locals.currentCall,
     pastCalls: app.locals.pastCalls,
     totalCalls,                        // Total number of calls
     totalDuration,                     // Total duration of calls (in seconds)
-    avgCallTime,                       // Average call time (in seconds)
-    callCompletionRate,                // Percentage of completed calls
-    callFailureRate,                   // Percentage of failed or no-answer calls
+    avgCallTime,
     conversations: app.locals.conversations,
     pastConversations: app.locals.pastConversations,
   });
