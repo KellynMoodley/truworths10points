@@ -145,14 +145,18 @@
     </ul>
   </div>
 
-  <!-- KPI Container -->
   <div id="kpi-container">
-    <h3>Key Performance Indicators (KPIs)</h3>
-    <div id="avg-call-time" class="kpi">
-      <span class="kpi-title">Average Call Handling Time:</span> <span id="avg-call-time-value">Calculating...</span>
-    </div>
-    <!-- Add other KPIs here if needed -->
+  <h3>Key Performance Indicators (KPIs)</h3>
+  <div id="avg-call-time" class="kpi">
+    <span class="kpi-title">Average Call Handling Time:</span> <span id="avg-call-time-value">Calculating...</span>
   </div>
+  <div id="total-calls" class="kpi">
+    <span class="kpi-title">Total Calls:</span> <span id="total-calls-value">Calculating...</span>
+  </div>
+  <div id="total-duration" class="kpi">
+    <span class="kpi-title">Total Call Duration:</span> <span id="total-duration-value">Calculating...</span>
+  </div>
+</div>
 
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script>
@@ -217,6 +221,8 @@
           const profileDiv = document.getElementById('profile');
           const pastCallsList = document.getElementById('past-calls-list');
           const avgCallTimeValue = document.getElementById('avg-call-time-value');
+          const totalCallsValue = document.getElementById('total-calls-value');
+          const totalDurationValue = document.getElementById('total-duration-value');
 
           if (data.currentCall) {
             currentCallDiv.innerHTML = `
@@ -263,8 +269,13 @@
             pastCallsList.innerHTML = '<li>No past calls available</li>';
           }
 
-          const avgCallTime = data.avgCallTime || 'Calculating...';
-          avgCallTimeValue.textContent = avgCallTime;
+          //const avgCallTime = data.avgCallTime || 'Calculating...';
+          //avgCallTimeValue.textContent = avgCallTime;
+
+          // Update KPIs
+          avgCallTimeValue.textContent = data.avgCallTime ? `${data.avgCallTime.toFixed(2)} seconds` : 'Calculating...';
+          totalCallsValue.textContent = data.totalCalls || 0;
+          totalDurationValue.textContent = data.totalDuration ? `${data.totalDuration} seconds` : 'Calculating...';
         })
         .catch(error => console.error('Error fetching call data:', error));
     }, 5000);
