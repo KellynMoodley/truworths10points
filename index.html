@@ -176,13 +176,13 @@
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script>
     function downloadConversation(callSid) {
-      fetch(`/download-conversation/${callSid}`)
+      fetch(/download-conversation/${callSid})
         .then(response => response.blob())
         .then(blob => {
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = `conversation_${callSid}.txt`;
+          a.download = conversation_${callSid}.txt;
           document.body.appendChild(a);
           a.click();
           window.URL.revokeObjectURL(url);
@@ -229,15 +229,14 @@ setInterval(() => {
           profileDiv.style.display = 'block';
         }
 
-      
-       const elapsedTime = Math.floor((Date.now() - data.currentCall.startTime) / 1000);
-        currentCallDiv.innerHTML = 
-          <h2>Current Call</h2>
-          <p>Caller: ${data.currentCall.caller}</p>
-          <p>Status: ${data.currentCall.status}</p>
-          <p>Call SID: ${data.currentCall.callSid}</p>
-          <p>Duration: ${elapsedTime} seconds</p>
-        ;
+          const elapsedTime = Math.floor((Date.now() - data.currentCall.startTime) / 1000);
+          currentCallDiv.innerHTML = 
+           <h2>Current Call</h2>
+           <p>Caller: ${data.currentCall.caller}</p>
+           <p>Status: ${data.currentCall.status}</p>
+           <p>Call SID: ${data.currentCall.callSid}</p>
+           <p>Duration: ${elapsedTime} seconds</p>
+          ;
       } else {
         currentCallDiv.innerHTML = '<p>No current call</p>';
         profileDiv.innerHTML = 'No caller details found.';
@@ -246,8 +245,8 @@ setInterval(() => {
       // Handle past calls
       if (data.pastCalls.length > 0) {
         pastCallsList.innerHTML = data.pastCalls.map(call => {
-          const detailsDivId = `details-${call.callSid}`;
-          return `
+          const detailsDivId = details-${call.callSid};
+          return 
             <li>
               <div>
                 <span class="caller" onclick="toggleDetails('${call.callSid}')">${call.caller}</span>
@@ -257,26 +256,26 @@ setInterval(() => {
                   <p>Duration: ${call.duration} seconds</p>
                   <h3>Conversation history:</h3>
                   <ul>
-                    ${call.conversations.map(convo => `
+                    ${call.conversations.map(convo => 
                       <li>
                         <p>User: ${convo.user}</p>
                         <p>Bot: ${convo.bot}</p>
                       </li>
-                    `).join('')}
+                    ).join('')}
                   </ul>
                 </div>
               </div>
             </li>
-          `;
+          ;
         }).join('');
       } else {
         pastCallsList.innerHTML = '<li>No past calls available</li>';
       }
 
       // Update KPIs
-      avgCallTimeValue.textContent = data.avgCallTime ? `${data.avgCallTime.toFixed(2)} seconds` : 'Calculating...';
+      avgCallTimeValue.textContent = data.avgCallTime ? ${data.avgCallTime.toFixed(2)} seconds : 'Calculating...';
       totalCallsValue.textContent = data.totalCalls || 0;
-      totalDurationValue.textContent = data.totalDuration ? `${data.totalDuration} seconds` : 'Calculating...';
+      totalDurationValue.textContent = data.totalDuration ? ${data.totalDuration} seconds : 'Calculating...';
     })
     .catch(error => console.error('Error fetching call data:', error));
 }, 1000);
@@ -291,10 +290,10 @@ function searchByPhoneNumber(phone) {
     .then(response => {
       const contacts = response.data;
       if (contacts.length === 0) {
-        profileDiv.innerHTML = `<p class="error-message">No contacts found with phone number: ${phone}</p>`;
+        profileDiv.innerHTML = <p class="error-message">No contacts found with phone number: ${phone}</p>;
       } else {
         const contact = contacts[0].properties;
-        profileDiv.innerHTML = `
+        profileDiv.innerHTML = 
           <p><span>First Name:</span> ${contact.firstname || 'N/A'}</p>
           <p><span>Last Name:</span> ${contact.lastname || 'N/A'}</p>
           <p><span>Email:</span> ${contact.email || 'N/A'}</p>
@@ -312,7 +311,7 @@ function searchByPhoneNumber(phone) {
           <p><span>PTP (Promise to pay) date:</span> ${contact.ptpdate|| 'N/A'}</p>
           <p><span>Best payment date:</span> ${contact.bestpaymentdate|| 'N/A'}</p>
           <p><span>Amount to pay:</span> ${contact.amounttopay|| 'N/A'}</p>
-        `;
+        ;
       }
     })
     .catch(error => {
@@ -322,7 +321,7 @@ function searchByPhoneNumber(phone) {
 }
 
 function toggleDetails(callSid) {
-  const detailsDiv = document.getElementById(`details-${callSid}`);
+  const detailsDiv = document.getElementById(details-${callSid});
   if (detailsDiv.style.display === 'none') {
     detailsDiv.style.display = 'block';
   } else {
@@ -345,4 +344,4 @@ function toggleDetails(callSid) {
     
   </script>
 </body>
-</html>
+</html>.
