@@ -244,6 +244,8 @@
         });
     }
 
+    let currentCallData = null;
+
     setInterval(() => {
       fetch('/call-data')
         .then(response => response.json())
@@ -256,21 +258,26 @@
           const totalDurationValue = document.getElementById('total-duration-value');
 
           if (data.currentCall) {
+            if (!currentCallData || currentCallData.callSid !== data.currentCall.callSid) {
+              // Call just started
+              currentCallData = { ...data.currentCall, startTime: Date.now() };
+              searchByPhoneNumber(data.currentCall.caller);
+              profileDiv.style.display = 'block';
+            }
+
+            const elapsedTime = Math.floor((Date.now() - currentCallData.startTime) / 1000);
             currentCallDiv.innerHTML = `
               <h2>Current Call</h2>
               <p>Caller: ${data.currentCall.caller}</p>
               <p>Status: ${data.currentCall.status}</p>
               <p>Call SID: ${data.currentCall.callSid}</p>
-              <p>Duration: ${data.currentCall.duration} seconds</p>
+              <p>Duration: ${elapsedTime} seconds</p>
             `;
-            searchByPhoneNumber(data.currentCall.caller);
-
-            profileDiv.style.display = 'block';
           } else {
-            currentCallDiv.innerHTML = '<p>No current call</p>';
-            profileDiv.innerHTML = 'No caller details found.';
+          currentCallDiv.innerHTML = '<p>No current call</p>';
+          profileDiv.innerHTML = 'No caller details found.';
           }
-
+          
           if (data.pastCalls.length > 0) {
             pastCallsList.innerHTML = data.pastCalls.map(call => {
               const detailsDivId = `details-${call.callSid}`;
@@ -309,7 +316,7 @@
           totalDurationValue.textContent = data.totalDuration ? `${data.totalDuration} seconds` : 'Calculating...';
         })
         .catch(error => console.error('Error fetching call data:', error));
-    });
+    }, 1000);
 
     function toggleDetails(callSid) {
       const detailsDiv = document.getElementById(`details-${callSid}`);
