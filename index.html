@@ -230,24 +230,18 @@ setInterval(() => {
         }
 
       
-       if (data.currentCall && data.currentCall.startTime) {
-          const startTime = new Date(data.currentCall.startTime);  // Ensure it's a valid date
-             if (!isNaN(startTime.getTime())) {
-               const elapsedTime = Math.floor((Date.now() - startTime.getTime()) / 1000);
-                 currentCallDiv.innerHTML = `
-                 <h2>Current Call</h2>
-                 <p>Caller: ${data.currentCall.caller}</p>
-                 <p>Status: ${data.currentCall.status}</p>
-                 <p>Call SID: ${data.currentCall.callSid}</p>
-                 <p>Duration: ${elapsedTime} seconds</p>
-                 `;
-           } else {
-             currentCallDiv.innerHTML = '<p>Invalid start time</p>';
-            }
-          } else {
-         currentCallDiv.innerHTML = '<p>No current call</p>';
-       } 
-
+       const elapsedTime = Math.floor((Date.now() - data.currentCall.startTime) / 1000);
+        currentCallDiv.innerHTML = 
+          <h2>Current Call</h2>
+          <p>Caller: ${data.currentCall.caller}</p>
+          <p>Status: ${data.currentCall.status}</p>
+          <p>Call SID: ${data.currentCall.callSid}</p>
+          <p>Duration: ${elapsedTime} seconds</p>
+        ;
+      } else {
+        currentCallDiv.innerHTML = '<p>No current call</p>';
+        profileDiv.innerHTML = 'No caller details found.';
+      }
 
       // Handle past calls
       if (data.pastCalls.length > 0) {
