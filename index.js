@@ -309,7 +309,7 @@ app.post('/status-callback', (req, res) => {
   if (app.locals.currentCall && app.locals.currentCall.callSid === callSid) {
     // Ignore calls that are cut abruptly or have no meaningful interaction
     if (['no-answer', 'canceled', 'no-speech', 'failed'].includes(callStatus)) {
-      console.log(Call ${callSid} was cut abruptly or no speech detected. Ignoring.);
+      console.log('Call ${callSid} was cut abruptly or no speech detected. Ignoring.');
       app.locals.currentCall = null;
       app.locals.conversations = [];
     } else if (callStatus === 'completed') {
