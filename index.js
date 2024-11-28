@@ -219,6 +219,10 @@ app.post('/process-speech', async (req, res) => {
       }
     }
 
+    const response = new twiml.VoiceResponse();
+    response.say(botResponse);
+    response.hangup();
+
     const conversationEntry = {
       timestamp: new Date().toISOString(),
       user: speechResult,
@@ -226,10 +230,7 @@ app.post('/process-speech', async (req, res) => {
     };
     app.locals.conversations.push(conversationEntry);
 
-    const response = new twiml.VoiceResponse();
-    response.say(botResponse);
-    response.hangup();
-
+    
     if (app.locals.currentCall) {
       const currentCall = app.locals.currentCall;
       const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
@@ -241,6 +242,7 @@ app.post('/process-speech', async (req, res) => {
       app.locals.currentCall = null; // Clear current call
       app.locals.conversations = []; // Clear the current conversations array for the next call
     }
+
 
     res.type('text/xml');
     res.send(response.toString());
@@ -270,6 +272,19 @@ app.post('/handle-no-speech', (req, res) => {
   const response = new twiml.VoiceResponse();
   response.say('No speech detected. Goodbye.');
   response.hangup();
+
+  if (app.locals.currentCall) {
+      const currentCall = app.locals.currentCall;
+      const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
+      currentCall.duration = callDuration;
+      currentCall.status = 'completed';
+      currentCall.conversations = app.locals.conversations;
+      app.locals.pastCalls.push(currentCall); // Push the current call to pastCalls
+      app.locals.pastConversations.push(...app.locals.conversations); // Ensure all conversations are added to pastConversations
+      app.locals.currentCall = null; // Clear current call
+      app.locals.conversations = []; // Clear the current conversations array for the next call
+    }
+  
   res.type('text/xml');
   res.send(response.toString());
 });
