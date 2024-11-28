@@ -172,7 +172,7 @@ app.post('/process-speech', async (req, res) => {
 
     console.log(`Speech input received: ${speechResult}`);
 
-    let botResponse = 'Thank you for your message. Goodbye!';
+    let botResponse = 'Your issue has been saved. An agent will review and get back to you. Goodbye!';
 
     if (speechResult.toLowerCase().includes('review account')) {
       const phone = req.body.From;
