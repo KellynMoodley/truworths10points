@@ -137,14 +137,13 @@ app.post('/voice', (req, res) => {
   response.say('or start speaking and an agent will review your case.');
 
   response.gather({
-  input: 'speech',
-  action: '/process-speech',
-  method: 'POST',
-  timeout: 5, // seconds to wait for user input
-  speechTimeout: 'auto',
-  voice: 'Polly.Ayanda-Neural',
-  model: 'phone_call',
-  enhanced: true,
+    input: 'speech',
+    action: '/process-speech',
+    method: 'POST',
+    voice: 'Polly.Ayanda-Neural',
+    timeout: 5,
+    enhanced: true,
+    actionFallback: '/handle-no-speech'
   });
 
   // Add statusCallback for call status updates
@@ -167,19 +166,13 @@ app.post('/process-speech', async (req, res) => {
   try {
     const speechResult = req.body.SpeechResult;
 
-    // Ignore the call if no speech is detected
-    if (speechResult=' ') {
-      console.log('No speech detected or user remained silent.');
-      const response = new twiml.VoiceResponse();
-      response.say('No speech was detected. Goodbye.');
-      response.hangup();
-
-      return res.status(200).header('Content-Type', 'text/xml').send(response.toString());
+    if (!speechResult) {
+      throw new Error('No speech input received');
     }
 
     console.log(`Speech input received: ${speechResult}`);
 
-    let botResponse = 'Issue has been saved. An agent will review it and call you back. Goodbye!';
+    let botResponse = 'Thank you for your message. Goodbye!';
 
     if (speechResult.toLowerCase().includes('review account')) {
       const phone = req.body.From;
@@ -258,20 +251,27 @@ app.post('/process-speech', async (req, res) => {
     response.say('I did not catch that. Could you please repeat?');
 
     response.gather({
-    input: 'speech',
-    action: '/process-speech',
-    method: 'POST',
-    timeout: 5, // seconds to wait for user input
-    speechTimeout: 'auto',
-    voice: 'Polly.Ayanda-Neural',
-    model: 'phone_call',
-    enhanced: true,
+      input: 'speech',
+      action: '/process-speech',
+      method: 'POST',
+      voice: 'Polly.Ayanda-Neural',
+      timeout: 5,
+      enhanced: true,
+      actionFallback: '/handle-no-speech'
     });
-
 
     res.type('text/xml');
     res.send(response.toString());
   }
+});
+
+// Handle case where no speech is detected
+app.post('/handle-no-speech', (req, res) => {
+  const response = new twiml.VoiceResponse();
+  response.say('No speech detected. Goodbye.');
+  response.hangup();
+  res.type('text/xml');
+  res.send(response.toString());
 });
 
 
@@ -300,6 +300,7 @@ app.get('/call-data', (req, res) => {
 });
 
 
+// Status callback to handle call status changes
 app.post('/status-callback', (req, res) => {
   const callSid = req.body.CallSid;
   const callStatus = req.body.CallStatus;
