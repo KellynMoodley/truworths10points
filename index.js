@@ -334,7 +334,7 @@ app.post('/status-callback', (req, res) => {
   // Check if there's a current call and if it matches the CallSid from Twilio
   if (app.locals.currentCall && app.locals.currentCall.callSid === callSid) {
     // If the call is completed, failed, or no-answer, we process the conversation
-    if (callStatus === 'completed' || callStatus === 'failed' || callStatus === 'no-answer') || callStatus === 'canceled') || callStatus === 'busy') {
+    if (callStatus === 'completed' || callStatus === 'failed' || callStatus === 'no-answer' || callStatus === 'canceled' || callStatus === 'busy') {
       const currentCall = app.locals.currentCall;
       const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000); // Calculate call duration
 
