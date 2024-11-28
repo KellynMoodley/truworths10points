@@ -304,7 +304,7 @@ app.post('/status-callback', (req, res) => {
   const callSid = req.body.CallSid;
   const callStatus = req.body.CallStatus;
 
-  console.log(Status update for CallSid ${callSid}: ${callStatus});
+  console.log('Status update for CallSid ${callSid}: ${callStatus'});
 
   if (app.locals.currentCall && app.locals.currentCall.callSid === callSid) {
     // Ignore calls that are cut abruptly or have no meaningful interaction
