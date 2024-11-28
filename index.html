@@ -207,125 +207,128 @@
         .catch(error => console.error('Download error:', error));
     }
 
-    function searchByPhoneNumber(phone) {
+    let lastCallSid = null;
+
+setInterval(() => {
+  fetch('/call-data')
+    .then(response => response.json())
+    .then(data => {
+      const currentCallDiv = document.getElementById('current-call');
       const profileDiv = document.getElementById('profile');
-      profileDiv.innerHTML = "Loading profile...";
-      axios.post('/api/search', { phone })
-        .then(response => {
-          const contacts = response.data;
-          if (contacts.length === 0) {
-            profileDiv.innerHTML = `<p class="error-message">No contacts found with phone number: ${phone}</p>`;
-          } else {
-            const contact = contacts[0].properties;
-            profileDiv.innerHTML = `
-              <p><span>First Name:</span> ${contact.firstname || 'N/A'}</p>
-              <p><span>Last Name:</span> ${contact.lastname || 'N/A'}</p>
-              <p><span>Email:</span> ${contact.email || 'N/A'}</p>
-              <p><span>Phone number:</span> ${contact.mobilenumber || 'N/A'}</p>
-              <p><span>Customer ID:</span> ${contact.customerid || 'N/A'}</p>
-              <p><span>Account Number:</span> ${contact.accountnumbers || 'N/A'}</p>
-              <p><span>High value customer:</span> ${contact.highvalue || 'N/A'}</p>
-              <p><span>Delinquency status:</span> ${contact.delinquencystatus || 'N/A'}</p>
-              <p><span>Segmentation:</span> ${contact.segmentation || 'N/A'}</p>
-              <p><span>Outstanding balance:</span> ${contact.outstandingbalance || 'N/A'}</p>
-              <p><span>Reasons for missed payment:</span> ${contact.missedpayment || 'N/A'}</p>
-              <p><span>Promise to pay rating:</span> ${contact.promisetopay || 'N/A'}</p>
-              <p><span>Payment method history:</span> ${contact.paymentmethodhistory || 'N/A'}</p>
-              <p><span>Last missed payment date:</span> ${contact.lastmissedpaymentdate || 'N/A'}</p>
-              <p><span>PTP (Promise to pay) date:</span> ${contact.ptpdate|| 'N/A'}</p>
-              <p><span>Best payment date:</span> ${contact.bestpaymentdate|| 'N/A'}</p>
-              <p><span>Amount to pay:</span> ${contact.amounttopay|| 'N/A'}</p>
-            `;
-          }
-        })
-        .catch(error => {
-          console.error('Error searching contacts:', error);
-          profileDiv.innerHTML = '<p class="error-message">Error loading profile. Please try again later.</p>';
-        });
-    }
+      const pastCallsList = document.getElementById('past-calls-list');
+      const avgCallTimeValue = document.getElementById('avg-call-time-value');
+      const totalCallsValue = document.getElementById('total-calls-value');
+      const totalDurationValue = document.getElementById('total-duration-value');
 
-    let currentCallData = null;
+      // Handle current call data
+      if (data.currentCall) {
+        if (lastCallSid !== data.currentCall.callSid) {
+          // Call just started, update profile and set the call sid
+          lastCallSid = data.currentCall.callSid;
+          searchByPhoneNumber(data.currentCall.caller);
+          profileDiv.style.display = 'block';
+        }
 
-    setInterval(() => {
-      fetch('/call-data')
-        .then(response => response.json())
-        .then(data => {
-          const currentCallDiv = document.getElementById('current-call');
-          const profileDiv = document.getElementById('profile');
-          const pastCallsList = document.getElementById('past-calls-list');
-          const avgCallTimeValue = document.getElementById('avg-call-time-value');
-          const totalCallsValue = document.getElementById('total-calls-value');
-          const totalDurationValue = document.getElementById('total-duration-value');
-
-          if (data.currentCall) {
-            if (!currentCallData || currentCallData.callSid !== data.currentCall.callSid) {
-              // Call just started
-              currentCallData = { ...data.currentCall, startTime: Date.now() };
-              searchByPhoneNumber(data.currentCall.caller);
-              profileDiv.style.display = 'block';
-            }
-
-            const elapsedTime = Math.floor((Date.now() - currentCallData.startTime) / 1000);
-            currentCallDiv.innerHTML = `
-              <h2>Current Call</h2>
-              <p>Caller: ${data.currentCall.caller}</p>
-              <p>Status: ${data.currentCall.status}</p>
-              <p>Call SID: ${data.currentCall.callSid}</p>
-              <p>Duration: ${elapsedTime} seconds</p>
-            `;
-          } else {
-          currentCallDiv.innerHTML = '<p>No current call</p>';
-          profileDiv.innerHTML = 'No caller details found.';
-          }
-          
-          if (data.pastCalls.length > 0) {
-            pastCallsList.innerHTML = data.pastCalls.map(call => {
-              const detailsDivId = `details-${call.callSid}`;
-              return `
-                <li>
-                  <div>
-                    <span class="caller" onclick="toggleDetails('${call.callSid}')">${call.caller}</span>
-                    <button onclick="downloadConversation('${call.callSid}')" class="download-btn">Download Conversation</button>
-                    <div id="${detailsDivId}" class="caller-details" style="${document.getElementById(detailsDivId)?.style.display === 'block' ? 'display: block;' : 'display: none;'}">
-                      <p>Status: ${call.status}</p>
-                      <p>Duration: ${call.duration} seconds</p>
-                      <h3>Conversation history:</h3>
-                      <ul>
-                        ${call.conversations.map(convo => `
-                          <li>
-                            <p>User: ${convo.user}</p>
-                            <p>Bot: ${convo.bot}</p>
-                          </li>
-                        `).join('')}
-                      </ul>
-                    </div>
-                  </div>
-                </li>
-              `;
-            }).join('');
-          } else {
-            pastCallsList.innerHTML = '<li>No past calls available</li>';
-          }
-
-          //const avgCallTime = data.avgCallTime || 'Calculating...';
-          //avgCallTimeValue.textContent = avgCallTime;
-
-          // Update KPIs
-          avgCallTimeValue.textContent = data.avgCallTime ? `${data.avgCallTime.toFixed(2)} seconds` : 'Calculating...';
-          totalCallsValue.textContent = data.totalCalls || 0;
-          totalDurationValue.textContent = data.totalDuration ? `${data.totalDuration} seconds` : 'Calculating...';
-        })
-        .catch(error => console.error('Error fetching call data:', error));
-    }, 1000);
-
-    function toggleDetails(callSid) {
-      const detailsDiv = document.getElementById(`details-${callSid}`);
-      if (detailsDiv.style.display === 'none') {
-        detailsDiv.style.display = 'block';
+        const elapsedTime = Math.floor((Date.now() - data.currentCall.startTime) / 1000);
+        currentCallDiv.innerHTML = `
+          <h2>Current Call</h2>
+          <p>Caller: ${data.currentCall.caller}</p>
+          <p>Status: ${data.currentCall.status}</p>
+          <p>Call SID: ${data.currentCall.callSid}</p>
+          <p>Duration: ${elapsedTime} seconds</p>
+        `;
       } else {
-        detailsDiv.style.display = 'none';
+        currentCallDiv.innerHTML = '<p>No current call</p>';
+        profileDiv.innerHTML = 'No caller details found.';
       }
-    }
+
+      // Handle past calls
+      if (data.pastCalls.length > 0) {
+        pastCallsList.innerHTML = data.pastCalls.map(call => {
+          const detailsDivId = `details-${call.callSid}`;
+          return `
+            <li>
+              <div>
+                <span class="caller" onclick="toggleDetails('${call.callSid}')">${call.caller}</span>
+                <button onclick="downloadConversation('${call.callSid}')" class="download-btn">Download Conversation</button>
+                <div id="${detailsDivId}" class="caller-details" style="${document.getElementById(detailsDivId)?.style.display === 'block' ? 'display: block;' : 'display: none;'}">
+                  <p>Status: ${call.status}</p>
+                  <p>Duration: ${call.duration} seconds</p>
+                  <h3>Conversation history:</h3>
+                  <ul>
+                    ${call.conversations.map(convo => `
+                      <li>
+                        <p>User: ${convo.user}</p>
+                        <p>Bot: ${convo.bot}</p>
+                      </li>
+                    `).join('')}
+                  </ul>
+                </div>
+              </div>
+            </li>
+          `;
+        }).join('');
+      } else {
+        pastCallsList.innerHTML = '<li>No past calls available</li>';
+      }
+
+      // Update KPIs
+      avgCallTimeValue.textContent = data.avgCallTime ? `${data.avgCallTime.toFixed(2)} seconds` : 'Calculating...';
+      totalCallsValue.textContent = data.totalCalls || 0;
+      totalDurationValue.textContent = data.totalDuration ? `${data.totalDuration} seconds` : 'Calculating...';
+    })
+    .catch(error => console.error('Error fetching call data:', error));
+}, 1000);
+
+function searchByPhoneNumber(phone) {
+  const profileDiv = document.getElementById('profile');
+  if (profileDiv.innerHTML !== "Loading profile...") {
+    profileDiv.innerHTML = "Loading profile...";
+  }
+
+  axios.post('/api/search', { phone })
+    .then(response => {
+      const contacts = response.data;
+      if (contacts.length === 0) {
+        profileDiv.innerHTML = `<p class="error-message">No contacts found with phone number: ${phone}</p>`;
+      } else {
+        const contact = contacts[0].properties;
+        profileDiv.innerHTML = `
+          <p><span>First Name:</span> ${contact.firstname || 'N/A'}</p>
+          <p><span>Last Name:</span> ${contact.lastname || 'N/A'}</p>
+          <p><span>Email:</span> ${contact.email || 'N/A'}</p>
+          <p><span>Phone number:</span> ${contact.mobilenumber || 'N/A'}</p>
+          <p><span>Customer ID:</span> ${contact.customerid || 'N/A'}</p>
+          <p><span>Account Number:</span> ${contact.accountnumbers || 'N/A'}</p>
+          <p><span>High value customer:</span> ${contact.highvalue || 'N/A'}</p>
+          <p><span>Delinquency status:</span> ${contact.delinquencystatus || 'N/A'}</p>
+          <p><span>Segmentation:</span> ${contact.segmentation || 'N/A'}</p>
+          <p><span>Outstanding balance:</span> ${contact.outstandingbalance || 'N/A'}</p>
+          <p><span>Reasons for missed payment:</span> ${contact.missedpayment || 'N/A'}</p>
+          <p><span>Promise to pay rating:</span> ${contact.promisetopay || 'N/A'}</p>
+          <p><span>Payment method history:</span> ${contact.paymentmethodhistory || 'N/A'}</p>
+          <p><span>Last missed payment date:</span> ${contact.lastmissedpaymentdate || 'N/A'}</p>
+          <p><span>PTP (Promise to pay) date:</span> ${contact.ptpdate|| 'N/A'}</p>
+          <p><span>Best payment date:</span> ${contact.bestpaymentdate|| 'N/A'}</p>
+          <p><span>Amount to pay:</span> ${contact.amounttopay|| 'N/A'}</p>
+        `;
+      }
+    })
+    .catch(error => {
+      console.error('Error searching contacts:', error);
+      profileDiv.innerHTML = '<p class="error-message">Error loading profile. Please try again later.</p>';
+    });
+}
+
+function toggleDetails(callSid) {
+  const detailsDiv = document.getElementById(`details-${callSid}`);
+  if (detailsDiv.style.display === 'none') {
+    detailsDiv.style.display = 'block';
+  } else {
+    detailsDiv.style.display = 'none';
+  }
+}
+
 
   window.watsonAssistantChatOptions = {
     integrationID: "ed428f23-61fb-42c7-b5ad-45995b4c2d92", // The ID of this integration.
