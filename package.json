@@ -15,7 +15,8 @@
     "ibm-watson": "^6.1.0",
     "cors":"^2.8.5",
     "dotenv":"^16.0.3",
-    "path": "^0.12.7"
+    "path": "^0.12.7",
+    "@supabase/supabase-js": "^2.46.1",
   },
   "devDependencies": {
     "nodemon": "^2.0.22"
