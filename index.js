@@ -269,6 +269,9 @@ app.post('/process-speech', async (req, res) => {
 
 // Handle case where no speech is detected
 app.post('/handle-no-speech', (req, res) => {
+  console.log('Current Call before processing:', app.locals.currentCall);
+  console.log('Current Conversations:', app.locals.conversations);
+
   const response = new twiml.VoiceResponse();
   response.say('No speech detected. Goodbye.');
   response.hangup();
@@ -279,16 +282,22 @@ app.post('/handle-no-speech', (req, res) => {
       currentCall.duration = callDuration;
       currentCall.status = 'completed';
       currentCall.conversations = app.locals.conversations;
-      app.locals.pastCalls.push(currentCall); // Push the current call to pastCalls
-      app.locals.pastConversations.push(...app.locals.conversations); // Ensure all conversations are added to pastConversations
-      app.locals.currentCall = null; // Clear current call
-      app.locals.conversations = []; // Clear the current conversations array for the next call
-    }
+      
+      console.log('Pushing Call:', currentCall);
+      console.log('Pushing Conversations:', app.locals.conversations);
+
+      app.locals.pastCalls.push(currentCall);
+      app.locals.pastConversations.push(...app.locals.conversations);
+      app.locals.currentCall = null;
+      app.locals.conversations = [];
+
+      console.log('Past Calls after pushing:', app.locals.pastCalls);
+      console.log('Past Conversations after pushing:', app.locals.pastConversations);
+  }
   
   res.type('text/xml');
   res.send(response.toString());
 });
-
 
 // Serve call data
 app.get('/call-data', (req, res) => {
