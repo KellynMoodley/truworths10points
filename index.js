@@ -304,25 +304,30 @@ app.post('/status-callback', (req, res) => {
   const callSid = req.body.CallSid;
   const callStatus = req.body.CallStatus;
 
-  console.log(`Status update for CallSid ${callSid}: ${callStatus}`);
+  console.log(Status update for CallSid ${callSid}: ${callStatus});
 
   if (app.locals.currentCall && app.locals.currentCall.callSid === callSid) {
-    if (['no-answer', 'canceled', 'no-speech', 'failed', 'completed'].includes(callStatus)) {
+    // Ignore calls that are cut abruptly or have no meaningful interaction
+    if (['no-answer', 'canceled', 'no-speech', 'failed'].includes(callStatus)) {
+      console.log(Call ${callSid} was cut abruptly or no speech detected. Ignoring.);
+      app.locals.currentCall = null;
+      app.locals.conversations = [];
+    } else if (callStatus === 'completed') {
       const currentCall = app.locals.currentCall;
-      if (callStatus === 'completed') {
-        const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
-        currentCall.duration = callDuration;
-      }
+      const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
+
+      currentCall.duration = callDuration;
       currentCall.status = callStatus;
+
       app.locals.pastCalls.push(currentCall);
       app.locals.pastConversations.push(...app.locals.conversations);
+
+      app.locals.currentCall = null;
+      app.locals.conversations = [];
     }
-    // Cleanup current call data
-    app.locals.currentCall = null;
-    app.locals.conversations = [];
   }
 
-  res.status(200).send('');
+  res.status(200).send(''); // Acknowledge Twilio's callback
 });
 
 
