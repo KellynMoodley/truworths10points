@@ -137,14 +137,14 @@ app.post('/voice', (req, res) => {
   response.say('or start speaking and an agent will review your case.');
 
   response.gather({
-    input: 'speech',
-    action: '/process-speech',
-    method: 'POST',
-    voice: 'Polly.Ayanda-Neural',
-    model: 'phone_call',
-    speechTimeout: 'auto',
-    //timeout: 3,
-    enhanced: true, 
+  input: 'speech',
+  action: '/process-speech',
+  method: 'POST',
+  timeout: 5, // seconds to wait for user input
+  speechTimeout: 'auto',
+  voice: 'Polly.Ayanda-Neural',
+  model: 'phone_call',
+  enhanced: true,
   });
 
   // Add statusCallback for call status updates
@@ -168,7 +168,7 @@ app.post('/process-speech', async (req, res) => {
     const speechResult = req.body.SpeechResult;
 
     // Ignore the call if no speech is detected
-    if (!speechResult || speechResult.trim() === '') {
+    if (speechResult=' ') {
       console.log('No speech detected or user remained silent.');
       const response = new twiml.VoiceResponse();
       response.say('No speech was detected. Goodbye.');
@@ -258,15 +258,16 @@ app.post('/process-speech', async (req, res) => {
     response.say('I did not catch that. Could you please repeat?');
 
     response.gather({
-      input: 'speech',
-      action: '/process-speech',
-      method: 'POST',
-      voice: 'Polly.Ayanda-Neural',
-      model: 'phone_call',
-      speechTimeout: 'auto',
-      //timeout: 3,
-      enhanced: true, 
+    input: 'speech',
+    action: '/process-speech',
+    method: 'POST',
+    timeout: 5, // seconds to wait for user input
+    speechTimeout: 'auto',
+    voice: 'Polly.Ayanda-Neural',
+    model: 'phone_call',
+    enhanced: true,
     });
+
 
     res.type('text/xml');
     res.send(response.toString());
@@ -306,27 +307,22 @@ app.post('/status-callback', (req, res) => {
   console.log(`Status update for CallSid ${callSid}: ${callStatus}`);
 
   if (app.locals.currentCall && app.locals.currentCall.callSid === callSid) {
-    // Ignore calls that are cut abruptly or have no meaningful interaction
-    if (['no-answer', 'canceled', 'no-speech', 'failed'].includes(callStatus)) {
-      console.log(`Call ${callSid} was cut abruptly or no speech detected. Ignoring.`);
-      app.locals.currentCall = null;
-      app.locals.conversations = [];
-    } else if (callStatus === 'completed') {
+    if (['no-answer', 'canceled', 'no-speech', 'failed', 'completed'].includes(callStatus)) {
       const currentCall = app.locals.currentCall;
-      const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
-
-      currentCall.duration = callDuration;
+      if (callStatus === 'completed') {
+        const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
+        currentCall.duration = callDuration;
+      }
       currentCall.status = callStatus;
-
       app.locals.pastCalls.push(currentCall);
       app.locals.pastConversations.push(...app.locals.conversations);
-
-      app.locals.currentCall = null;
-      app.locals.conversations = [];
     }
+    // Cleanup current call data
+    app.locals.currentCall = null;
+    app.locals.conversations = [];
   }
 
-  res.status(200).send(''); // Acknowledge Twilio's callback
+  res.status(200).send('');
 });
 
 
