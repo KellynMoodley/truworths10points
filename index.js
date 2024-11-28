@@ -341,7 +341,7 @@ app.post('/status-callback', (req, res) => {
       // Update the current call's duration and status
       currentCall.duration = callDuration;
       currentCall.status = callStatus;
-      //currentCall.conversations = app.locals.conversations;
+      currentCall.conversations = app.locals.conversations;
 
       // Move conversations to the past conversations array
       app.locals.pastConversations.push(...app.locals.conversations);
