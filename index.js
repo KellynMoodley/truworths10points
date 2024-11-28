@@ -11,6 +11,8 @@ const fs = require('fs');
 
 const app = express();
 const port = process.env.PORT || 3000;
+const { createClient } = require('@supabase/supabase-js');
+
 
 // Configure middleware
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -34,6 +36,8 @@ const twilioClient = twilio(
 );
 
 const ACCESS_TOKEN = process.env.access_token;
+
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY)
 
 // Store calls and conversations in memory
 app.locals.currentCall = null;
