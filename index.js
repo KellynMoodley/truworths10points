@@ -284,11 +284,11 @@ app.post('/handle-no-speech', (req, res) => {
       currentCall.conversations = app.locals.conversations;
 
       // If no conversations, set the conversations to "Conversation not recorded"
-      if (app.locals.conversations.length === 0) {
-        currentCall.conversations = ['Conversation not recorded'];
-      } else {
-        currentCall.conversations = app.locals.conversations;
-      }
+  if (!app.locals.conversations || app.locals.conversations.length === 0 || app.locals.conversations.every(item => item === undefined)) {
+      currentCall.conversations = ['Conversation not recorded'];
+  } else {
+      currentCall.conversations = app.locals.conversations;
+  }
     
       console.log('Pushing Call:', currentCall);
       console.log('Pushing Conversations:', app.locals.conversations);
