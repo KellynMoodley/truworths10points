@@ -50,7 +50,6 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-
 // Download conversation endpoint
 app.get('/download-conversation/:callSid', (req, res) => {
   const callSid = req.params.callSid;
@@ -70,63 +69,6 @@ app.get('/download-conversation/:callSid', (req, res) => {
   res.send(conversationText);
 });
 
-// Function to upload text to Supabase
-async function uploadConversationToSupabase(conversationText, callSid) {
-  try {
-    const fileName = `conversation_${callSid}_${Date.now()}.txt`
-    // Upload the text buffer
-    const { data, error } = await supabase
-      .storage
-      .from('truworths')
-      .upload(fileName, Buffer.from(conversationText, 'utf-8'), {
-        contentType: 'text/plain',
-        cacheControl: '3600',
-        upsert: true
-      })
- 
-    if (error) {
-      console.error('Supabase upload error:', error)
-      throw error
-    }
- 
-    // Get the public URL
-    const { data: urlData } = supabase
-      .storage
-      .from('truworths')
-      .getPublicUrl(fileName)
- 
-    return {
-      uploadData: data,
-      publicUrl: urlData.publicUrl
-    }
-  } catch (err) {
-    console.error('Error uploading conversation:', err)
-    throw err
-  }
-}
-
-// Change to POST method and use req.body instead of req.params
-app.post('/upload-conversation', async (req, res) => {
-  try {
-    const { callSid, conversationText } = req.body;
-
-    if (!callSid || !conversationText) {
-      return res.status(400).send('Missing callSid or conversationText');
-    }
-
-    // Upload to Supabase
-    const uploadResult = await uploadConversationToSupabase(conversationText, callSid);
-
-    // Send back the public URL
-    res.json({
-      message: 'Conversation uploaded successfully',
-      publicUrl: uploadResult.publicUrl
-    });
-  } catch (error) {
-    console.error('Upload failed:', error);
-    res.status(500).send('Failed to upload conversation');
-  }
-});
 
 
 
