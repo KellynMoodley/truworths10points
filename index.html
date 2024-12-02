@@ -176,32 +176,20 @@
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script>
     function downloadConversation(customerid) {
-  // Use "unknown_customer" if customerid is not provided
-  const safeCustomerId = customerid ? encodeURIComponent(customerid) : 'unknown_customer';
-
-  fetch(`/download-conversation/${safeCustomerId}`)
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(`Failed to download conversation: ${response.statusText}`);
-      }
-      return response.blob();
-    })
-    .then(blob => {
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `conversation_${safeCustomerId}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      a.remove();
-    })
-    .catch(error => {
-      console.error('Download error:', error.message);
-      alert('An error occurred while downloading the conversation. Please try again.');
-    });
-}
-
+      fetch(`/download-conversation/${customerid}`)
+        .then(response => response.blob())
+        .then(blob => {          
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `conversation_${customerid}.txt`;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          a.remove();
+        })
+        .catch(error => console.error('Download error:', error));
+    }
 
     function downloadKpis() {
       fetch('/download-kpis')
