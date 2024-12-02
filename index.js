@@ -50,29 +50,62 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+app.get('/download-conversation', async (req, res) => {
+  const { phone, callSid } = req.body;
 
-// Download conversation endpoint
-app.get('/download-conversation/:callSid', async (req, res) => {
+  if (!phone) {
+    return res.status(400).json({ error: 'Phone number is required.' });
+  }
+
   try {
-    const callSid = req.params.callSid;
+    // Step 1: Search for the contact in HubSpot
+    const url = 'https://api.hubapi.com/crm/v3/objects/contacts/search';
+    const query = {
+      filterGroups: [
+        {
+          filters: [
+            {
+              propertyName: "mobilenumber",
+              operator: "EQ",
+              value: phone
+            }
+          ]
+        }
+      ],
+      properties: ['customerid']
+    };
+
+    const response = await axios.post(url, query, {
+      headers: {
+        Authorization: `Bearer ${ACCESS_TOKEN}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const results = response.data.results;
+    if (results.length === 0) {
+      return res.status(404).json({ error: 'Customer not found.' });
+    }
+
+    // Extract the customer ID from the response
+    const customerID = results[0].properties.customerid || 'unknown_customer';
+
+    // Step 2: Retrieve the call data
     const call = app.locals.pastCalls.find(c => c.callSid === callSid);
 
     if (!call || !call.conversations) {
       return res.status(404).send('Conversation not found');
     }
 
-    // Retrieve the customer ID (assuming it's part of the call object)
-    const customerID = call.customerID || 'unknown_customer';
-
     const conversationText = call.conversations.map(conv => `
       Truworths customer: ${conv.user}
       Truworths agent: ${conv.bot}
     `).join('');
 
-    // Define the file name using the customer ID
+    // Step 3: Define the file name using the customer ID
     const fileName = `${customerID}.txt`;
 
-    // Upload the conversation text to Supabase storage
+    // Step 4: Upload the conversation text to Supabase storage
     const { data, error } = await supabase
       .storage
       .from('truworths')
@@ -85,17 +118,15 @@ app.get('/download-conversation/:callSid', async (req, res) => {
     if (error) {
       console.error('Supabase upload error:', error);
       return res.status(500).send('Error uploading conversation to Supabase');
-    } else {
-      console.log('Conversation uploaded successfully:', data);
     }
 
-    // Send the conversation text as a downloadable file
+    // Step 5: Send the conversation text as a downloadable file
     res.setHeader('Content-Type', 'text/plain');
     res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);
     res.send(conversationText);
   } catch (error) {
-    console.error('Error in /download-conversation:', error.message);
-    res.status(500).send('Internal Server Error');
+    console.error('Error in /download-conversation:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Failed to process request. Please try again later.' });
   }
 });
 
