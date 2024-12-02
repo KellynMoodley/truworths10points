@@ -179,11 +179,6 @@
       fetch(`/download-conversation/${callSid}`)
         .then(response => response.blob())
         .then(blob => {
-
-          // Show the public URL or do something with it
-          console.log('Conversation uploaded. Public URL:', data.publicUrl);
-          // Optionally, you could update the UI to show the link
-          alert(`Conversation uploaded. Public URL: ${data.publicUrl}`);
           
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
@@ -196,6 +191,27 @@
         })
         .catch(error => console.error('Download error:', error));
     }
+
+    function uploadConversation(conversationText, callSid) {
+      fetch('/upload-conversation', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ conversationText, callSid }),
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.publicUrl) {
+                console.log('Conversation uploaded. Public URL:', data.publicUrl);
+                alert(`Conversation uploaded. Public URL: ${data.publicUrl}`);
+            } else {
+                throw new Error('No public URL returned');
+            }
+        })
+        .catch(error => console.error('Upload error:', error));
+   }
+
 
     function downloadKpis() {
       fetch('/download-kpis')
