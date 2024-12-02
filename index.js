@@ -51,8 +51,8 @@ app.get('/', (req, res) => {
 });
 
 // Route to download conversation
-app.get('/download-conversation', async (req, res) => {
-const { phone, callSid } = req.body;
+app.post('/download-conversation', async (req, res) => {
+    const { phone, callSid } = req.body;
 
     if (!phone) {
         return res.status(400).json({ error: 'Phone number is required.' });
@@ -101,12 +101,11 @@ const { phone, callSid } = req.body;
           Agent: ${conv.bot}
         `).join('');
 
-        const fileName = `${customerID}.txt`;
-
+        // Upload to Supabase
         const { data, error } = await supabase
             .storage
             .from('truworths')
-            .upload(fileName, conversationText, {
+            .upload(`${customerID}.txt`, conversationText, {
                 cacheControl: '3600',
                 contentType: 'text/plain',
                 upsert: false,
@@ -117,14 +116,17 @@ const { phone, callSid } = req.body;
             return res.status(500).send('Error uploading conversation to Supabase');
         }
 
-        res.setHeader('Content-Type', 'text/plain');
-        res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);
-        res.send(conversationText);
+        // Respond with the conversation text and customer info
+        res.json({
+            contact: { customerid: customerID },
+            conversationText
+        });
     } catch (error) {
         console.error('Error in /download-conversation:', error.response?.data || error.message);
         res.status(500).json({ error: 'Failed to process request. Please try again later.' });
     }
 });
+
 
 
 
