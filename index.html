@@ -179,6 +179,12 @@
       fetch(`/download-conversation/${callSid}`)
         .then(response => response.blob())
         .then(blob => {
+
+          // Show the public URL or do something with it
+          console.log('Conversation uploaded. Public URL:', data.publicUrl);
+          // Optionally, you could update the UI to show the link
+          alert(`Conversation uploaded. Public URL: ${data.publicUrl}`);
+          
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
