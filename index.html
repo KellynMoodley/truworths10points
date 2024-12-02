@@ -193,31 +193,32 @@
     }
 
     function uploadConversation(conversationText, callSid) {
-       fetch('/upload-conversation', {
+        fetch('/upload-conversation', {
          method: 'POST',
          headers: {
-       'Content-Type': 'application/json',
+      'Content-Type': 'application/json',
        },
-       body: JSON.stringify({ conversationText, callSid }),
-     })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('Failed to upload conversation');
-      }
-      return response.json();
-    })
-    .then(data => {
-      if (data.publicUrl) {
+      body: JSON.stringify({ conversationText, callSid }),
+       })
+       .then(response => {
+       if (!response.ok) {
+          throw new Error('Failed to upload conversation');
+        }
+        return response.json();
+       })
+       .then(data => {
+       if (data.publicUrl) {
         console.log('Conversation uploaded. Public URL:', data.publicUrl);
         alert(`Conversation uploaded. Public URL: ${data.publicUrl}`);
-      } else {
+       } else {
         throw new Error('No public URL returned');
-      }
-    })
-    .catch(error => console.error('Upload error:', error));
-}
-
-
+       }
+      })
+        .catch(error => {
+        console.error('Upload error:', error);
+        alert('Failed to upload conversation');
+      });
+    }
 
     function downloadKpis() {
       fetch('/download-kpis')
