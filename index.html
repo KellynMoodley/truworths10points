@@ -178,8 +178,7 @@
     function downloadConversation(callSid) {
       fetch(`/download-conversation/${callSid}`)
         .then(response => response.blob())
-        .then(blob => {
-          
+        .then(blob => {          
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
@@ -190,34 +189,6 @@
           a.remove();
         })
         .catch(error => console.error('Download error:', error));
-    }
-
-    function uploadConversation(conversationText, callSid) {
-        fetch('/upload-conversation', {
-         method: 'POST',
-         headers: {
-      'Content-Type': 'application/json',
-       },
-      body: JSON.stringify({ conversationText, callSid }),
-       })
-       .then(response => {
-       if (!response.ok) {
-          throw new Error('Failed to upload conversation');
-        }
-        return response.json();
-       })
-       .then(data => {
-       if (data.publicUrl) {
-        console.log('Conversation uploaded. Public URL:', data.publicUrl);
-        alert(`Conversation uploaded. Public URL: ${data.publicUrl}`);
-       } else {
-        throw new Error('No public URL returned');
-       }
-      })
-        .catch(error => {
-        console.error('Upload error:', error);
-        alert('Failed to upload conversation');
-      });
     }
 
     function downloadKpis() {
