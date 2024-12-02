@@ -77,7 +77,7 @@ async function uploadConversationToSupabase(conversationText, callSid) {
     // Upload the text buffer
     const { data, error } = await supabase
       .storage
-      .from('call_transcripts')
+      .from('truworths')
       .upload(fileName, Buffer.from(conversationText, 'utf-8'), {
         contentType: 'text/plain',
         cacheControl: '3600',
