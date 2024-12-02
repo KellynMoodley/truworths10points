@@ -50,6 +50,26 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+
+// Download conversation endpoint
+app.get('/download-conversation/:callSid', (req, res) => {
+  const callSid = req.params.callSid;
+  const call = app.locals.pastCalls.find(c => c.callSid === callSid);
+
+  if (!call || !call.conversations) {
+    return res.status(404).send('Conversation not found');
+  }
+
+  const conversationText = call.conversations.map(conv => `
+     Truworths customer: ${conv.user}
+     Truworths agent: ${conv.bot} 
+  `).join('');
+
+  res.setHeader('Content-Type', 'text/plain');
+  res.setHeader('Content-Disposition', `attachment; filename=conversation_${callSid}.txt`);
+  res.send(conversationText);
+});
+
 // Function to upload text to Supabase
 async function uploadConversationToSupabase(conversationText, callSid) {
   try {
@@ -85,44 +105,18 @@ async function uploadConversationToSupabase(conversationText, callSid) {
   }
 }
 
-// Download conversation endpoint
-app.get('/download-conversation/:callSid', (req, res) => {
-  const callSid = req.params.callSid;
-  const call = app.locals.pastCalls.find(c => c.callSid === callSid);
-
-  if (!call || !call.conversations) {
-    return res.status(404).send('Conversation not found');
-  }
-
-  const conversationText = call.conversations.map(conv => `
-     Truworths customer: ${conv.user}
-     Truworths agent: ${conv.bot} 
-  `).join('');
-
-  res.setHeader('Content-Type', 'text/plain');
-  res.setHeader('Content-Disposition', `attachment; filename=conversation_${callSid}.txt`);
-  res.send(conversationText);
-});
-
-
-// Modify your existing endpoint
-app.get('/upload-conversation', async (req, res) => {
+// Change to POST method and use req.body instead of req.params
+app.post('/upload-conversation', async (req, res) => {
   try {
-    const callSid = req.params.callSid;
-    const call = app.locals.pastCalls.find(c => c.callSid === callSid);
- 
-    if (!call || !call.conversations) {
-      return res.status(404).send('Conversation not found');
+    const { callSid, conversationText } = req.body;
+
+    if (!callSid || !conversationText) {
+      return res.status(400).send('Missing callSid or conversationText');
     }
- 
-    const conversationText = call.conversations.map(conv => 
-      `Truworths customer: ${conv.user}
-Truworths agent: ${conv.bot}
-`).join('\n\n');
- 
-    // Upload to Supabase instead of downloading
+
+    // Upload to Supabase
     const uploadResult = await uploadConversationToSupabase(conversationText, callSid);
- 
+
     // Send back the public URL
     res.json({
       message: 'Conversation uploaded successfully',
