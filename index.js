@@ -50,26 +50,51 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+
 // Download conversation endpoint
-app.get('/download-conversation/:callSid', (req, res) => {
-  const callSid = req.params.callSid;
-  const call = app.locals.pastCalls.find(c => c.callSid === callSid);
+app.get('/download-conversation/:callSid', async (req, res) => {
+  try {
+    const callSid = req.params.callSid;
+    const call = app.locals.pastCalls.find(c => c.callSid === callSid);
 
-  if (!call || !call.conversations) {
-    return res.status(404).send('Conversation not found');
+    if (!call || !call.conversations) {
+      return res.status(404).send('Conversation not found');
+    }
+
+    const conversationText = call.conversations.map(conv => `
+       Truworths customer: ${conv.user}
+       Truworths agent: ${conv.bot} 
+    `).join('');
+
+    // Define a filename for the uploaded file
+    const fileName = `conversation_${callSid}.txt`;
+
+    // Upload the conversation text to Supabase storage
+    const { data, error } = await supabase
+      .storage
+      .from('truworths')
+      .upload(fileName, conversationText, {
+        cacheControl: '3600',
+        contentType: 'text/plain',
+        upsert: false
+      });
+
+    if (error) {
+      console.error('Supabase upload error:', error);
+      return res.status(500).send('Error uploading conversation to Supabase');
+    } else {
+      console.log('Conversation uploaded successfully:', data);
+    }
+
+    // Send the conversation text as a downloadable file
+    res.setHeader('Content-Type', 'text/plain');
+    res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);
+    res.send(conversationText);
+  } catch (error) {
+    console.error('Error in /download-conversation:', error.message);
+    res.status(500).send('Internal Server Error');
   }
-
-  const conversationText = call.conversations.map(conv => `
-     Truworths customer: ${conv.user}
-     Truworths agent: ${conv.bot} 
-  `).join('');
-
-  res.setHeader('Content-Type', 'text/plain');
-  res.setHeader('Content-Disposition', `attachment; filename=conversation_${callSid}.txt`);
-  res.send(conversationText);
 });
-
-
 
 
 // Download KPIs endpoint
@@ -339,7 +364,7 @@ app.get('/call-data', (req, res) => {
 
 
 // Status callback to handle call status changes
-app.post('/status-callback', async (req, res) => {
+app.post('/status-callback', (req, res) => {
   const callSid = req.body.CallSid;
   const callStatus = req.body.CallStatus;
 
@@ -367,29 +392,12 @@ app.post('/status-callback', async (req, res) => {
       app.locals.currentCall = null;
       app.locals.conversations = [];
 
-     
-
   // Log for debugging
       console.log('Call terminated with status:', callStatus);
       console.log('Past Calls:', app.locals.pastCalls.length);
       console.log('Past Conversations:', app.locals.pastConversations.length);
     }
   }
-    
-  // Convert conversations to text
-  const conversationText = app.locals.conversations.map(conv => 
-    `User: ${conv.user}\nBot: ${conv.bot}\n`
-  ).join('\n');
-
-  // Upload the conversation text to Supabase storage
-  const { data, error } = await supabase
-    .storage
-    .from('truworths')
-    .upload(fileName, conversationText, {
-      cacheControl: '3600',
-      contentType: 'text/plain',
-      upsert: false
-    });
 
   // Send an empty response to acknowledge the callback
   res.send('');
