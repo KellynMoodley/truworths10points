@@ -92,7 +92,7 @@ async function uploadConversationToSupabase(conversationText, callSid) {
     // Get the public URL
     const { data: urlData } = supabase
       .storage
-      .from('call_transcripts')
+      .from('truworths')
       .getPublicUrl(fileName)
  
     return {
