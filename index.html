@@ -175,14 +175,29 @@
 
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script>
-    function downloadConversation(customerid) {
-      fetch(`/download-conversation/${customerid}`)
+    function downloadConversation(phone) {
+      fetch(`/download-conversation`)
+      axios.post('/download/conversation', { phone })
+        .then(response => {
+          const contacts = response.data;
+          if (contacts.length === 0) {
+            profileDiv.innerHTML = `<p class="error-message">No contacts found with phone number: ${phone}</p>`;
+          } else {
+            const contact = contacts[0].properties;
+        
+              <p><span>Customer ID:</span> ${contact.customerid || 'Unknown customer'}</p>          }
+        })
+        .catch(error => {
+          console.error('Error searching contacts:', error);
+          profileDiv.innerHTML = '<p class="error-message">Error loading profile. Please try again later.</p>';
+        });
+      
         .then(response => response.blob())
         .then(blob => {          
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = `conversation_${customerid}.txt`;
+          a.download = `${contact.customerid}.txt`;
           document.body.appendChild(a);
           a.click();
           window.URL.revokeObjectURL(url);
