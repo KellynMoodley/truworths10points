@@ -50,6 +50,41 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// Function to upload text to Supabase
+async function uploadConversationToSupabase(conversationText, callSid) {
+  try {
+    const fileName = `conversation_${callSid}_${Date.now()}.txt`
+    // Upload the text buffer
+    const { data, error } = await supabase
+      .storage
+      .from('call_transcripts')
+      .upload(fileName, Buffer.from(conversationText, 'utf-8'), {
+        contentType: 'text/plain',
+        cacheControl: '3600',
+        upsert: true
+      })
+ 
+    if (error) {
+      console.error('Supabase upload error:', error)
+      throw error
+    }
+ 
+    // Get the public URL
+    const { data: urlData } = supabase
+      .storage
+      .from('call_transcripts')
+      .getPublicUrl(fileName)
+ 
+    return {
+      uploadData: data,
+      publicUrl: urlData.publicUrl
+    }
+  } catch (err) {
+    console.error('Error uploading conversation:', err)
+    throw err
+  }
+}
+
 // Download conversation endpoint
 app.get('/download-conversation/:callSid', (req, res) => {
   const callSid = req.params.callSid;
