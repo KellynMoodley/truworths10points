@@ -50,84 +50,51 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Route to download conversation
-app.post('/download-conversation', async (req, res) => {
-    const { phone, callSid } = req.body;
 
-    if (!phone) {
-        return res.status(400).json({ error: 'Phone number is required.' });
+// Download conversation endpoint
+app.get('/download-conversation/:callSid', async (req, res) => {
+  try {
+    const callSid = req.params.callSid;
+    const call = app.locals.pastCalls.find(c => c.callSid === callSid);
+
+    if (!call || !call.conversations) {
+      return res.status(404).send('Conversation not found');
     }
 
-    try {
-        // Search for the contact in HubSpot
-        const url = 'https://api.hubapi.com/crm/v3/objects/contacts/search';
-        const query = {
-            filterGroups: [
-                {
-                    filters: [
-                        {
-                            propertyName: "mobilenumber",
-                            operator: "EQ",
-                            value: phone
-                        }
-                    ]
-                }
-            ],
-            properties: ['customerid']
-        };
+    const conversationText = call.conversations.map(conv => `
+       Truworths customer: ${conv.user}
+       Truworths agent: ${conv.bot} 
+    `).join('');
 
-        const response = await axios.post(url, query, {
-            headers: {
-                Authorization: `Bearer ${ACCESS_TOKEN}`,
-                'Content-Type': 'application/json'
-            }
-        });
+    // Define a filename for the uploaded file
+    const fileName = `conversation_${callSid}.txt`;
 
-        const results = response.data.results;
-        if (results.length === 0) {
-            return res.status(404).json({ error: 'Customer not found.' });
-        }
+    // Upload the conversation text to Supabase storage
+    const { data, error } = await supabase
+      .storage
+      .from('truworths')
+      .upload(fileName, conversationText, {
+        cacheControl: '3600',
+        contentType: 'text/plain',
+        upsert: false
+      });
 
-        const customerID = results[0].properties.customerid || 'unknown_customer';
-
-        // Retrieve the call data
-        const call = app.locals.pastCalls.find(c => c.callSid === callSid);
-        if (!call || !call.conversations) {
-            return res.status(404).send('Conversation not found');
-        }
-
-        const conversationText = call.conversations.map(conv => `
-          Customer: ${conv.user}
-          Agent: ${conv.bot}
-        `).join('');
-
-        // Upload to Supabase
-        const { data, error } = await supabase
-            .storage
-            .from('truworths')
-            .upload(`${customerID}.txt`, conversationText, {
-                cacheControl: '3600',
-                contentType: 'text/plain',
-                upsert: false,
-            });
-
-        if (error) {
-            console.error('Supabase upload error:', error);
-            return res.status(500).send('Error uploading conversation to Supabase');
-        }
-
-        // Respond with the conversation text and customer info
-        res.json({
-            contact: { customerid: customerID },
-            conversationText
-        });
-    } catch (error) {
-        console.error('Error in /download-conversation:', error.response?.data || error.message);
-        res.status(500).json({ error: 'Failed to process request. Please try again later.' });
+    if (error) {
+      console.error('Supabase upload error:', error);
+      return res.status(500).send('Error uploading conversation to Supabase');
+    } else {
+      console.log('Conversation uploaded successfully:', data);
     }
+
+    // Send the conversation text as a downloadable file
+    res.setHeader('Content-Type', 'text/plain');
+    res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);
+    res.send(conversationText);
+  } catch (error) {
+    console.error('Error in /download-conversation:', error.message);
+    res.status(500).send('Internal Server Error');
+  }
 });
-
-
 
 
 // Download KPIs endpoint
