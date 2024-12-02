@@ -175,34 +175,21 @@
 
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script>
-    function downloadConversation(phone, callSid) {
-    axios.post('/download-conversation', { phone, callSid })
-        .then(response => {
-            const contact = response.data.contact;
-            if (!contact) {
-                profileDiv.innerHTML = `<p class="error-message">No contact found with phone number: ${phone}</p>`;
-                return;
-            }
-
-            const customerID = contact.customerid || 'Unknown customer';
-            const fileName = `${customerID}.txt`;
-
-            // Create a download link
-            const url = window.URL.createObjectURL(new Blob([response.data.conversationText], { type: 'text/plain' }));
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = fileName;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            a.remove();
+    function downloadConversation(customerid) {
+      fetch(`/download-conversation/${customerid}`)
+        .then(response => response.blob())
+        .then(blob => {          
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `conversation_${customerid}.txt`;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          a.remove();
         })
-        .catch(error => {
-            console.error('Error downloading conversation:', error);
-            profileDiv.innerHTML = '<p class="error-message">Error downloading conversation. Please try again later.</p>';
-        });
-      }
-
+        .catch(error => console.error('Download error:', error));
+    }
 
     function downloadKpis() {
       fetch('/download-kpis')
