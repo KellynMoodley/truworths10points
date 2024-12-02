@@ -377,32 +377,37 @@ app.post('/status-callback', async (req, res) => {
   }
 
   try {
-        // Convert conversations to text
-        const conversationText = app.locals.conversations.map(conv => 
-          `User: ${conv.user}\nBot: ${conv.bot}\n`
-        ).join('\n');
 
-        // Write conversation to a file (optional, but can be useful)
-        const fileName = `conversation_${callSid}.txt`;
-        
-        // Upload the conversation text to Supabase storage
-        const { data, error } = await supabase
-          .storage
-          .from('truworths')
-          .upload(fileName, conversationText, {
-            cacheControl: '3600',
-            contentType: 'text/plain',
-            upsert: false
-          });
+    // Ensure there are conversations to process
+    if (app.locals.conversations.length === 0) {
+      console.log('No conversations to save.');
+      return; // Exit early if no conversations exist
+    }
+    
+  // Convert conversations to text
+  const conversationText = app.locals.conversations.map(conv => 
+    `User: ${conv.user}\nBot: ${conv.bot}\n`
+  ).join('\n');
 
-        if (error) {
-          console.error('Supabase upload error:', error);
-        } else {
-          console.log('Conversation uploaded successfully:', data);
-        }
-      } catch (uploadError) {
-        console.error('Error uploading conversation:', uploadError);
-      }
+  // Upload the conversation text to Supabase storage
+  const { data, error } = await supabase
+    .storage
+    .from('truworths')
+    .upload(fileName, conversationText, {
+      cacheControl: '3600',
+      contentType: 'text/plain',
+      upsert: false
+    });
+
+  if (error) {
+    console.error('Supabase upload error:', error);
+  } else {
+    console.log('Conversation uploaded successfully:', data);
+  }
+} catch (uploadError) {
+  console.error('Error uploading conversation:', uploadError.message);
+}
+
 
   // Send an empty response to acknowledge the callback
   res.send('');
