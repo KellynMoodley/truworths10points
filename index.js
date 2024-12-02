@@ -61,13 +61,16 @@ app.get('/download-conversation/:callSid', async (req, res) => {
       return res.status(404).send('Conversation not found');
     }
 
+    // Retrieve the customer ID (assuming it's part of the call object)
+    const customerID = call.customerID || 'unknown_customer';
+
     const conversationText = call.conversations.map(conv => `
-       Truworths customer: ${conv.user}
-       Truworths agent: ${conv.bot} 
+      Truworths customer: ${conv.user}
+      Truworths agent: ${conv.bot}
     `).join('');
 
-    // Define a filename for the uploaded file
-    const fileName = `conversation_${callSid}.txt`;
+    // Define the file name using the customer ID
+    const fileName = `${customerID}.txt`;
 
     // Upload the conversation text to Supabase storage
     const { data, error } = await supabase
@@ -76,7 +79,7 @@ app.get('/download-conversation/:callSid', async (req, res) => {
       .upload(fileName, conversationText, {
         cacheControl: '3600',
         contentType: 'text/plain',
-        upsert: false
+        upsert: false,
       });
 
     if (error) {
@@ -95,6 +98,7 @@ app.get('/download-conversation/:callSid', async (req, res) => {
     res.status(500).send('Internal Server Error');
   }
 });
+
 
 
 // Download KPIs endpoint
