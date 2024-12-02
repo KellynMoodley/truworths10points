@@ -52,43 +52,6 @@ app.get('/', (req, res) => {
 
 // Download conversation endpoint
 app.get('/download-conversation/:callSid', (req, res) => {
-
-  const { phone } = req.body;
-
-  if (!phone) {
-    return res.status(400).json({ error: 'Phone number is required.' });
-  }
-
-  try {
-    const url = 'https://api.hubapi.com/crm/v3/objects/contacts/search';
-    const query = {
-      filterGroups: [
-        {
-          filters: [
-            {
-              propertyName: "mobilenumber",
-              operator: "EQ",
-              value: phone
-            }
-          ]
-        }
-      ],
-      properties: ['customerid']
-    };
-
-    const response = await axios.post(url, query, {
-      headers: {
-        Authorization: `Bearer ${ACCESS_TOKEN}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    res.json(response.data.results);
-  } catch (error) {
-    console.error('Error searching contacts:', error.response?.data || error.message);
-    res.status(500).json({ error: 'Failed to search contacts. Please try again later.' });
-  }
-
   const callSid = req.params.callSid;
   const call = app.locals.pastCalls.find(c => c.callSid === callSid);
 
@@ -102,9 +65,11 @@ app.get('/download-conversation/:callSid', (req, res) => {
   `).join('');
 
   res.setHeader('Content-Type', 'text/plain');
-  res.setHeader('Content-Disposition', `attachment; filename=conversation_${customerid}.txt`);
+  res.setHeader('Content-Disposition', `attachment; filename=conversation_${callSid}.txt`);
   res.send(conversationText);
 });
+
+
 
 
 // Download KPIs endpoint
@@ -374,7 +339,7 @@ app.get('/call-data', (req, res) => {
 
 
 // Status callback to handle call status changes
-app.post('/status-callback', (req, res) => {
+app.post('/status-callback', async (req, res) => {
   const callSid = req.body.CallSid;
   const callStatus = req.body.CallStatus;
 
@@ -402,12 +367,42 @@ app.post('/status-callback', (req, res) => {
       app.locals.currentCall = null;
       app.locals.conversations = [];
 
+     
+
   // Log for debugging
       console.log('Call terminated with status:', callStatus);
       console.log('Past Calls:', app.locals.pastCalls.length);
       console.log('Past Conversations:', app.locals.pastConversations.length);
     }
   }
+
+  try {
+        // Convert conversations to text
+        const conversationText = app.locals.conversations.map(conv => 
+          `User: ${conv.user}\nBot: ${conv.bot}\n`
+        ).join('\n');
+
+        // Write conversation to a file (optional, but can be useful)
+        const fileName = `conversation_${callSid}.txt`;
+        
+        // Upload the conversation text to Supabase storage
+        const { data, error } = await supabase
+          .storage
+          .from('truworths')
+          .upload(fileName, conversationText, {
+            cacheControl: '3600',
+            contentType: 'text/plain',
+            upsert: false
+          });
+
+        if (error) {
+          console.error('Supabase upload error:', error);
+        } else {
+          console.log('Conversation uploaded successfully:', data);
+        }
+      } catch (uploadError) {
+        console.error('Error uploading conversation:', uploadError);
+      }
 
   // Send an empty response to acknowledge the callback
   res.send('');
