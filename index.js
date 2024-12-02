@@ -69,7 +69,57 @@ app.get('/download-conversation/:callSid', (req, res) => {
   res.send(conversationText);
 });
 
+// Download and upload conversation endpoint
+app.get('/upload-conversation/:callSid', async (req, res) => {
+  const callSid = req.params.callSid;
+  const call = app.locals.pastCalls.find(c => c.callSid === callSid);
 
+  if (!call || !call.conversations) {
+    return res.status(404).send('Conversation not found');
+  }
+
+  const conversationText = call.conversations.map(conv => `
+     Truworths customer: ${conv.user}
+     Truworths agent: ${conv.bot} 
+  `).join('');
+
+  const fileName = `conversation_${callSid}.txt`;
+  const filePath = path.join(__dirname, fileName);
+
+  // Save conversation to a file
+  fs.writeFileSync(filePath, conversationText);
+
+  try {
+    // Upload file to Supabase
+    const { data, error } = await supabase.storage
+      .from('conversations') // Replace 'conversations' with your actual storage bucket name
+      .upload(`conversations/${fileName}`, fs.createReadStream(filePath), {
+        cacheControl: '3600',
+        upsert: true,
+        contentType: 'text/plain',
+      });
+
+    if (error) {
+      console.error('Error uploading to Supabase:', error);
+      return res.status(500).send('Failed to upload conversation to Supabase');
+    }
+
+    console.log('File uploaded successfully to Supabase:', data);
+
+    // Cleanup local file
+    fs.unlinkSync(filePath);
+
+    res.setHeader('Content-Type', 'text/plain');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=${fileName}`
+    );
+    res.send(conversationText);
+  } catch (error) {
+    console.error('Error during upload:', error);
+    res.status(500).send('An error occurred during the upload process.');
+  }
+});
 
 
 // Download KPIs endpoint
