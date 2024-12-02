@@ -99,10 +99,31 @@ app.get('/download-conversation/:callSid', (req, res) => {
      Truworths agent: ${conv.bot} 
   `).join('');
 
-  // Upload to Supabase instead of downloading
-  const uploadResult = await uploadConversationToSupabase(conversationText, callSid);
+  res.setHeader('Content-Type', 'text/plain');
+  res.setHeader('Content-Disposition', `attachment; filename=conversation_${callSid}.txt`);
+  res.send(conversationText);
+});
 
-  // Send back the public URL
+
+// Modify your existing endpoint
+app.get('/upload-conversation', async (req, res) => {
+  try {
+    const callSid = req.params.callSid;
+    const call = app.locals.pastCalls.find(c => c.callSid === callSid);
+ 
+    if (!call || !call.conversations) {
+      return res.status(404).send('Conversation not found');
+    }
+ 
+    const conversationText = call.conversations.map(conv => 
+      `Truworths customer: ${conv.user}
+Truworths agent: ${conv.bot}
+`).join('\n\n');
+ 
+    // Upload to Supabase instead of downloading
+    const uploadResult = await uploadConversationToSupabase(conversationText, callSid);
+ 
+    // Send back the public URL
     res.json({
       message: 'Conversation uploaded successfully',
       publicUrl: uploadResult.publicUrl
@@ -111,12 +132,7 @@ app.get('/download-conversation/:callSid', (req, res) => {
     console.error('Upload failed:', error);
     res.status(500).send('Failed to upload conversation');
   }
-
-  res.setHeader('Content-Type', 'text/plain');
-  res.setHeader('Content-Disposition', `attachment; filename=conversation_${callSid}.txt`);
-  res.send(conversationText);
 });
-
 
 
 
