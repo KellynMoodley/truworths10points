@@ -460,8 +460,13 @@ app.post('/status-callback', (req, res) => {
       console.log('Past Calls:', app.locals.pastCalls.length);
       console.log('Past Conversations:', app.locals.pastConversations.length);
 
-      // Call the uploadConversation function to upload the call data to Supabase
-      await uploadConversation(callSid);
+      uploadConversation(callSid)
+        .then(() => {
+            console.log('Conversation uploaded successfully');
+         })
+        .catch((error) => {
+            console.error('Error while uploading conversation:', error.message);
+         });
     }
   }
 
