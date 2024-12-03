@@ -184,7 +184,13 @@
           a.href = url;
           // Generate dynamic filename with timestamp
           const now = new Date();
-          a.download = `${now}_conversation_${caller}.txt`;
+          const timestamp = now.getFullYear() + '/' + 
+                  String(now.getMonth() + 1).padStart(2, '0') + '/' + 
+                  String(now.getDate()).padStart(2, '0') + ' ' + 
+                  String(now.getHours()).padStart(2, '0') + ':' + 
+                  String(now.getMinutes()).padStart(2, '0');
+     
+          a.download = `${timestamp}_conversation_${caller}.txt`;
           document.body.appendChild(a);
           a.click();
           window.URL.revokeObjectURL(url);
