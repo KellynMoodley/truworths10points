@@ -211,19 +211,19 @@ app.post('/voice', (req, res) => {
 // Process speech using Watson and handle option 3
 app.post('/process-speech', async (req, res) => {
   try {
-    const digits= req.body.Digits; 
-    const speechResult = req.body.SpeechResult;
+    const speechResult= req.body.Digits; 
+    //const speechResult = req.body.SpeechResult;
 
-    if (!speechResult||!digits) {
+    if (!speechResult) {
       throw new Error('No speech input received');
     }
 
-    console.log(`Speech input received: ${speechResult}`);
+   // console.log(`Speech input received: ${speechResult}`);
 
-    let botResponse = 'Your issue has been saved. An agent will review and get back to you. Goodbye!';
+    //let botResponse = 'Your issue has been saved. An agent will review and get back to you. Goodbye!';
 
     //if (speechResult.toLowerCase().includes('review account')) {
-    if (digits === '1'){
+    if (speechResult === '1'){
       const phone = req.body.From;
 
       if (!phone) {
