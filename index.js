@@ -66,7 +66,7 @@ app.get('/download-conversation/:callSid', async (req, res) => {
     const timestamp = now.getFullYear() + '/' + 
              String(now.getMonth() + 1).padStart(2, '0') + '/' + 
              String(now.getDate()).padStart(2, '0') + ' ' + 
-             String(now.getHours()).padStart(2, '0') + ':' + 
+             String(now.getHours()+2).padStart(2, '0') + ':' + 
              String(now.getMinutes()).padStart(2, '0');
 
     const conversationText = call.conversations.map(conv => `
@@ -105,6 +105,59 @@ app.get('/download-conversation/:callSid', async (req, res) => {
   }
 });
 
+// Import any necessary dependencies if not already imported
+const uploadConversation = async (callSid) => {
+  try {
+    const call = app.locals.pastCalls.find(c => c.callSid === callSid);
+
+    if (!call || !call.conversations) {
+      console.error('Conversation not found for CallSid:', callSid);
+      return;
+    }
+
+    const caller = call.caller; // Access the caller (phone number) from the call object
+
+    const now = new Date(); 
+    const timestamp = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Africa/Johannesburg',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(now);
+
+    const conversationText = call.conversations.map(conv => `
+      Date: ${timestamp}
+      Truworths customer: ${conv.user}
+      Truworths agent: ${conv.bot} 
+    `).join('\n');
+
+    // Define a filename for the uploaded file
+    const fileName = `${caller}_call_${callSid}.txt`;
+
+    // Convert text to Buffer
+    const fileContent = Buffer.from(conversationText, 'utf-8');
+
+    // Upload the conversation text to Supabase storage
+    const { data, error } = await supabase
+      .storage
+      .from('truworths')
+      .upload(fileName, fileContent, {
+        cacheControl: '3600',
+        contentType: 'text/plain',
+        upsert: false, // Change to true if you want to overwrite existing files
+      });
+
+    if (error) {
+      console.error('Supabase upload error:', error);
+    } else {
+      console.log('Conversation uploaded successfully:', data);
+    }
+  } catch (error) {
+    console.error('Error in uploadConversation:', error.message);
+  }
+};
 
 
 // Download KPIs endpoint
@@ -406,6 +459,9 @@ app.post('/status-callback', (req, res) => {
       console.log('Call terminated with status:', callStatus);
       console.log('Past Calls:', app.locals.pastCalls.length);
       console.log('Past Conversations:', app.locals.pastConversations.length);
+
+      // Call the uploadConversation function to upload the call data to Supabase
+      await uploadConversation(callSid);
     }
   }
 
