@@ -61,7 +61,7 @@ app.get('/download-conversation/:callSid', async (req, res) => {
       return res.status(404).send('Conversation not found');
     }
 
-    const caller = call.caller; // Access the caller (phone number) from the call object
+    const caller = call.caller|| 'Unknown'; // Access the caller (phone number) from the call object
 
     const now = new Date(); 
     const timestamp = new Intl.DateTimeFormat('en-GB', {
