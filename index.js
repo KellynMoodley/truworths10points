@@ -340,12 +340,9 @@ app.post('/handle-no-speech', async (req, res) => {
       }
 
     
-      // Attempt to upload conversation
+      // Upload conversation synchronously
       try {
-        const uploadSuccess = await uploadconversation(currentCall.callSid);
-        if (!uploadSuccess) {
-          console.error('Failed to upload conversation for CallSid:', currentCall.callSid);
-        }
+        await uploadconversation(callSid);
       } catch (uploadError) {
         console.error('Error during conversation upload:', uploadError);
       }
@@ -480,12 +477,9 @@ app.post('/status-callback', async (req, res) => {
         }];
       }
 
-      // Attempt to upload conversation
+      // Upload conversation synchronously
       try {
-        const uploadSuccess = await uploadconversation(callSid);
-        if (!uploadSuccess) {
-          console.error('Failed to upload conversation for CallSid:', callSid);
-        }
+        await uploadconversation(callSid);
       } catch (uploadError) {
         console.error('Error during conversation upload:', uploadError);
       }
