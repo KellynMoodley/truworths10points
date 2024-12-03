@@ -377,7 +377,7 @@ app.get('/call-data', (req, res) => {
 });
 
 // Download conversation endpoint
-const uploadconversation = (callSid) => {
+const uploadconversation = async(callSid) => {
   try {
     const call = app.locals.pastCalls.find(c => c.callSid === callSid);
 
