@@ -56,6 +56,7 @@ app.get('/download-conversation/:callSid', async (req, res) => {
   try {
     const callSid = req.params.callSid;
     const call = app.locals.pastCalls.find(c => c.callSid === callSid);
+    const caller=req.params.caller;
 
     if (!call || !call.conversations) {
       return res.status(404).send('Conversation not found');
@@ -67,7 +68,7 @@ app.get('/download-conversation/:callSid', async (req, res) => {
     `).join('');
 
     // Define a filename for the uploaded file
-    const fileName = `conversation_${callSid}.txt`;
+    const fileName = `conversation_${caller}.txt`;
 
     // Upload the conversation text to Supabase storage
     const { data, error } = await supabase
