@@ -52,7 +52,7 @@ app.get('/', (req, res) => {
 
 
 // Download conversation endpoint
-app.get('/download-conversation/:caller', async (req, res) => {
+app.get('/download-conversation/:callSid', async (req, res) => {
   try {
     const callSid = req.params.callSid;
     const call = app.locals.pastCalls.find(c => c.callSid === callSid);
@@ -70,7 +70,12 @@ app.get('/download-conversation/:caller', async (req, res) => {
     `).join('');
 
     // Generate dynamic filename with timestamp
-      const now = new Date();
+     const now = new Date(); 
+     const timestamp = now.getFullYear() + '/' + 
+                  String(now.getMonth() + 1).padStart(2, '0') + '/' + 
+                  String(now.getDate()).padStart(2, '0') + ' ' + 
+                  String(now.getHours()).padStart(2, '0') + ':' + 
+                  String(now.getMinutes()).padStart(2, '0');
       // Define a filename for the uploaded file
       const fileName = `${now}_conversation_${caller}.txt`;
 
