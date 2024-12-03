@@ -175,22 +175,14 @@
 
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script>
-    function downloadConversation(caller) {
-      fetch(`/download-conversation/${caller}`)
+        function downloadConversation(callSid,caller) {
+      fetch(`/download-conversation/${callSid}`)
         .then(response => response.blob())
         .then(blob => {          
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          // Generate dynamic filename with timestamp
-          const now = new Date();
-          const timestamp = now.getFullYear() + '/' + 
-                  String(now.getMonth() + 1).padStart(2, '0') + '/' + 
-                  String(now.getDate()).padStart(2, '0') + ' ' + 
-                  String(now.getHours()+2).padStart(2, '0') + ':' + 
-                  String(now.getMinutes()).padStart(2, '0');
-     
-          a.download = `${caller}_conversation.txt`;
+          a.download = `${caller}_conversation_${callSid}.txt`;
           document.body.appendChild(a);
           a.click();
           window.URL.revokeObjectURL(url);
@@ -198,6 +190,7 @@
         })
         .catch(error => console.error('Download error:', error));
     }
+
 
     function downloadKpis() {
       fetch('/download-kpis')
