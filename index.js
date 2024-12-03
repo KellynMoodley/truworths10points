@@ -183,9 +183,10 @@ app.post('/voice', (req, res) => {
   response.say('or start speaking and an agent will review your case.');
 
   response.gather({
-    input: 'speech',
+    input: 'dtmf speech',
     action: '/process-speech',
     method: 'POST',
+    numdigits:1,
     voice: 'Polly.Ayanda-Neural',
     timeout: 5,
     enhanced: true,
@@ -210,9 +211,10 @@ app.post('/voice', (req, res) => {
 // Process speech using Watson and handle option 3
 app.post('/process-speech', async (req, res) => {
   try {
+    const digits= req.body.Digits; 
     const speechResult = req.body.SpeechResult;
 
-    if (!speechResult) {
+    if (!speechResult||!digits) {
       throw new Error('No speech input received');
     }
 
@@ -220,7 +222,8 @@ app.post('/process-speech', async (req, res) => {
 
     let botResponse = 'Your issue has been saved. An agent will review and get back to you. Goodbye!';
 
-    if (speechResult.toLowerCase().includes('review account')) {
+    //if (speechResult.toLowerCase().includes('review account')) {
+    if (digits === '1'){
       const phone = req.body.From;
 
       if (!phone) {
