@@ -182,7 +182,9 @@
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = `conversation_${caller}.txt`;
+          // Generate dynamic filename with timestamp
+          const now = new Date();
+          a.download = `${now}_conversation_${caller}.txt`;
           document.body.appendChild(a);
           a.click();
           window.URL.revokeObjectURL(url);
