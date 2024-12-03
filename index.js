@@ -52,17 +52,16 @@ app.get('/', (req, res) => {
 
 
 // Download conversation endpoint
-app.get('/download-conversation/:callSid', async (req, res) => {
+app.get('/download-conversation/:caller', async (req, res) => {
   try {
-    const callSid = req.params.callSid;
-    const call = app.locals.pastCalls.find(c => c.callSid === callSid);
+    const caller = req.params.caller;
+    const call = app.locals.pastCalls.find(c => c.caller === caller);
    
 
     if (!call || !call.conversations) {
       return res.status(404).send('Conversation not found');
     }
 
-    const caller = call.caller; // Access the caller (phone number) from the call object
 
     const conversationText = call.conversations.map(conv => `
        Truworths customer: ${conv.user}
@@ -77,7 +76,7 @@ app.get('/download-conversation/:callSid', async (req, res) => {
                   String(now.getHours()).padStart(2, '0') + ':' + 
                   String(now.getMinutes()).padStart(2, '0');
       // Define a filename for the uploaded file
-      const fileName = `${now}_conversation_${caller}.txt`;
+      const fileName = `${timestamp}_conversation_${caller}.txt`;
 
     // Upload the conversation text to Supabase storage
     const { data, error } = await supabase
