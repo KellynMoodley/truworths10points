@@ -51,7 +51,7 @@ app.get('/', (req, res) => {
 });
 
 // Download conversation endpoint
-app.get('/download-conversation/:callSid', (req, res) => {
+app.get('/download-conversation/:callSid/:caller', (req, res) => {
   const callSid = req.params.callSid;
   const call = app.locals.pastCalls.find(c => c.callSid === callSid);
 
