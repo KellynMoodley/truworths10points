@@ -186,7 +186,7 @@ app.post('/voice', (req, res) => {
     input: 'dtmf speech',
     action: '/process-speech',
     method: 'POST',
-    numdigits:1,
+    numDigits: 1,
     voice: 'Polly.Ayanda-Neural',
     timeout: 5,
     enhanced: true,
