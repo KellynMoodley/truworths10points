@@ -50,18 +50,20 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+
 // Download conversation endpoint
-app.get('/download-conversation/:callSid', (req, res) => {
-  const callSid = req.params.callSid;
-  const call = app.locals.pastCalls.find(c => c.callSid === callSid);
+app.get('/download-conversation/:callSid', async (req, res) => {
+  try {
+    const callSid = req.params.callSid;
+    const call = app.locals.pastCalls.find(c => c.callSid === callSid);
 
-  if (!call || !call.conversations) {
-    return res.status(404).send('Conversation not found');
-  }
+    if (!call || !call.conversations) {
+      return res.status(404).send('Conversation not found');
+    }
 
-  const caller = call.caller; // Access the caller (phone number) from the call object
+    const caller = call.caller; // Access the caller (phone number) from the call object
 
-  const now = new Date(); 
+    const now = new Date(); 
     const timestamp = new Intl.DateTimeFormat('en-GB', {
       timeZone: 'Africa/Johannesburg',
       year: 'numeric',
@@ -78,64 +80,35 @@ app.get('/download-conversation/:callSid', (req, res) => {
     `).join('');
 
 
-  res.setHeader('Content-Type', 'text/plain');
-  res.setHeader('Content-Disposition', `attachment; filename=${timestamp}_${callSid}.txt`);
-  res.send(conversationText);
-});
-
-
-
-// Import any necessary dependencies if not already imported
-const uploadConversation = async (callSid) => {
-  try {
-    const call = app.locals.pastCalls.find(c => c.callSid === callSid);
-
-    if (!call || !call.conversations) {
-      console.error('Conversation not found for CallSid:', callSid);
-      return;
-    }
-
-    const caller = call.caller; // Access the caller (phone number) from the call object
-
-    const now = new Date(); 
-    const timestamp = new Intl.DateTimeFormat('en-GB', {
-      timeZone: 'Africa/Johannesburg',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(now);
-
-    const conversationText = call.conversations.map(conv => `
-      Date: ${timestamp}
-      Truworths customer: ${conv.user}
-      Truworths agent: ${conv.bot} 
-    `).join('\n');
-
     // Define a filename for the uploaded file
-    const fileName = `${caller}_call_${callSid}.txt`;
-
+    const fileName = `${caller}_${callSid}.txt`;
 
     // Upload the conversation text to Supabase storage
     const { data, error } = await supabase
       .storage
       .from('truworths')
-      .upload(fileName, fileContent, {
+      .upload(fileName, conversationText, {
         cacheControl: '3600',
         contentType: 'text/plain',
-        upsert: false, // Change to true if you want to overwrite existing files
+        upsert: false
       });
 
     if (error) {
       console.error('Supabase upload error:', error);
+      return res.status(500).send('Error uploading conversation to Supabase');
     } else {
       console.log('Conversation uploaded successfully:', data);
     }
+
+    // Send the conversation text as a downloadable file
+    res.setHeader('Content-Type', 'text/plain');
+    res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);
+    res.send(conversationText);
   } catch (error) {
-    console.error('Error in uploadConversation:', error.message);
+    console.error('Error in /download-conversation:', error.message);
+    res.status(500).send('Internal Server Error');
   }
-};
+});
 
 
 // Download KPIs endpoint
@@ -296,31 +269,12 @@ app.post('/process-speech', async (req, res) => {
     response.say(botResponse);
     response.hangup();
 
-    const now = new Date(); 
-    const timestamp = new Intl.DateTimeFormat('en-GB', {
-      timeZone: 'Africa/Johannesburg',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(now);
-
-
     const conversationEntry = {
-      timestamp: timestamp,
+      timestamp: new Date().toISOString(),
       user: speechResult,
       bot: botResponse,
     };
     app.locals.conversations.push(conversationEntry);
-
-    uploadConversation(callSid)
-        .then(() => {
-            console.log('Conversation uploaded successfully');
-        })
-        .catch((error) => {
-            console.error('Error while uploading conversation:', error.message);
-        });
 
     
     if (app.locals.currentCall) {
@@ -434,7 +388,6 @@ app.post('/status-callback', (req, res) => {
   if (app.locals.currentCall && app.locals.currentCall.callSid === callSid) {
     // If the call is completed, failed, or no-answer, we process the conversation
     if (callStatus === 'completed' || callStatus === 'failed' || callStatus === 'no-answer' || callStatus === 'canceled' || callStatus === 'busy') {
-      
       const currentCall = app.locals.currentCall;
       const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000); // Calculate call duration
 
