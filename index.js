@@ -377,6 +377,7 @@ app.get('/call-data', (req, res) => {
 });
 
 
+
 // Status callback to handle call status changes and file upload
 app.post('/status-callback', (req, res) => {
   const callSid = req.body.CallSid;
@@ -384,28 +385,18 @@ app.post('/status-callback', (req, res) => {
 
   console.log(`Status update for CallSid ${callSid}: ${callStatus}`);
 
+  try {
+       // Check if there's a current call and if it matches the CallSid from Twilio
+     if (app.locals.currentCall && app.locals.currentCall.callSid === callSid) {
+        // If the call is completed, failed, or no-answer, we process the conversation
+        if (callStatus === 'completed' || callStatus === 'failed' || callStatus === 'no-answer' || callStatus === 'canceled' || callStatus === 'busy') {
+          const currentCall = app.locals.currentCall;
+          const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
 
-  // Check if there's a current call and if it matches the CallSid from Twilio
-  if (app.locals.currentCall && app.locals.currentCall.callSid === callSid) {
-    // If the call is completed, failed, or no-answer, we process the conversation
-    if (callStatus === 'completed' || callStatus === 'failed' || callStatus === 'no-answer' || callStatus === 'canceled' || callStatus === 'busy') {
-      const currentCall = app.locals.currentCall;
-      const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
-
-       const now = new Date(); 
-      const timestamp = new Intl.DateTimeFormat('en-GB', {
-        timeZone: 'Africa/Johannesburg',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-      }).format(now);
-
-      // Update the current call's duration and status
-      currentCall.duration = callDuration;
-      currentCall.status = callStatus;
-      // Ensure conversations are captured
+          // Update the current call's duration and status
+          currentCall.duration = callDuration;
+          currentCall.status = callStatus;
+          // Ensure conversations are captured
       if (app.locals.conversations.length > 0) {
         currentCall.conversations = app.locals.conversations;
       } else {
@@ -417,10 +408,18 @@ app.post('/status-callback', (req, res) => {
         }];
       }
 
- 
+      
       // Automatic file upload to Supabase
       const caller = currentCall.caller || 'Unknown';
-     
+      const now = new Date(); 
+      const timestamp = new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Africa/Johannesburg',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(now);
 
       const conversationText = currentCall.conversations.map(conv => `
         Date: ${timestamp}
@@ -450,13 +449,11 @@ app.post('/status-callback', (req, res) => {
       console.error('Error during automatic file upload:', uploadError);
     }
   
-
       // Move conversations to the past conversations array
       app.locals.pastConversations.push(...app.locals.conversations);
 
       // Push the current call to pastCalls
       app.locals.pastCalls.push(currentCall);
-
 
       // Clear current call and conversations for the next call
       app.locals.currentCall = null;
@@ -467,6 +464,8 @@ app.post('/status-callback', (req, res) => {
       console.log('Past Calls:', app.locals.pastCalls.length);
       console.log('Past Conversations:', app.locals.pastConversations.length);
     }
+  }catch (error) {
+    console.error('Error in status callback:', error);
   }
 
   // Send an empty response to acknowledge the callback
