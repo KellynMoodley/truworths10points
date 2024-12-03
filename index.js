@@ -50,33 +50,33 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-
 // Download conversation endpoint
-app.get('/download-conversation/:caller', async (req, res) => {
+app.get('/download-conversation/:callSid', async (req, res) => {
   try {
-    const caller = req.params.caller;
-    const call = app.locals.pastCalls.find(c => c.caller === caller);
-   
+    const callSid = req.params.callSid;
+    const call = app.locals.pastCalls.find(c => c.callSid === callSid);
 
     if (!call || !call.conversations) {
       return res.status(404).send('Conversation not found');
     }
 
+    const caller = call.caller; // Access the caller (phone number) from the call object
+
+    const now = new Date(); 
+    const timestamp = now.getFullYear() + '/' + 
+             String(now.getMonth() + 1).padStart(2, '0') + '/' + 
+             String(now.getDate()).padStart(2, '0') + ' ' + 
+             String(now.getHours()).padStart(2, '0') + ':' + 
+             String(now.getMinutes()).padStart(2, '0');
 
     const conversationText = call.conversations.map(conv => `
+       Date: ${timestamp}
        Truworths customer: ${conv.user}
        Truworths agent: ${conv.bot} 
     `).join('');
 
-    // Generate dynamic filename with timestamp
-     const now = new Date(); 
-     const timestamp = now.getFullYear() + '/' + 
-                  String(now.getMonth() + 1).padStart(2, '0') + '/' + 
-                  String(now.getDate()).padStart(2, '0') + ' ' + 
-                  String(now.getHours()).padStart(2, '0') + ':' + 
-                  String(now.getMinutes()).padStart(2, '0');
-      // Define a filename for the uploaded file
-      const fileName = `${timestamp}_conversation_${caller}.txt`;
+    // Define a filename for the uploaded file
+    const fileName = `${caller}_call_${callSid}.txt`;
 
     // Upload the conversation text to Supabase storage
     const { data, error } = await supabase
@@ -104,6 +104,7 @@ app.get('/download-conversation/:caller', async (req, res) => {
     res.status(500).send('Internal Server Error');
   }
 });
+
 
 
 // Download KPIs endpoint
