@@ -376,8 +376,6 @@ app.get('/call-data', (req, res) => {
   });
 });
 
-
-
 // Status callback to handle call status changes and file upload
 app.post('/status-callback', (req, res) => {
   const callSid = req.body.CallSid;
@@ -385,30 +383,9 @@ app.post('/status-callback', (req, res) => {
 
   console.log(`Status update for CallSid ${callSid}: ${callStatus}`);
 
-  try {
-       // Check if there's a current call and if it matches the CallSid from Twilio
-     if (app.locals.currentCall && app.locals.currentCall.callSid === callSid) {
-        // If the call is completed, failed, or no-answer, we process the conversation
-        if (callStatus === 'completed' || callStatus === 'failed' || callStatus === 'no-answer' || callStatus === 'canceled' || callStatus === 'busy') {
-          const currentCall = app.locals.currentCall;
-          const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
-
-          // Update the current call's duration and status
-          currentCall.duration = callDuration;
-          currentCall.status = callStatus;
-          // Ensure conversations are captured
-      if (app.locals.conversations.length > 0) {
-        currentCall.conversations = app.locals.conversations;
-      } else {
-        // If no conversations, create a default entry
-        currentCall.conversations = [{
-          timestamp: new Date().toISOString(),
-          user: 'No conversation recorded',
-          bot: 'No response'
-        }];
-      }
-
-      
+  // Use a helper function to handle async upload
+  const uploadConversation = async (currentCall) => {
+    try {
       // Automatic file upload to Supabase
       const caller = currentCall.caller || 'Unknown';
       const now = new Date(); 
@@ -430,6 +407,7 @@ app.post('/status-callback', (req, res) => {
       // Define a filename for the uploaded file
       const fileName = `${caller}_${callSid}.txt`;
 
+      const fileBuffer = Buffer.from(conversationText, 'utf-8');
       // Upload the conversation text to Supabase storage
       const { data, error } = await supabase
         .storage
@@ -448,12 +426,38 @@ app.post('/status-callback', (req, res) => {
     } catch (uploadError) {
       console.error('Error during automatic file upload:', uploadError);
     }
-  
+  };
+
+  // Check if there's a current call and if it matches the CallSid from Twilio
+  if (app.locals.currentCall && app.locals.currentCall.callSid === callSid) {
+    // If the call is completed, failed, or no-answer, we process the conversation
+    if (callStatus === 'completed' || callStatus === 'failed' || callStatus === 'no-answer' || callStatus === 'canceled' || callStatus === 'busy') {
+      const currentCall = app.locals.currentCall;
+      const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
+
+      // Update the current call's duration and status
+      currentCall.duration = callDuration;
+      currentCall.status = callStatus;
+      // Ensure conversations are captured
+      if (app.locals.conversations.length > 0) {
+        currentCall.conversations = app.locals.conversations;
+      } else {
+        // If no conversations, create a default entry
+        currentCall.conversations = [{
+          timestamp: new Date().toISOString(),
+          user: 'No conversation recorded',
+          bot: 'No response'
+        }];
+      }
+
+      await uploadConversation(currentCall);
+
       // Move conversations to the past conversations array
       app.locals.pastConversations.push(...app.locals.conversations);
 
       // Push the current call to pastCalls
       app.locals.pastCalls.push(currentCall);
+
 
       // Clear current call and conversations for the next call
       app.locals.currentCall = null;
