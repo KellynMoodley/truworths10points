@@ -376,110 +376,115 @@ app.get('/call-data', (req, res) => {
   });
 });
 
+// Download conversation endpoint
+const uploadconversation (callSid) => {
+  try {
+    const call = app.locals.pastCalls.find(c => c.callSid === callSid);
 
-// Status callback to handle call status changes and file upload
+    if (!call || !call.conversations) {
+      console.log('Conversation not found for CallSid:', callSid);
+      return false;
+    }
+
+    const caller = call.caller|| 'Unknown'; // Access the caller (phone number) from the call object
+
+    const now = new Date(); 
+    const timestamp = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Africa/Johannesburg',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(now);
+
+    const conversationText = call.conversations.map(conv => `
+       Date: ${timestamp}
+       Truworths customer: ${conv.user}
+       Truworths agent: ${conv.bot} 
+    `).join('');
+
+
+    // Define a filename for the uploaded file
+    const fileName = `${caller}_${callSid}.txt`;
+
+    // Upload the conversation text to Supabase storage
+    const { data, error } = await supabase
+      .storage
+      .from('truworths')
+      .upload(fileName, conversationText, {
+        cacheControl: '3600',
+        contentType: 'text/plain',
+        upsert: false
+      });
+
+    if (error) {
+      console.error('Supabase upload error:', error);
+      return false;
+    }
+
+    console.log('Conversation uploaded successfully:', data);
+    return true;
+  } catch (error) {
+    console.error('Error uploading conversation:', error.message);
+    return false;
+  }
+};
+
+
+// Status callback to handle call status changes
 app.post('/status-callback', async (req, res) => {
   const callSid = req.body.CallSid;
   const callStatus = req.body.CallStatus;
 
   console.log(`Status update for CallSid ${callSid}: ${callStatus}`);
 
-  // Use a helper function to handle async upload
-  const uploadConversation = async (currentCall) => {
-    try {
-      // Automatic file upload to Supabase
-      const caller = currentCall.caller || 'Unknown';
-      const now = new Date();
-      const timestamp = new Intl.DateTimeFormat('en-GB', {
-        timeZone: 'Africa/Johannesburg',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-      }).format(now);
+  // Check if there's a current call and if it matches the CallSid from Twilio
+  if (app.locals.currentCall && app.locals.currentCall.callSid === callSid) {
+    // If the call is completed, failed, or no-answer, we process the conversation
+    if (callStatus === 'completed' || callStatus === 'failed' || callStatus === 'no-answer' || callStatus === 'canceled' || callStatus === 'busy') {
+      const currentCall = app.locals.currentCall;
+      const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000); // Calculate call duration
 
-      const conversationText = currentCall.conversations.map(conv => `
-        Date: ${timestamp}
-        Truworths customer: ${conv.user}
-        Truworths agent: ${conv.bot} 
-      `).join('');
-
-      // Define a filename for the uploaded file
-      const fileName = `${caller}_${callSid}.txt`;
-
-      // Convert conversation text to a buffer
-      const fileBuffer = Buffer.from(conversationText, 'utf-8');
-
-      // Upload the conversation text to Supabase storage
-      const { data, error } = await supabase
-        .storage
-        .from('truworths')
-        .upload(fileName, fileBuffer, {
-          cacheControl: '3600',
-          contentType: 'text/plain',
-          upsert: false
-        });
-
-      if (error) {
-        console.error('Supabase upload error:', error);
+      // Update the current call's duration and status
+      currentCall.duration = callDuration;
+      currentCall.status = callStatus;
+      //currentCall.conversations = app.locals.conversations;
+      // Ensure conversations are captured
+      if (app.locals.conversations.length > 0) {
+        currentCall.conversations = app.locals.conversations;
       } else {
-        console.log('Conversation uploaded successfully:', data);
+        // If no conversations, create a default entry
+        currentCall.conversations = [{
+          timestamp: new Date().toISOString(),
+          user: 'No conversation recorded',
+          bot: 'No response'
+        }];
       }
-    } catch (uploadError) {
-      console.error('Error during automatic file upload:', uploadError);
+
+      await uploadconversation(callSid);
+
+      // Move conversations to the past conversations array
+      app.locals.pastConversations.push(...app.locals.conversations);
+
+      // Push the current call to pastCalls
+      app.locals.pastCalls.push(currentCall);
+
+      // Clear current call and conversations for the next call
+      app.locals.currentCall = null;
+      app.locals.conversations = [];
+
+  // Log for debugging
+      console.log('Call terminated with status:', callStatus);
+      console.log('Past Calls:', app.locals.pastCalls.length);
+      console.log('Past Conversations:', app.locals.pastConversations.length);
     }
-  };
-
-  try {
-    // Check if there's a current call and if it matches the CallSid from Twilio
-    if (app.locals.currentCall && app.locals.currentCall.callSid === callSid) {
-      // If the call is completed, failed, or no-answer, we process the conversation
-      if (['completed', 'failed', 'no-answer', 'canceled', 'busy'].includes(callStatus)) {
-        const currentCall = app.locals.currentCall;
-        const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
-
-        // Update the current call's duration and status
-        currentCall.duration = callDuration;
-        currentCall.status = callStatus;
-
-        // Ensure conversations are captured
-        if (app.locals.conversations.length > 0) {
-          currentCall.conversations = app.locals.conversations;
-        } else {
-          // If no conversations, create a default entry
-          currentCall.conversations = [{
-            timestamp: new Date().toISOString(),
-            user: 'No conversation recorded',
-            bot: 'No response'
-          }];
-        }
-
-        await uploadConversation(currentCall);
-
-        // Move conversations to the past conversations array
-        app.locals.pastConversations.push(...app.locals.conversations);
-
-        // Push the current call to pastCalls
-        app.locals.pastCalls.push(currentCall);
-
-        // Clear current call and conversations for the next call
-        app.locals.currentCall = null;
-        app.locals.conversations = [];
-
-        // Log for debugging
-        console.log('Call terminated with status:', callStatus);
-        console.log('Past Calls:', app.locals.pastCalls.length);
-        console.log('Past Conversations:', app.locals.pastConversations.length);
-      }
-    }
-  } catch (error) {
-    console.error('Error in status callback:', error);
   }
 
   // Send an empty response to acknowledge the callback
   res.send('');
 });
+
 
 
 // Start the server
