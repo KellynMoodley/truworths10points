@@ -51,23 +51,25 @@ app.get('/', (req, res) => {
 });
 
 // Download conversation endpoint
-app.get('/download-conversation/:callSid', async (req, res) => {
-  try {
-    const callSid = req.params.callSid;
-    const call = app.locals.pastCalls.find(c => c.callSid === callSid);
+app.get('/download-conversation/:callSid', (req, res) => {
+  const callSid = req.params.callSid;
+  const call = app.locals.pastCalls.find(c => c.callSid === callSid);
 
-    if (!call || !call.conversations) {
-      return res.status(404).send('Conversation not found');
-    }
+  if (!call || !call.conversations) {
+    return res.status(404).send('Conversation not found');
+  }
 
-    const caller = call.caller; // Access the caller (phone number) from the call object
+  const caller = call.caller; // Access the caller (phone number) from the call object
 
-    const now = new Date(); 
-    const timestamp = now.getFullYear() + '/' + 
-             String(now.getMonth() + 1).padStart(2, '0') + '/' + 
-             String(now.getDate()).padStart(2, '0') + ' ' + 
-             String(now.getHours()+2).padStart(2, '0') + ':' + 
-             String(now.getMinutes()).padStart(2, '0');
+  const now = new Date(); 
+    const timestamp = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Africa/Johannesburg',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(now);
 
     const conversationText = call.conversations.map(conv => `
        Date: ${timestamp}
@@ -75,36 +77,13 @@ app.get('/download-conversation/:callSid', async (req, res) => {
        Truworths agent: ${conv.bot} 
     `).join('');
 
-    // Define a filename for the uploaded file
-    const fileName = `${caller}_call_${callSid}.txt`;
 
-    // Upload the conversation text to Supabase storage
-    const { data, error } = await supabase
-      .storage
-      .from('truworths')
-      .upload(fileName, conversationText, {
-        cacheControl: '3600',
-        contentType: 'text/plain',
-        upsert: false
-      });
-
-    if (error) {
-      console.error('Supabase upload error:', error);
-      return res.status(500).send('Error uploading conversation to Supabase');
-    } else {
-      console.log('Conversation uploaded successfully:', data);
-    }
-
-
-    // Send the conversation text as a downloadable file
-    res.setHeader('Content-Type', 'text/plain');
-    res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);
-    res.send(conversationText);
-  } catch (error) {
-    console.error('Error in /download-conversation:', error.message);
-    res.status(500).send('Internal Server Error');
-  }
+  res.setHeader('Content-Type', 'text/plain');
+  res.setHeader('Content-Disposition', `attachment; filename=${caller}_call_${callSid}.txt`);
+  res.send(conversationText);
 });
+
+
 
 // Import any necessary dependencies if not already imported
 const uploadConversation = async (callSid) => {
