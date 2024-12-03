@@ -376,8 +376,9 @@ app.get('/call-data', (req, res) => {
   });
 });
 
+
 // Status callback to handle call status changes and file upload
-app.post('/status-callback', (req, res) => {
+app.post('/status-callback', async (req, res) => {
   const callSid = req.body.CallSid;
   const callStatus = req.body.CallStatus;
 
@@ -458,7 +459,6 @@ app.post('/status-callback', (req, res) => {
       // Push the current call to pastCalls
       app.locals.pastCalls.push(currentCall);
 
-
       // Clear current call and conversations for the next call
       app.locals.currentCall = null;
       app.locals.conversations = [];
@@ -468,13 +468,14 @@ app.post('/status-callback', (req, res) => {
       console.log('Past Calls:', app.locals.pastCalls.length);
       console.log('Past Conversations:', app.locals.pastConversations.length);
     }
-  }catch (error) {
+  } catch (error) {
     console.error('Error in status callback:', error);
   }
 
   // Send an empty response to acknowledge the callback
   res.send('');
 });
+
 
 
 // Start the server
