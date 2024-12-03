@@ -71,9 +71,8 @@ app.get('/download-conversation/:callSid', async (req, res) => {
 
     // Generate dynamic filename with timestamp
       const now = new Date();
-      const timestamp = now.toISOString().replace(/[:.]/g, '-'); // Format timestamp
       // Define a filename for the uploaded file
-      const fileName = `${timestamp}_conversation_${caller}.txt`;
+      const fileName = `${now}_conversation_${caller}.txt`;
 
     // Upload the conversation text to Supabase storage
     const { data, error } = await supabase
