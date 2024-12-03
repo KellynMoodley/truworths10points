@@ -313,56 +313,84 @@ app.post('/process-speech', async (req, res) => {
   }
 });
 
-// Handle case where no speech is detected
-app.post('/handle-no-speech', async (req, res) => {  
- try{
-  console.log('Current Call before processing:', app.locals.currentCall);
-  console.log('Current Conversations:', app.locals.conversations);
-
-  const response = new twiml.VoiceResponse();
-  response.say('No speech detected. Goodbye.');
-  response.hangup();
-
-  if (app.locals.currentCall) {
+app.post('/handle-no-speech', async (req, res) => {
+  try {
+    console.log('Current Call before processing:', app.locals.currentCall);
+    console.log('Current Conversations:', app.locals.conversations);
+    
+    const response = new twiml.VoiceResponse();
+    response.say('No speech detected. Goodbye.');
+    response.hangup();
+    
+    if (app.locals.currentCall) {
       const currentCall = app.locals.currentCall;
       const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
       currentCall.duration = callDuration;
       currentCall.status = 'completed';
+      
       // Handle conversations
       if (!app.locals.conversations || app.locals.conversations.length === 0) {
         currentCall.conversations = [{
           timestamp: new Date().toISOString(),
           user: 'No conversation recorded',
           bot: 'No response'
-      }];
+        }];
       } else {
         currentCall.conversations = app.locals.conversations;
       }
-
     
-      // Upload conversation synchronously
-      try {
-        await uploadconversation(currentCall.callSid);
-      } catch (uploadError) {
-        console.error('Error during conversation upload:', uploadError);
+      const now = new Date(); 
+      const timestamp = new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Africa/Johannesburg',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(now);
+      
+      const conversationText = currentCall.conversations.map(conv => `
+        Date: ${timestamp}
+        Truworths customer: ${conv.user}
+        Truworths agent: ${conv.bot} 
+      `).join('');
+      
+      // Define a filename for the uploaded file
+      const fileName = `${currentCall.caller}_${currentCall.callSid}.txt`;
+      
+      // Upload the conversation text to Supabase storage
+      const { data, error } = await supabase
+        .storage
+        .from('truworths')
+        .upload(fileName, conversationText, {
+          cacheControl: '3600',
+          contentType: 'text/plain',
+          upsert: false
+        });
+      
+      if (error) {
+        console.error('Supabase upload error:', error);
+        return res.status(500).send('Error uploading conversation to Supabase');
+      } else {
+        console.log('Conversation uploaded successfully:', data);
       }
-    
+      
       console.log('Pushing Call:', currentCall);
       console.log('Pushing Conversations:', app.locals.conversations);
-
+      
       app.locals.pastCalls.push(currentCall);
       app.locals.pastConversations.push(...app.locals.conversations);
       app.locals.currentCall = null;
       app.locals.conversations = [];
-
+      
       console.log('Past Calls after pushing:', app.locals.pastCalls);
       console.log('Past Conversations after pushing:', app.locals.pastConversations);
-  }
-
-  res.type('text/xml');
-  res.send(response.toString());
- }catch (error) {
-    console.error('Error in handle-no-speech:', error);
+    }
+    
+    res.type('text/xml');
+    res.send(response.toString());
+  } catch (error) {
+    console.error('Error in /handle-no-speech:', error.message);
     res.status(500).send('Internal Server Error');
   }
 });
@@ -390,61 +418,6 @@ app.get('/call-data', (req, res) => {
     pastConversations: app.locals.pastConversations,
   });
 });
-
-// Download conversation endpoint
-const uploadconversation = async(callSid) => {
-  try {
-    const call = app.locals.pastCalls.find(c => c.callSid === callSid);
-
-    if (!call || !call.conversations) {
-      console.log('Conversation not found for CallSid:', callSid);
-      return false;
-    }
-
-    const caller = call.caller|| 'Unknown'; // Access the caller (phone number) from the call object
-
-    const now = new Date(); 
-    const timestamp = new Intl.DateTimeFormat('en-GB', {
-      timeZone: 'Africa/Johannesburg',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(now);
-
-    const conversationText = call.conversations.map(conv => `
-       Date: ${timestamp}
-       Truworths customer: ${conv.user}
-       Truworths agent: ${conv.bot} 
-    `).join('');
-
-
-    // Define a filename for the uploaded file
-    const fileName = `${caller}_${callSid}.txt`;
-
-    // Upload the conversation text to Supabase storage
-    const { data, error } = await supabase
-      .storage
-      .from('truworths')
-      .upload(fileName, conversationText, {
-        cacheControl: '3600',
-        contentType: 'text/plain',
-        upsert: false
-      });
-
-    if (error) {
-      console.error('Supabase upload error:', error);
-      return false;
-    }
-
-    console.log('Conversation uploaded successfully:', data);
-    return true;
-  } catch (error) {
-    console.error('Error uploading conversation:', error.message);
-    return false;
-  }
-};
 
 
 // Status callback to handle call status changes
@@ -477,11 +450,40 @@ app.post('/status-callback', async (req, res) => {
         }];
       }
 
-      // Upload conversation synchronously
-      try {
-        await uploadconversation(callSid);
-      } catch (uploadError) {
-        console.error('Error during conversation upload:', uploadError);
+      const now = new Date(); 
+      const timestamp = new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Africa/Johannesburg',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(now);
+      
+      const conversationText = currentCall.conversations.map(conv => `
+        Date: ${timestamp}
+        Truworths customer: ${conv.user}
+        Truworths agent: ${conv.bot} 
+      `).join('');
+      
+      // Define a filename for the uploaded file
+      const fileName = `${currentCall.caller}_${currentCall.callSid}.txt`;
+      
+      // Upload the conversation text to Supabase storage
+      const { data, error } = await supabase
+        .storage
+        .from('truworths')
+        .upload(fileName, conversationText, {
+          cacheControl: '3600',
+          contentType: 'text/plain',
+          upsert: false
+        });
+      
+      if (error) {
+        console.error('Supabase upload error:', error);
+        return res.status(500).send('Error uploading conversation to Supabase');
+      } else {
+        console.log('Conversation uploaded successfully:', data);
       }
 
       // Move conversations to the past conversations array
