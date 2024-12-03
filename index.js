@@ -327,16 +327,19 @@ app.post('/handle-no-speech', (req, res) => {
       const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
       currentCall.duration = callDuration;
       currentCall.status = 'completed';
-      currentCall.conversations = app.locals.conversations;
+      // Handle conversations
+      if (!app.locals.conversations || app.locals.conversations.length === 0) {
+        currentCall.conversations = [{
+          timestamp: new Date().toISOString(),
+          user: 'No conversation recorded',
+          bot: 'No response'
+      }];
+      } else {
+        currentCall.conversations = app.locals.conversations;
+      }
 
-      // If no conversations, set the conversations to "Conversation not recorded"
-  if (!app.locals.conversations || app.locals.conversations.length === 0 || app.locals.conversations.every(item => item === undefined)) {
-      currentCall.conversations = ['Conversation not recorded'];
-  } else {
-      currentCall.conversations = app.locals.conversations;
-  }
-
-    await uploadconversation(app.locals.currentCall.callSid);
+    
+      await uploadconversation(currentCall.callSid);
     
       console.log('Pushing Call:', currentCall);
       console.log('Pushing Conversations:', app.locals.conversations);
