@@ -187,10 +187,10 @@
           const timestamp = now.getFullYear() + '/' + 
                   String(now.getMonth() + 1).padStart(2, '0') + '/' + 
                   String(now.getDate()).padStart(2, '0') + ' ' + 
-                  String(now.getHours()).padStart(2, '0') + ':' + 
+                  String(now.getHours()+2).padStart(2, '0') + ':' + 
                   String(now.getMinutes()).padStart(2, '0');
      
-          a.download = `${timestamp}_conversation_${caller}.txt`;
+          a.download = `${caller}_conversation.txt`;
           document.body.appendChild(a);
           a.click();
           window.URL.revokeObjectURL(url);
