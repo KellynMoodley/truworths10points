@@ -342,7 +342,7 @@ app.post('/handle-no-speech', async (req, res) => {
     
       // Upload conversation synchronously
       try {
-        await uploadconversation(callSid);
+        await uploadconversation(currentCall.callSid);
       } catch (uploadError) {
         console.error('Error during conversation upload:', uploadError);
       }
