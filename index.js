@@ -314,7 +314,8 @@ app.post('/process-speech', async (req, res) => {
 });
 
 // Handle case where no speech is detected
-app.post('/handle-no-speech', async (req, res) => {  // Add 'async' here
+app.post('/handle-no-speech', async (req, res) => {  
+ try{
   console.log('Current Call before processing:', app.locals.currentCall);
   console.log('Current Conversations:', app.locals.conversations);
 
@@ -339,7 +340,15 @@ app.post('/handle-no-speech', async (req, res) => {  // Add 'async' here
       }
 
     
-      await uploadconversation(currentCall.callSid);
+      // Attempt to upload conversation
+      try {
+        const uploadSuccess = await uploadconversation(currentCall.callSid);
+        if (!uploadSuccess) {
+          console.error('Failed to upload conversation for CallSid:', currentCall.callSid);
+        }
+      } catch (uploadError) {
+        console.error('Error during conversation upload:', uploadError);
+      }
     
       console.log('Pushing Call:', currentCall);
       console.log('Pushing Conversations:', app.locals.conversations);
@@ -352,9 +361,13 @@ app.post('/handle-no-speech', async (req, res) => {  // Add 'async' here
       console.log('Past Calls after pushing:', app.locals.pastCalls);
       console.log('Past Conversations after pushing:', app.locals.pastConversations);
   }
-  
+
   res.type('text/xml');
   res.send(response.toString());
+ }catch (error) {
+    console.error('Error in handle-no-speech:', error);
+    res.status(500).send('Internal Server Error');
+  }
 });
 
 // Serve call data
@@ -467,7 +480,15 @@ app.post('/status-callback', async (req, res) => {
         }];
       }
 
-      await uploadconversation(callSid);
+      // Attempt to upload conversation
+      try {
+        const uploadSuccess = await uploadconversation(callSid);
+        if (!uploadSuccess) {
+          console.error('Failed to upload conversation for CallSid:', callSid);
+        }
+      } catch (uploadError) {
+        console.error('Error during conversation upload:', uploadError);
+      }
 
       // Move conversations to the past conversations array
       app.locals.pastConversations.push(...app.locals.conversations);
