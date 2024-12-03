@@ -335,6 +335,8 @@ app.post('/handle-no-speech', (req, res) => {
   } else {
       currentCall.conversations = app.locals.conversations;
   }
+
+    await uploadconversation(app.locals.currentCall.callSid);
     
       console.log('Pushing Call:', currentCall);
       console.log('Pushing Conversations:', app.locals.conversations);
