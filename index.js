@@ -417,6 +417,15 @@ app.post('/status-callback', (req, res) => {
   if (app.locals.currentCall && app.locals.currentCall.callSid === callSid) {
     // If the call is completed, failed, or no-answer, we process the conversation
     if (callStatus === 'completed' || callStatus === 'failed' || callStatus === 'no-answer' || callStatus === 'canceled' || callStatus === 'busy') {
+
+      uploadConversation(callSid)
+        .then(() => {
+            console.log('Conversation uploaded successfully');
+        })
+        .catch((error) => {
+            console.error('Error while uploading conversation:', error.message);
+        });
+      
       const currentCall = app.locals.currentCall;
       const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000); // Calculate call duration
 
@@ -439,14 +448,6 @@ app.post('/status-callback', (req, res) => {
       console.log('Call terminated with status:', callStatus);
       console.log('Past Calls:', app.locals.pastCalls.length);
       console.log('Past Conversations:', app.locals.pastConversations.length);
-
-      uploadConversation(callSid)
-        .then(() => {
-            console.log('Conversation uploaded successfully');
-         })
-        .catch((error) => {
-            console.error('Error while uploading conversation:', error.message);
-         });
     }
   }
 
