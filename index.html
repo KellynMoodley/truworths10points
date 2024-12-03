@@ -176,7 +176,7 @@
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script>
         function downloadConversation(callSid,caller) {
-      fetch(`/download-conversation/${callSid}`)
+      fetch(`/download-conversation/${callSid}/${caller}`)
         .then(response => response.blob())
         .then(blob => {          
           const url = window.URL.createObjectURL(blob);
