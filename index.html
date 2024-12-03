@@ -175,14 +175,14 @@
 
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script>
-    function downloadConversation(customerid) {
-      fetch(`/download-conversation/${customerid}`)
+    function downloadConversation(caller) {
+      fetch(`/download-conversation/${caller}`)
         .then(response => response.blob())
         .then(blob => {          
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = `conversation_${customerid}.txt`;
+          a.download = `conversation_${caller}.txt`;
           document.body.appendChild(a);
           a.click();
           window.URL.revokeObjectURL(url);
