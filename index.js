@@ -314,7 +314,7 @@ app.post('/process-speech', async (req, res) => {
 });
 
 // Handle case where no speech is detected
-app.post('/handle-no-speech', (req, res) => {
+app.post('/handle-no-speech', async (req, res) => {  // Add 'async' here
   console.log('Current Call before processing:', app.locals.currentCall);
   console.log('Current Conversations:', app.locals.conversations);
 
