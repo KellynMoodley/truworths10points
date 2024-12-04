@@ -70,16 +70,16 @@ async function callN8nWebhook(supabaseUrl) {
     }
   }
 
-
-  app.get('/webhook-data', async (req, res) => {
-    try {
-        const data = await callN8nWebhook();
-        res.json(data);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+app.get('/webhook-data', async (req, res) => {
+  try {
+    const data = await callN8nWebhook();
+    res.json({ 
+      response: data  // Ensure you're structuring the response correctly
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
-
 
 
 // supabase connect and read 
