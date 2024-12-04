@@ -55,7 +55,7 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-/n8n api 
+//n8n api 
 async function callN8nWebhook(supabaseUrl) {
   try {
     const response = await axios.get('https://kkarodia.app.n8n.cloud/webhook-test/call_url', {
