@@ -456,12 +456,6 @@ app.post('/status-callback', async (req, res) => {
         }];
       }
 
-      // Move conversations to the past conversations array
-      app.locals.pastConversations.push(...app.locals.conversations);
-
-      // Push the current call to pastCalls
-      app.locals.pastCalls.push(currentCall);
-
       const now = new Date(); 
       const timestamp = new Intl.DateTimeFormat('en-GB', {
         timeZone: 'Africa/Johannesburg',
@@ -498,6 +492,12 @@ app.post('/status-callback', async (req, res) => {
       } else {
         console.log('Conversation uploaded successfully:', data);
       }
+
+      // Move conversations to the past conversations array
+      app.locals.pastConversations.push(...app.locals.conversations);
+
+      // Push the current call to pastCalls
+      app.locals.pastCalls.push(currentCall);
 
       // Clear current call and conversations for the next call
       app.locals.currentCall = null;
