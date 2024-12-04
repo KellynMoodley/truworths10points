@@ -60,7 +60,7 @@ async function callN8nWebhook(supabaseUrl) {
   try {
     const response = await axios.get('https://kkarodia.app.n8n.cloud/webhook-test/call_url', {
       params: {
-        myUrl: supabaseUrl
+        myUrl: process.env.SUPABASE_URL
       }
     });
     return response.data;
