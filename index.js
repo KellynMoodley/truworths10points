@@ -278,7 +278,6 @@ app.post('/process-speech', async (req, res) => {
     };
     app.locals.conversations.push(conversationEntry);
 
-try {
     const now = new Date(); 
     const timestamp = new Intl.DateTimeFormat('en-GB', {
         timeZone: 'Africa/Johannesburg',
