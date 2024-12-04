@@ -3,7 +3,7 @@
 async function triggerFileCheck() {
   try {
       // Update the URL to include the correct port and path
-      const response = await fetch('https://truworths-5d9b0467377c.herokuapp.com//check-file');
+      const response = await fetch('https://truworths-5d9b0467377c.herokuapp.com/check-file');
       if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
       }
