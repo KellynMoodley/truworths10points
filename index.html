@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script defer src="script.js"></script>
   <title>Phone Call Status</title>
   <style>
     body {
@@ -176,12 +175,12 @@
     </ul>
   </div>
 
-    <button id="triggerFileCheckBtn">Fetch Call Summary</button>
+<button id="triggerFileCheckBtn" class="button">Fetch Call Summary</button>
 
-    <div id="result-container">
-        <h2>Response:</h2>
-        <pre id="response-data">Waiting for response...</pre>
-    </div>
+<div id="result-container">
+    <h2>Response:</h2>
+    <pre id="response-data">Waiting for response...</pre>
+</div>
 
 <div id="kpi-container">
   <h3>Key Performance Indicators (KPIs)</h3>
@@ -200,6 +199,7 @@
 </div>
 
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script defer src="script.js"></script>
   <script>
     function downloadConversation(callSid) {
       fetch(`/download-conversation/${callSid}`)
