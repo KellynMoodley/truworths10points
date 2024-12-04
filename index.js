@@ -434,20 +434,7 @@ app.post('/status-callback', async (req, res) => {
 
   // Check if there's a current call and if it matches the CallSid from Twilio
   if (app.locals.currentCall && app.locals.currentCall.callSid === callSid) {
-    // If the call is completed, failed, or no-answer, we process the conversation
-    if (callStatus === 'completed' || callStatus === 'failed' || callStatus === 'no-answer' || callStatus === 'canceled' || callStatus === 'busy') {
-      const currentCall = app.locals.currentCall;
-      const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000); // Calculate call duration
-
-      // Update the current call's duration and status
-      currentCall.duration = callDuration;
-      currentCall.status = callStatus;
-      //currentCall.conversations = app.locals.conversations;
-      // Ensure conversations are captured
-      if (app.locals.conversations.length > 0) {
-        currentCall.conversations = app.locals.conversations;
-
-        const now = new Date(); 
+     const now = new Date(); 
       const timestamp = new Intl.DateTimeFormat('en-GB', {
         timeZone: 'Africa/Johannesburg',
         year: 'numeric',
@@ -483,7 +470,18 @@ app.post('/status-callback', async (req, res) => {
       } else {
         console.log('Conversation uploaded successfully:', data);
       }
-        
+    // If the call is completed, failed, or no-answer, we process the conversation
+    if (callStatus === 'completed' || callStatus === 'failed' || callStatus === 'no-answer' || callStatus === 'canceled' || callStatus === 'busy') {
+      const currentCall = app.locals.currentCall;
+      const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000); // Calculate call duration
+
+      // Update the current call's duration and status
+      currentCall.duration = callDuration;
+      currentCall.status = callStatus;
+      //currentCall.conversations = app.locals.conversations;
+      // Ensure conversations are captured
+      if (app.locals.conversations.length > 0) {
+        currentCall.conversations = app.locals.conversations;        
       } else {
         // If no conversations, create a default entry
         currentCall.conversations = [{
