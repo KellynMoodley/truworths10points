@@ -10,6 +10,7 @@ const twilio = require('twilio');
 const fs = require('fs');
 
 const app = express();
+const router = express.Router();
 const port = process.env.PORT || 3000;
 const { createClient } = require('@supabase/supabase-js');
 
@@ -18,6 +19,10 @@ const { createClient } = require('@supabase/supabase-js');
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cors());
 app.use(express.json());
+app.use(express.static('public'));
+// Mount the router
+app.use('/api', router);
+
 
 require('dotenv').config();
 
@@ -49,6 +54,73 @@ app.locals.pastConversations = [];
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
+
+/n8n api 
+async function callN8nWebhook(supabaseUrl) {
+  try {
+    const response = await axios.get('https://kkarodia.app.n8n.cloud/webhook-test/call_url', {
+      params: {
+        myUrl: supabaseUrl
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error:', error);
+        throw error;
+    }
+  }
+
+
+  app.get('/webhook-data', async (req, res) => {
+    try {
+        const data = await callN8nWebhook();
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+
+
+// supabase connect and read 
+async function checkFileAndLog() {
+  try {
+    // Get the public URL of the file
+    const { data, error } = supabase
+      .storage
+      .from('truworths')
+      .getPublicUrl('+27815952073_CA97723bbb3961adc241281cdf40f629a9.txt');
+
+    if (error) {
+      console.error('Error fetching file:', error.message);
+      return;
+    }
+
+    // Check if the URL is valid (Supabase returns a URL regardless of existence)
+    const response = await fetch(data.publicUrl);
+    if (response.ok) {
+      console.log('success');
+      console.log(data.publicUrl);
+      callN8nWebhook(data.publicUrl);
+
+    } else {
+      console.error('File not found or inaccessible');
+    }
+  } catch (err) {
+    console.error('Unexpected error:', err.message);
+  }
+}
+
+  app.get('/check-file', async (req, res) => {
+    try {
+      await checkFileAndLog(); // Call your Supabase-related logic here
+      res.json({ message: 'File check initiated.' });
+    } catch (err) {
+      console.error('Error in file check route:', err.message);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
 
 
 // Download conversation endpoint
