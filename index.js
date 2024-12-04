@@ -201,7 +201,7 @@ async function triggerFileCheck() {
       console.log('File check response:', data);
 
       // After successful file check, fetch webhook data
-      const webhookResponse = await fetch('http://localhost:3000/webhook-data');
+      const webhookResponse = await fetch('https://truworths-5d9b0467377c.herokuapp.com/webhook-data');
       if (!webhookResponse.ok) {
           throw new Error(`HTTP error! Status: ${webhookResponse.status}`);
       }
