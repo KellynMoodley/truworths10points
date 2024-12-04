@@ -10,14 +10,25 @@ const twilio = require('twilio');
 const fs = require('fs');
 
 const app = express();
+const router = express.Router();
 const port = process.env.PORT || 3000;
 const { createClient } = require('@supabase/supabase-js');
 
 
 // Configure middleware
 app.use(bodyParser.urlencoded({ extended: false }));
-app.use(cors());
+//app.use(cors());
+// Enable CORS
+app.use(cors({
+    origin: ['https://truworths-5d9b0467377c.herokuapp.com/'], // Allow both localhost and 127.0.0.1
+    methods: ['GET', 'POST'],
+    credentials: true
+}));
+
 app.use(express.json());
+app.use(express.static('public'));
+// Mount the router
+app.use('/api', router);
 
 require('dotenv').config();
 
@@ -110,6 +121,104 @@ app.get('/download-conversation/:callSid', async (req, res) => {
   }
 });
 
+//n8n api 
+async function callN8nWebhook(supabaseUrl) {
+  try {
+    const response = await axios.get('https://kkarodia.app.n8n.cloud/webhook-test/call_url', {
+      params: {
+        myUrl: supabaseUrl
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error:', error);
+        throw error;
+    }
+  }
+
+
+  app.get('/webhook-data', async (req, res) => {
+    try {
+        const data = await callN8nWebhook();
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+
+
+// supabase connect and read 
+async function checkFileAndLog() {
+  try {
+    // Get the public URL of the file
+    const { data, error } = supabase
+      .storage
+      .from('truworths')
+      .getPublicUrl('+27815952073_CA07f78cfaa2bcf367993a2c2db27269f8.txt');
+
+    if (error) {
+      console.error('Error fetching file:', error.message);
+      return;
+    }
+
+    // Check if the URL is valid (Supabase returns a URL regardless of existence)
+    const response = await fetch(data.publicUrl);
+    if (response.ok) {
+      console.log('success');
+      console.log(data.publicUrl);
+      callN8nWebhook(data.publicUrl);
+
+    } else {
+      console.error('File not found or inaccessible');
+    }
+  } catch (err) {
+    console.error('Unexpected error:', err.message);
+  }
+}
+
+  app.get('/check-file', async (req, res) => {
+    try {
+      await checkFileAndLog(); // Call your Supabase-related logic here
+      res.json({ message: 'File check initiated.' });
+    } catch (err) {
+      console.error('Error in file check route:', err.message);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+// Function to trigger the file check
+// script.js - Update the fetch URLs to match the backend endpoints
+async function triggerFileCheck() {
+  try {
+      // Update the URL to include the correct port and path
+      const response = await fetch('https://truworths-5d9b0467377c.herokuapp.com/check-file');
+      if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('File check response:', data);
+
+      // After successful file check, fetch webhook data
+      const webhookResponse = await fetch('http://localhost:3000/webhook-data');
+      if (!webhookResponse.ok) {
+          throw new Error(`HTTP error! Status: ${webhookResponse.status}`);
+      }
+      const webhookData = await webhookResponse.json();
+      console.log('Webhook response:', webhookData);
+      // Now you can safely manipulate the DOM
+      const resultElement = document.getElementById('result-container');
+      resultElement.textContent = JSON.stringify(webhookData.response.text);
+
+  } catch (error) {
+      console.error('Error:', error);
+      alert('Failed to process request. See console for details.');
+  }
+}
+
+// Attach event listener to the button
+document.getElementById('triggerFileCheckBtn').addEventListener('click', triggerFileCheck);
 
 // Download KPIs endpoint
 app.get('/download-kpis', (req, res) => {
