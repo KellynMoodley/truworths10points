@@ -3,7 +3,7 @@
 async function triggerFileCheck() {
   try {
       // Update the URL to include the correct port and path
-      const response = await fetch('http://localhost:3000/check-file');
+      const response = await fetch('/check-file');
       if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
       }
@@ -12,7 +12,7 @@ async function triggerFileCheck() {
       console.log('File check response:', data);
 
       // After successful file check, fetch webhook data
-      const webhookResponse = await fetch('http://localhost:3000/webhook-data');
+      const webhookResponse = await fetch('/webhook-data');
       if (!webhookResponse.ok) {
           throw new Error(`HTTP error! Status: ${webhookResponse.status}`);
       }
