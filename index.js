@@ -287,6 +287,41 @@ app.post('/process-speech', async (req, res) => {
       currentCall.duration = callDuration;
       currentCall.status = 'completed';
       currentCall.conversations = app.locals.conversations;
+      const now = new Date(); 
+      const timestamp = new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Africa/Johannesburg',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(now);
+      
+      const conversationText = currentCall.conversations.map(conv => `
+        Date: ${timestamp}
+        Truworths customer: ${conv.user}
+        Truworths agent: ${conv.bot} 
+      `).join('');
+      
+      // Define a filename for the uploaded file
+      const fileName = `${currentCall.caller}_${currentCall.callSid}.txt`;
+      
+      // Upload the conversation text to Supabase storage
+      const { data, error } = await supabase
+        .storage
+        .from('truworths')
+        .upload(fileName, conversationText, {
+          cacheControl: '3600',
+          contentType: 'text/plain',
+          upsert: false
+        });
+      
+      if (error) {
+        console.error('Supabase upload error:', error);
+        return res.status(500).send('Error uploading conversation to Supabase');
+      } else {
+        console.log('Conversation uploaded successfully:', data);
+      }
       app.locals.pastCalls.push(currentCall); // Push the current call to pastCalls
       app.locals.pastConversations.push(...app.locals.conversations); // Ensure all conversations are added to pastConversations
       app.locals.currentCall = null; // Clear current call
