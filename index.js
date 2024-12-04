@@ -352,11 +352,12 @@ app.post('/handle-no-speech', async (req, res) => {
         minute: '2-digit',
       }).format(now);
       
-      const conversationText = currentCall.conversations.map(conv => 
+      const conversationText = currentCall.conversations.map(conv => `
         Date: ${timestamp}
         Truworths customer: ${conv.user}
         Truworths agent: ${conv.bot} 
-      ).join('');
+      `).join('');
+
       
       // Define a filename for the uploaded file
       const fileName = ${currentCall.caller}_${currentCall.callSid}.txt;
