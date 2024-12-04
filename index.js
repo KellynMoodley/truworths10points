@@ -360,7 +360,7 @@ app.post('/handle-no-speech', async (req, res) => {
 
       
       // Define a filename for the uploaded file
-      const fileName = ${currentCall.caller}_${currentCall.callSid}.txt;
+      const fileName = `${currentCall.caller}_${currentCall.callSid}.txt`;
       
       // Upload the conversation text to Supabase storage
       const { data, error } = await supabase
