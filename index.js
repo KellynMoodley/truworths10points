@@ -278,6 +278,7 @@ app.post('/process-speech', async (req, res) => {
     };
     app.locals.conversations.push(conversationEntry);
 
+try{
     const now = new Date(); 
       const timestamp = new Intl.DateTimeFormat('en-GB', {
         timeZone: 'Africa/Johannesburg',
@@ -287,7 +288,11 @@ app.post('/process-speech', async (req, res) => {
         hour: '2-digit',
         minute: '2-digit',
       }).format(now);
-      
+
+  // Use app.locals.currentCall instead of currentCall
+    const currentCall = app.locals.currentCall;
+    
+    if (currentCall && currentCall.conversations) {     
       const conversationText = currentCall.conversations.map(conv => `
         Date: ${timestamp}
         Truworths customer: ${conv.user}
@@ -296,7 +301,8 @@ app.post('/process-speech', async (req, res) => {
       
       // Define a filename for the uploaded file
       const fileName = `${currentCall.caller}_${currentCall.callSid}.txt`;
-      
+
+    try{
       // Upload the conversation text to Supabase storage
       const { data, error } = await supabase
         .storage
@@ -313,6 +319,11 @@ app.post('/process-speech', async (req, res) => {
       } else {
         console.log('Conversation uploaded successfully:', data);
       }
+  }catch (uploadError) {
+      console.error('Error uploading to Supabase:', uploadError);
+  } catch (error) {
+  console.error('Unexpected error:', error);
+    }
 
     response.hangup();
 
