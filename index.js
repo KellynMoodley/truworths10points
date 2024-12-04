@@ -425,24 +425,27 @@ app.get('/call-data', (req, res) => {
 });
 
 
+// Status callback to handle call status changes
 app.post('/status-callback', async (req, res) => {
   const callSid = req.body.CallSid;
   const callStatus = req.body.CallStatus;
-  console.log(Status update for CallSid ${callSid}: ${callStatus});
+
+  console.log(`Status update for CallSid ${callSid}: ${callStatus}`);
+
   // Check if there's a current call and if it matches the CallSid from Twilio
   if (app.locals.currentCall && app.locals.currentCall.callSid === callSid) {
-
     // If the call is completed, failed, or no-answer, we process the conversation
     if (callStatus === 'completed' || callStatus === 'failed' || callStatus === 'no-answer' || callStatus === 'canceled' || callStatus === 'busy') {
       const currentCall = app.locals.currentCall;
       const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000); // Calculate call duration
+
       // Update the current call's duration and status
       currentCall.duration = callDuration;
       currentCall.status = callStatus;
       //currentCall.conversations = app.locals.conversations;
       // Ensure conversations are captured
       if (app.locals.conversations.length > 0) {
-        currentCall.conversations = app.locals.conversations;        
+        currentCall.conversations = app.locals.conversations;
       } else {
         // If no conversations, create a default entry
         currentCall.conversations = [{
@@ -451,6 +454,7 @@ app.post('/status-callback', async (req, res) => {
           bot: 'No response'
         }];
       }
+
       const now = new Date(); 
       const timestamp = new Intl.DateTimeFormat('en-GB', {
         timeZone: 'Africa/Johannesburg',
@@ -460,16 +464,16 @@ app.post('/status-callback', async (req, res) => {
         hour: '2-digit',
         minute: '2-digit',
       }).format(now);
-
-      const conversationText = currentCall.conversations.map(conv => 
+      
+      const conversationText = currentCall.conversations.map(conv => `
         Date: ${timestamp}
         Truworths customer: ${conv.user}
         Truworths agent: ${conv.bot} 
-      ).join('');
-
+      `).join('');
+      
       // Define a filename for the uploaded file
-      const fileName = ${currentCall.caller}_${currentCall.callSid}.txt;
-
+      const fileName = `${currentCall.caller}_${currentCall.callSid}.txt`;
+      
       // Upload the conversation text to Supabase storage
       const { data, error } = await supabase
         .storage
@@ -479,29 +483,35 @@ app.post('/status-callback', async (req, res) => {
           contentType: 'text/plain',
           upsert: false
         });
-
+      
       if (error) {
         console.error('Supabase upload error:', error);
         return res.status(500).send('Error uploading conversation to Supabase');
       } else {
         console.log('Conversation uploaded successfully:', data);
       }
+
       // Move conversations to the past conversations array
       app.locals.pastConversations.push(...app.locals.conversations);
+
       // Push the current call to pastCalls
       app.locals.pastCalls.push(currentCall);
+
       // Clear current call and conversations for the next call
       app.locals.currentCall = null;
       app.locals.conversations = [];
+
   // Log for debugging
       console.log('Call terminated with status:', callStatus);
       console.log('Past Calls:', app.locals.pastCalls.length);
       console.log('Past Conversations:', app.locals.pastConversations.length);
     }
   }
+
   // Send an empty response to acknowledge the callback
   res.send('');
 });
+
 
 // Start the server
 app.listen(port, () => {
