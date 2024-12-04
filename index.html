@@ -214,32 +214,7 @@
                a.remove();
         })
         .catch(error => console.error('Download error:', error));
-    }
-
-    async function triggerFileCheck() {
-            try {
-                // Make a request to your backend endpoint that triggers the n8n workflow
-                const response = await fetch('https://truworths-5d9b0467377c.herokuapp.com/webhook-data');
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-
-                const data = await response.json();
-                
-                // Display the response in the result container
-                const resultElement = document.getElementById('response-data');
-                resultElement.textContent = JSON.stringify(data, null, 2);
-            } catch (error) {
-                console.error('Error:', error);
-                const resultElement = document.getElementById('response-data');
-                resultElement.textContent = `Error: ${error.message}`;
-            }
-        }
-
-        // Attach event listener to the button
-        document.getElementById('triggerFileCheckBtn').addEventListener('click', triggerFileCheck);
-   
+    }  
 
 
     function downloadKpis() {
