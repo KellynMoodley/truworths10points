@@ -277,8 +277,6 @@ app.post('/process-speech', async (req, res) => {
       bot: botResponse,
     };
     app.locals.conversations.push(conversationEntry);
-        
-    response.hangup();
 
     
     if (app.locals.currentCall) {
@@ -327,6 +325,8 @@ app.post('/process-speech', async (req, res) => {
       app.locals.currentCall = null; // Clear current call
       app.locals.conversations = []; // Clear the current conversations array for the next call
     }
+
+    response.hangup();
 
 
     res.type('text/xml');
