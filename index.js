@@ -427,14 +427,11 @@ app.get('/call-data', (req, res) => {
 
 // Status callback to handle call status changes
 app.post('/status-callback', async (req, res) => {
-  try{
     const callSid = req.body.CallSid;
     const callStatus = req.body.CallStatus;
     console.log(`Status update for CallSid ${callSid}: ${callStatus}`);
     res.send('');
 
-    setImmediate(async () => {
-      try {
         // Check if there's a current call and if it matches the CallSid from Twilio
     if (app.locals.currentCall && app.locals.currentCall.callSid === callSid) {
      
@@ -512,13 +509,8 @@ app.post('/status-callback', async (req, res) => {
         console.log('Past Conversations:', app.locals.pastConversations.length);
       }    
     }
-  }catch (error) {
-        console.error('Status callback processing error:', error);
-      }
-    });
-  } catch (error) {
-    console.error('Status callback main error:', error);
-  }
+  // Send an empty response to acknowledge the callback
+  res.send('');
 });
 
 
