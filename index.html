@@ -128,24 +128,6 @@
       background-color: #0056b3;
     }
 
-    #result-container {
-      margin-top: 20px;
-      padding: 10px;
-      border: 1px solid #ccc;
-      background: #f9f9f9;
-    }
-    .button {
-      padding: 10px 20px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    .button:hover {
-      background-color: #45a049;
-    }
-    
   </style>
 </head>
 <body>
@@ -175,13 +157,6 @@
     </ul>
   </div>
 
-<button id="triggerFileCheckBtn" class="button">Fetch Call Summary</button>
-
-<div id="result-container">
-    <h2>Response:</h2>
-    <pre id="response-data">Waiting for response...</pre>
-</div>
-
 <div id="kpi-container">
   <h3>Key Performance Indicators (KPIs)</h3>
   <div id="avg-call-time" class="kpi">
@@ -199,7 +174,6 @@
 </div>
 
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <script defer src="script.js"></script>
   <script>
     function downloadConversation(callSid) {
       fetch(`/download-conversation/${callSid}`)
@@ -215,7 +189,7 @@
                a.remove();
         })
         .catch(error => console.error('Download error:', error));
-    }  
+    }
 
 
     function downloadKpis() {
