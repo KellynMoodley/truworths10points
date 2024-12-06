@@ -18,7 +18,7 @@ const { createClient } = require('@supabase/supabase-js');
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cors());
 app.use(express.json());
-app.use(express.static(__dirname));
+
 
 require('dotenv').config();
 
