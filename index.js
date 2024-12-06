@@ -16,10 +16,6 @@ const { createClient } = require('@supabase/supabase-js');
 
 // Configure middleware
 app.use(bodyParser.urlencoded({ extended: false }));
-app.use(cors());
-app.use(express.json());
-
-
 require('dotenv').config();
 
 // Watson configuration
@@ -51,7 +47,21 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-//n8n start 
+// CORS Configuration
+app.use(cors({
+  origin: ['https://truworths-5d9b0467377c.herokuapp.com/'],
+//  origin:'*',
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
+
+//app.use(cors());
+
+// Middleware
+app.use(express.json());
+app.use(express.static(__dirname));
+
 // N8N Webhook Function
 async function callN8nWebhook(fileUrl) {
   try {
@@ -146,7 +156,10 @@ app.get('/webhook-data', async (req, res) => {
   }
 });
 
-//n8n end
+// Start Server
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+});
 
 
 // Download conversation endpoint
