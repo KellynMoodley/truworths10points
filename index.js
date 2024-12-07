@@ -2,8 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const { twiml } = require('twilio');
 const path = require('path');
-//const axios = require('axios');
-const axios = require('axios').default;
+const axios = require('axios');
 const cors = require('cors');
 const { IamAuthenticator } = require('ibm-watson/auth');
 const SpeechToTextV1 = require('ibm-watson/speech-to-text/v1');
@@ -20,8 +19,8 @@ app.use(bodyParser.urlencoded({ extended: false }));
 // CORS Configuration
 app.use(cors({
   origin: ['https://truworths-5d9b0467377c.herokuapp.com/'],
-//  origin:'*',
-  methods: ['GET', 'POST', 'OPTIONS'],
+// origin:'*',
+/ methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
