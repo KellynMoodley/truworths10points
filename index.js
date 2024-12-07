@@ -17,13 +17,14 @@ require('dotenv').config();
 // Configure middleware
 app.use(bodyParser.urlencoded({ extended: false }));
 // CORS Configuration
-app.use(cors({
-  origin: ['https://truworths-5d9b0467377c.herokuapp.com/'],
+//app.use(cors({
+//  origin: ['https://truworths-5d9b0467377c.herokuapp.com/'],
 // origin:'*',
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
-}));
+//  methods: ['GET', 'POST', 'OPTIONS'],
+//  allowedHeaders: ['Content-Type', 'Authorization'],
+//  credentials: true
+//}));
+app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
