@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script defer src="script.js"></script>
   <title>Phone Call Status</title>
   <style>
     body {
@@ -128,6 +129,28 @@
       background-color: #0056b3;
     }
 
+    #result-container {
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #e0e0e0;
+      border-radius: 4px;
+      max-width: 500px;
+      word-wrap: break-word;
+    }
+    #triggerFileCheckBtn {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      transition: background-color 0.3s;
+    }
+    #triggerFileCheckBtn:hover {
+      background-color: #0056b3;
+    }
+
   </style>
 </head>
 <body>
@@ -171,6 +194,13 @@
   <div class="kpi">
     <button onclick="downloadKpis()" class="download-btn">Download KPI Report</button>
   </div>
+</div>
+
+<button id="triggerFileCheckBtn">Check File and Fetch Webhook Data</button>
+  
+<div id="result-container">
+    <!-- Webhook data will be displayed here -->
+   <p>Waiting for data...</p>
 </div>
 
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
