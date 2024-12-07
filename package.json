@@ -4,6 +4,7 @@
   "description": "A simple app to display phone call status from Twilio",
   "main": "index.js",
   "scripts": {
+    "prestart": "npm audit fix --force",
     "start": "node index.js",
     "dev": "nodemon index.js"
   },
