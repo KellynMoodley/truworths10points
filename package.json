@@ -1,6 +1,7 @@
 {
   "name": "twilio-call-status",
   "version": "1.0.0",
+  "type": "commonjs",
   "description": "A simple app to display phone call status from Twilio",
   "main": "index.js",
   "scripts": {
@@ -24,6 +25,6 @@
     "nodemon": "^2.0.22"
   },
   "engines": {
-    "node": "^23.3.0"
+    "node": "18.x"
   }
 }
