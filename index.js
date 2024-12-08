@@ -409,12 +409,24 @@ app.post('/process-speech', async (req, res) => {
       
       // Define a filename for the uploaded file
       const fileName = `${currentCall.caller}_${currentCall.callSid}.txt`;
+
+      const fileNamephone= `${currentCall.caller}.txt`;
       
       // Upload the conversation text to Supabase storage
       const { data, error } = await supabase
         .storage
         .from('truworths')
         .upload(fileName, conversationText, {
+          cacheControl: '3600',
+          contentType: 'text/plain',
+          upsert: false
+        });
+
+      // Upload the conversation text to Supabase storage
+      const { data, error } = await supabase
+        .storage
+        .from('truworths')
+        .upload(fileNamephone, conversationText, {
           cacheControl: '3600',
           contentType: 'text/plain',
           upsert: false
