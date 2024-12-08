@@ -216,11 +216,6 @@ app.get('/download-conversation/:callSid', async (req, res) => {
 
 
 
-
-// Usage example
-await appendToFile(supabase, 'truworths', fileNamephone, conversationText);
-
-
 // Download KPIs endpoint
 app.get('/download-kpis', (req, res) => {
   const totalCalls = app.locals.pastCalls.length;
