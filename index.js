@@ -188,21 +188,21 @@ app.get('/download-conversation/:callSid', async (req, res) => {
     const fileName = `${caller}_${callSid}.txt`;
 
     // Upload the conversation text to Supabase storage
-    const { data, error } = await supabase
-      .storage
-      .from('truworths')
-      .upload(fileName, conversationText, {
-        cacheControl: '3600',
-        contentType: 'text/plain',
-        upsert: false
-      });
+   // const { data, error } = await supabase
+    //  .storage
+    //  .from('truworths')
+    //  .upload(fileName, conversationText, {
+    //    cacheControl: '3600',
+    //    contentType: 'text/plain',
+    //    upsert: false
+    //  });
 
-    if (error) {
-      console.error('Supabase upload error:', error);
-      return res.status(500).send('Error uploading conversation to Supabase');
-    } else {
-      console.log('Conversation uploaded successfully:', data);
-    }
+   // if (error) {
+    //  console.error('Supabase upload error:', error);
+    //  return res.status(500).send('Error uploading conversation to Supabase');
+    //} else {
+    //  console.log('Conversation uploaded successfully:', data);
+    //}
 
     // Send the conversation text as a downloadable file
     res.setHeader('Content-Type', 'text/plain');
