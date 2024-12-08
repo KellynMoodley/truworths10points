@@ -11,7 +11,7 @@ async function triggerFileCheck() {
     // Update DOM with response
     const resultElement = document.getElementById('result-container');
     resultElement.innerHTML = `
-      <h3>Webhook Response:</h3>
+      <h3>Summary:</h3>
       <p>${data.data || 'No data received'}</p>
     `;
   } catch (error) {
