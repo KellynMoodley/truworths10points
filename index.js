@@ -475,15 +475,6 @@ console.log('Updated content:', updatedContent);
   console.log('File updated successfully!');
 } catch (error) {
   console.error('Error appending to file:', error.message);
-  // Upload the conversation text to Supabase storage
-  const { data, error } = await supabase
-    .storage
-    .from('truworths')
-    .upload(fileNamephone, conversationText, {
-      cacheControl: '3600',
-      contentType: 'text/plain',
-      upsert: false
-   });
 }
     
 
