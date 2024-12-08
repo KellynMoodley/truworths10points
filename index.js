@@ -420,7 +420,7 @@ app.post('/process-speech', async (req, res) => {
           cacheControl: '3600',
           contentType: 'text/plain',
           upsert: false
-        });
+        }
 
       // Upload the conversation text to Supabase storage
       const { data, error } = await supabase
