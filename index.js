@@ -392,14 +392,16 @@ app.post('/process-speech', async (req, res) => {
       currentCall.status = 'completed';
       currentCall.conversations = app.locals.conversations;
       const now = new Date(); 
-      const timestamp = new Intl.DateTimeFormat('en-US', {
-        timeZone: 'Africa/Johannesburg',
+      const timestamp = now.toLocaleString('en-GB', {
         year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
+        month: 'long',
+        day: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
-      }).format(now);
+        timeZone: 'Africa/Johannesburg',
+      });
+
+      console.log(timestamp); // Example: "8 December 2024, 14:30"
       
       const conversationText = currentCall.conversations.map(conv => `
         Date: ${timestamp}
