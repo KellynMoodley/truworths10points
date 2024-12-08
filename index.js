@@ -437,6 +437,8 @@ try {
     .storage
     .from('truworths')
     .download(fileNamephone);
+  
+   console.log('Starting the try block');
 
   let existingContent = '';
 
@@ -460,6 +462,11 @@ try {
       contentType: 'text/plain',
       upsert: true, // Overwrite the file with updated content
     });
+  
+ 
+console.log('Existing content:', existingContent);
+console.log('Updated content:', updatedContent);
+
 
   if (uploadError) {
     throw new Error(uploadError.message);
