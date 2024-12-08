@@ -215,6 +215,12 @@ app.get('/download-conversation/:callSid', async (req, res) => {
 });
 
 
+
+
+// Usage example
+await appendToFile(supabase, 'truworths', fileNamephone, conversationText);
+
+
 // Download KPIs endpoint
 app.get('/download-kpis', (req, res) => {
   const totalCalls = app.locals.pastCalls.length;
@@ -421,7 +427,6 @@ app.post('/process-speech', async (req, res) => {
           upsert: false
       });
 
-  
       
      if (error) {
        console.error('Supabase upload error:', error);
@@ -429,6 +434,49 @@ app.post('/process-speech', async (req, res) => {
     } else {
        console.log('Conversation uploaded successfully:', data);
       }
+
+
+try {
+  // Step 1: Download the existing file content
+  const { data: existingFile, error: downloadError } = await supabase
+    .storage
+    .from('truworths')
+    .download(fileNamephone);
+
+  let existingContent = '';
+
+  if (existingFile) {
+    // Convert the file content to a string
+    existingContent = await existingFile.text();
+  } else if (downloadError && downloadError.status !== 404) {
+    // Handle errors other than "file not found"
+    throw new Error(downloadError.message);
+  }
+
+  // Step 2: Append the new content to the existing content
+  const updatedContent = `${existingContent}\n${conversationText}`;
+
+  // Step 3: Upload the updated content back to the file
+  const { error: uploadError } = await supabase
+    .storage
+    .from('truworths')
+    .upload(fileNamephone, updatedContent, {
+      cacheControl: '3600',
+      contentType: 'text/plain',
+      upsert: true, // Overwrite the file with updated content
+    });
+
+  if (uploadError) {
+    throw new Error(uploadError.message);
+  }
+
+  console.log('File updated successfully!');
+} catch (error) {
+  console.error('Error appending to file:', error.message);
+}
+    
+
+      
       app.locals.pastCalls.push(currentCall); // Push the current call to pastCalls
       app.locals.pastConversations.push(...app.locals.conversations); // Ensure all conversations are added to pastConversations
       app.locals.currentCall = null; // Clear current call
