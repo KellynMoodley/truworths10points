@@ -392,7 +392,7 @@ app.post('/process-speech', async (req, res) => {
       currentCall.status = 'completed';
       currentCall.conversations = app.locals.conversations;
       const now = new Date(); 
-      const timestamp = new Intl.DateTimeFormat('en-GB', {
+      const timestamp = new Intl.DateTimeFormat('en-US', {
         timeZone: 'Africa/Johannesburg',
         year: 'numeric',
         month: '2-digit',
@@ -420,7 +420,7 @@ app.post('/process-speech', async (req, res) => {
           cacheControl: '3600',
           contentType: 'text/plain',
           upsert: false
-        }
+        });
 
       // Upload the conversation text to Supabase storage
       const { data, error } = await supabase
