@@ -6,125 +6,124 @@
   <script defer src="script.js"></script>
   <title>Phone Call Status</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: #f4f4f9;
-    }
+    /* General Body Styling */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f4f4f9;
+}
 
-    /* Profile Section */
-    #profile-container {
-      background: #ffffff;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-      margin: 20px auto;
-      max-width: 500px;
-    }
+/* Main Container */
+#container {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 20px;
+  gap: 20px;
+}
 
-    /* Current Call Section */
-    #current-call {
-      background: #ffffff;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-      margin: 20px auto;
-      max-width: 700px;
-    }
+/* Combined Main Content */
+#summary-container {
+  display: flex;
+  flex: 3;
+  flex-wrap: wrap;
+  gap: 20px;
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  font-size: 14px; /* Set uniform font size */
+}
 
-    /* Past Calls Section */
-    #past-calls {
-      background: #ffffff;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-      margin: 20px auto;
-      max-width: 700px;
-    }
+/* Profile Section */
+#profile-container {
+  flex: 1 1 30%;
+  background: #ffffff;
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  font-size: 12px; /* Smaller font for profile */
+}
 
-    /* KPI Section (Fixed on top-right corner) */
-    #kpi-container {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: #ffffff;
-      padding: 15px;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-      width: 250px;
-    }
+/* KPI Section - Moved to side */
+#kpi-container {
+  flex: 1 1 30%;
+  background: #ffffff;
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  font-size: 14px; /* Set uniform font */
+}
 
-    /* Button and Hover Effects */
-    .download-btn {
-      margin-left: 10px;
-      padding: 5px 10px;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
+/* Current Call Section */
+#current-call {
+  flex: 2 1 60%;
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
 
-    .download-btn:hover {
-      background-color: #0056b3;
-    }
+/* Past Calls Section */
+#past-calls {
+  flex: 1 1 100%;
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  margin-top: 10px;
+}
 
-    .triggerFileCheckBtn {
-      padding: 10px 20px;
-      font-size: 16px;
-      cursor: pointer;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      transition: background-color 0.3s;
-    }
+/* KPI */
+.kpi {
+  font-size: 14px;
+  margin-bottom: 10px;
+}
 
-    .triggerFileCheckBtn:hover {
-      background-color: #0056b3;
-    }
+.kpi-title {
+  font-weight: bold;
+}
 
-    /* Section Text & Results */
-    #result-container {
-      margin: 20px auto;
-      padding: 10px;
-      background-color: #e0e0e0;
-      border-radius: 4px;
-      max-width: 500px;
-      word-wrap: break-word;
-    }
+/* Button Styles */
+.download-btn {
+  margin-left: 10px;
+  padding: 5px 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
 
-    h1,
-    h2 {
-      margin-top: 0;
-    }
+.download-btn:hover {
+  background-color: #0056b3;
+}
 
-    ul {
-      padding: 0;
-      list-style: none;
-    }
+/* Result Section */
+#result-container {
+  margin-top: 20px;
+  padding: 10px;
+  background-color: #e0e0e0;
+  border-radius: 4px;
+  max-width: 500px;
+  word-wrap: break-word;
+}
 
-    .caller {
-      cursor: pointer;
-      font-weight: bold;
-      color: #007bff;
-      display: block;
-      margin: 10px 0;
-    }
+.triggerFileCheckBtn {
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+}
 
-    .caller-details {
-      display: none;
-      padding: 10px;
-      background-color: #f9f9f9;
-      border-radius: 5px;
-      margin-top: 10px;
-    }
+.triggerFileCheckBtn:hover {
+  background-color: #0056b3;
+}
 
-    .error-message {
-      color: red;
-      font-weight: bold;
-    }
 
   </style>
 </head>
