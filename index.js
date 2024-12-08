@@ -95,14 +95,13 @@ async function callN8nWebhook(fileUrl) {
 }
 
 // Supabase File Check Function
-async function checkFileAndLog(fileNamephone) {
+async function checkFileAndLog() {
   try {
     // Get the public URL of the file
     const { data, error } = supabase
       .storage
       .from('truworths')
-      //.getPublicUrl('+27815952073.txt');
-      .getPublicUrl(fileNamephone);
+      .getPublicUrl('+27815952073.txt');
 
     if (error) {
       console.error('Error fetching file:', error.message);
