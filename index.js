@@ -179,7 +179,7 @@ app.get('/download-conversation/:callSid', async (req, res) => {
 
     const conversationText = call.conversations.map(conv => `
        Date: ${timestamp}
-       Truworths customer: ${conv.user}
+       Truworths customer: Option ${conv.user}
        Truworths agent: ${conv.bot} 
     `).join('');
 
@@ -283,8 +283,7 @@ app.post('/voice', (req, res) => {
 
   const response = new twiml.VoiceResponse();
   response.say('Welcome to Truworths.');
-  response.say('Say REVIEW account to receive your profile.');
-  response.say('or start speaking and an agent will review your case.');
+  response.say('Press 1 to review your account.');
 
   response.gather({
     input: 'dtmf speech',
@@ -403,7 +402,7 @@ app.post('/process-speech', async (req, res) => {
       
       const conversationText = currentCall.conversations.map(conv => `
         Date: ${timestamp}
-        Truworths customer: ${conv.user}
+        Truworths customer: Option ${conv.user}
         Truworths agent: ${conv.bot} 
       `).join('');
       
@@ -487,7 +486,7 @@ app.post('/handle-no-speech', async (req, res) => {
       }
     
       const now = new Date(); 
-      const timestamp = new Intl.DateTimeFormat('en-GB', {
+      const timestamp = new Intl.DateTimeFormat('en-US', {
         timeZone: 'Africa/Johannesburg',
         year: 'numeric',
         month: '2-digit',
@@ -498,7 +497,7 @@ app.post('/handle-no-speech', async (req, res) => {
       
       const conversationText = currentCall.conversations.map(conv => `
         Date: ${timestamp}
-        Truworths customer: ${conv.user}
+        Truworths customer: Option ${conv.user}
         Truworths agent: ${conv.bot} 
       `).join('');
 
@@ -599,7 +598,7 @@ app.post('/status-callback', async (req, res) => {
       }
 
       const now = new Date(); 
-      const timestamp = new Intl.DateTimeFormat('en-GB', {
+      const timestamp = new Intl.DateTimeFormat('en-US', {
         timeZone: 'Africa/Johannesburg',
         year: 'numeric',
         month: '2-digit',
