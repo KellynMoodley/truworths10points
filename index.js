@@ -459,18 +459,6 @@ console.log('Updated content:', updatedContent);
 
   const result = await checkFileAndLog(fileNamephone);
 
-  
-
-  res.type('text/xml');
-  res.send(response.toString());
-} catch (error) {
-  console.error('Error in file append or check:', error.message);
-
-  res.status(500).send('Something went wrong while processing');
-}
-
-
-
   if (uploadError) {
     throw new Error(uploadError.message);
   }
