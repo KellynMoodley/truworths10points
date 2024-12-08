@@ -131,13 +131,8 @@ async function checkFileAndLog(fileNamephone) {
 // Backend (index.js)
 app.get('/check-file', async (req, res) => {
   try {
-    const { fileNamephone } = req.query; // Extract the parameter from query string
-    if (!fileNamephone) {
-      return res.status(400).json({ error: 'fileNamephone is required' });
-    }
-
-    console.log('Checking file with:', fileNamephone);
-    const result = await checkFileAndLog(fileNamephone);
+    
+    const result = await checkFileAndLog();
     res.json({ 
       message: 'File check completed', 
       data: result?.response?.output_text  || 'No data received'
@@ -151,13 +146,8 @@ app.get('/check-file', async (req, res) => {
 
 app.get('/webhook-data', async (req, res) => {
   try {
-    const { fileNamephone } = req.query; // Extract the parameter from query string
-    if (!fileNamephone) {
-      return res.status(400).json({ error: 'fileNamephone is required' });
-    }
-
-    console.log('Checking file with:', fileNamephone);
-    const result = await checkFileAndLog(fileNamephone);
+    
+    const result = await checkFileAndLog();
     res.json({ 
       message: 'Webhook data retrieved', 
       response: result?.response?.text || 'No data received'
@@ -467,15 +457,9 @@ try {
 console.log('Existing content:', existingContent);
 console.log('Updated content:', updatedContent);
 
-  try {
   const result = await checkFileAndLog(fileNamephone);
 
-  if (uploadError) {
-    throw new Error(uploadError.message);
-  }
-
-  console.log('File updated successfully!');
-  console.log('Final result:', result?.response?.output_text);
+  
 
   res.type('text/xml');
   res.send(response.toString());
