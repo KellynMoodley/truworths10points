@@ -168,14 +168,16 @@ app.get('/download-conversation/:callSid', async (req, res) => {
     const caller = call.caller|| 'Unknown'; // Access the caller (phone number) from the call object
 
     const now = new Date(); 
-    const timestamp = new Intl.DateTimeFormat('en-GB', {
-      timeZone: 'Africa/Johannesburg',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(now);
+    const timestamp = now.toLocaleString('en-GB', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'Africa/Johannesburg',
+      });
+
+      console.log(timestamp); // Example: "8 December 2024, 14:30"
 
     const conversationText = call.conversations.map(conv => `
        Date: ${timestamp}
@@ -538,14 +540,16 @@ app.post('/handle-no-speech', async (req, res) => {
       }
     
       const now = new Date(); 
-      const timestamp = new Intl.DateTimeFormat('en-US', {
-        timeZone: 'Africa/Johannesburg',
+      const timestamp = now.toLocaleString('en-GB', {
         year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
+        month: 'long',
+        day: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
-      }).format(now);
+        timeZone: 'Africa/Johannesburg',
+      });
+
+      console.log(timestamp); // Example: "8 December 2024, 14:30"
       
       const conversationText = currentCall.conversations.map(conv => `
         Date: ${timestamp}
@@ -650,14 +654,16 @@ app.post('/status-callback', async (req, res) => {
       }
 
       const now = new Date(); 
-      const timestamp = new Intl.DateTimeFormat('en-US', {
-        timeZone: 'Africa/Johannesburg',
+      const timestamp = now.toLocaleString('en-GB', {
         year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
+        month: 'long',
+        day: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
-      }).format(now);
+        timeZone: 'Africa/Johannesburg',
+      });
+
+      console.log(timestamp); // Example: "8 December 2024, 14:30"
       
       const conversationText = currentCall.conversations.map(conv => `
         Date: ${timestamp}
