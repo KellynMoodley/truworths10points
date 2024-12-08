@@ -437,7 +437,7 @@ app.post('/process-speech', async (req, res) => {
       .upload(fileNamephone, conversationText, {
         cacheControl: '3600',
         contentType: 'text/plain',
-        upsert: false,
+        upsert: true,
       }),
   ]);
 
