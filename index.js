@@ -413,53 +413,23 @@ app.post('/process-speech', async (req, res) => {
       const fileNamephone= `${currentCall.caller}.txt`;
       
       // Upload the conversation text to Supabase storage
-     // const { data, error } = await supabase
-       // .storage
-       // .from('truworths')
-        //.upload(fileName, conversationText, {
-         // cacheControl: '3600',
-         // contentType: 'text/plain',
-        //  upsert: false
-        //});
+      const { data, error } = await supabase
+        .storage
+        .from('truworths')
+        .upload(fileName, conversationText, {
+         cacheControl: '3600',
+         contentType: 'text/plain',
+          upsert: false
+      });
 
-      try {
-  // Upload both files simultaneously using Promise.all
-  const [upload1, upload2] = await Promise.all([
-    supabase.storage
-      .from('truworths')
-      .upload(fileName, conversationText, {
-        cacheControl: '3600',
-        contentType: 'text/plain',
-        upsert: false,
-      }),
-    supabase.storage
-      .from('truworths')
-      .upload(fileNamephone, conversationText, {
-        cacheControl: '3600',
-        contentType: 'text/plain',
-        upsert: true,
-      }),
-  ]);
-
-  if (upload1.error || upload2.error) {
-    console.error('Supabase upload error:', upload1.error, upload2.error);
-    return res.status(500).send('Error uploading conversation to Supabase');
-  }
-
-  console.log('Both uploads completed successfully');
-  return res.status(200).send('Upload successful');
-} catch (error) {
-  console.error('Unexpected error during Supabase upload:', error);
-  return res.status(500).send('Unexpected server error');
-}
-
+  
       
-     // if (error) {
-      //  console.error('Supabase upload error:', error);
-      //  return res.status(500).send('Error uploading conversation to Supabase');
-      //} else {
-       // console.log('Conversation uploaded successfully:', data);
-      //}
+     if (error) {
+       console.error('Supabase upload error:', error);
+      return res.status(500).send('Error uploading conversation to Supabase');
+    } else {
+       console.log('Conversation uploaded successfully:', data);
+      }
       app.locals.pastCalls.push(currentCall); // Push the current call to pastCalls
       app.locals.pastConversations.push(...app.locals.conversations); // Ensure all conversations are added to pastConversations
       app.locals.currentCall = null; // Clear current call
