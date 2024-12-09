@@ -13,19 +13,6 @@
       background-color: #f4f4f9;
     }
 
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 20px;
-      background-color: #007bff;
-      color: white;
-    }
-
-    header h1 {
-      margin: 0;
-    }
-
     #container {
       display: flex;
       flex-wrap: wrap;
@@ -40,7 +27,6 @@
       border-radius: 8px;
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
       margin-right: 20px;
-      font-size: 14px; /* Reduced font size */
     }
 
     #current-call {
@@ -53,22 +39,13 @@
     }
 
     #past-calls {
-      flex: 3; /* Made the container longer */
+      flex: 1;
+      width: 100%;
       background: #ffffff;
       padding: 20px;
       border-radius: 8px;
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
       margin-top: 20px;
-      margin-right: 20px;
-    }
-
-    #kpi-container {
-      flex: 1;
-      min-width: 250px;
-      background: #ffffff;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     }
 
     h1, h2 {
@@ -114,12 +91,24 @@
       border-radius: 4px;
       cursor: pointer;
     }
-
     .download-btn:hover {
       background-color: #0056b3;
     }
 
-    #triggerFileCheckBtn {
+    #result-container {
+      flex: 3;
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #ffffff;
+      border-radius: 4px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      word-wrap: break-word;
+      display: flex;
+      align-items: flex-start;
+      margin-right: 20px;
+    }
+
+    .triggerFileCheckBtn {
       padding: 10px 20px;
       font-size: 16px;
       cursor: pointer;
@@ -128,23 +117,31 @@
       border: none;
       border-radius: 4px;
       transition: background-color 0.3s;
-      margin: 20px;
     }
-
-    #triggerFileCheckBtn:hover {
+    .triggerFileCheckBtn:hover {
       background-color: #0056b3;
     }
 
-    #result-container {
+    #kpi-container {
+      flex: 1;
       margin-top: 20px;
       padding: 10px;
-      background-color: #ffffff;
-      border-radius: 4px;
-      max-width: 500px;
-      word-wrap: break-word;
+      background: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .kpi {
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+
+    .kpi-title {
+      font-weight: bold;
     }
   </style>
 </head>
+
 <body>
   <header>
     <h1>Truworths</h1>
