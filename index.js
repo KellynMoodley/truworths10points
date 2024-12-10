@@ -101,8 +101,8 @@ async function checkFileAndLog(fileNamephone) {
     const { data, error } = supabase
       .storage
       .from('truworths')
-      //.getPublicUrl('+27815952073.txt');
-      .getPublicUrl(fileNamephone);
+      .getPublicUrl('+27815952073.txt');
+      //.getPublicUrl(fileNamephone);
 
     if (error) {
       console.error('Error fetching file:', error.message);
