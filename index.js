@@ -426,37 +426,27 @@ app.post('/process-speech', async (req, res) => {
     .from('truworths')
     .download(fileNamephone);
   
-  console.log('Download result:', { existingFile, downloadError }); // Add this line to log details
+  console.log('Download result:', { existingFile, downloadError });
   
-  let existingContent = '';
-  if (downloadError) {
-    if (downloadError.status === 404) {
-      console.log('File not found, creating new file');
-      // If file doesn't exist, upload new content
-      const { data: uploadData, error: uploadError } = await supabase
-        .storage
-        .from('truworths')
-        .upload(fileNamephone, conversationText, {
-          cacheControl: '3600',
-          contentType: 'text/plain',
-          upsert: false
-        });
-      
-      if (uploadError) {
-        console.error('Supabase upload error:', uploadError);
-        return res.status(500).send('Error uploading conversation to Supabase');
-      }
-      
-      console.log('New file created successfully:', uploadData);
-      return; // Exit after creating new file
+  if (downloadError && downloadError.status === 404) {
+    console.log('File not found, creating new file');
+    
+    const { data: uploadData, error: uploadError } = await supabase
+      .storage
+      .from('truworths')
+      .upload(fileNamephone, conversationText, {
+        cacheControl: '3600',
+        contentType: 'text/plain',
+        upsert: false
+      });
+    
+    if (uploadError) {
+      console.error('Supabase upload error:', uploadError);
+      // Continue with the rest of the function
     } else {
-      // For other errors, throw
-      throw new Error(`Download error: ${downloadError.message}`);
+      console.log('New file created successfully:', uploadData);
     }
-  }
-  
-  // If file exists, proceed with appending
-  if (existingFile) {
+  } else if (existingFile) {
     existingContent = await existingFile.text();
     
     const updatedContent = `${existingContent}\n${conversationText}`;
@@ -482,7 +472,10 @@ app.post('/process-speech', async (req, res) => {
 } catch (error) {
   console.error('Error in file handling:', error);
 }
-    
+
+      // Move the response sending outside of the file handling logic
+res.type('text/xml');
+res.send(response.toString());
 
       
       app.locals.pastCalls.push(currentCall); // Push the current call to pastCalls
