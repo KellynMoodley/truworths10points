@@ -30,6 +30,13 @@
     #header .status, #header #clock {
       margin: 0;
     }
+    .status-dot {
+    width: 10px;
+    height: 10px;
+    background-color: green;
+    border-radius: 50%;
+    margin-right: 8px;
+}
 
     #container {
       display: flex;
@@ -160,7 +167,7 @@
 <body>
   <header id="header">
     <div class="brand">Truworths</div>
-   <!-- <div class="online-status">Online</div> -->
+    <span class="status-dot"></span> Online
     <div id="clock">Time: 12:00 PM</div>
   </header>
 
