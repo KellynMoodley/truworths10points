@@ -23,6 +23,19 @@
       font-size: 1.2em;
     }
 
+    #header .status-container {
+    display: flex;
+    align-items: center;
+}
+
+.status-dot {
+    width: 10px;
+    height: 10px;
+    background-color: green;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+
     #header .brand {
       font-weight: bold;
     }
@@ -160,11 +173,14 @@
 </head>
 
 <body>
-  <header id="header">
-    <div class="brand">Truworths</div>
-   <!-- <div class="online-status">Online</div> -->
-    <div id="clock">Time: 12:00 PM</div>
-  </header>
+  <div id="container">
+    <!-- Header with Online status and green dot -->
+    <div id="header">
+        <div class="status-container">
+            <span class="status-dot"></span> Online
+        </div>
+        <div id="clock"></div>
+    </div>
 
   <div id="container">
     <!-- Profile Information -->
