@@ -402,7 +402,7 @@ app.post('/process-speech', async (req, res) => {
       const fileNamephone= `${currentCall.caller}.txt`;
       
       // Upload the conversation text to Supabase storage
-      const { data:fileData1, error:uploadError1 } = await supabase
+      const { data, error } = await supabase
         .storage
         .from('truworths')
         .upload(fileName, conversationText, {
@@ -411,73 +411,68 @@ app.post('/process-speech', async (req, res) => {
           upsert: false
       });
 
-      if (uploadError1) {
+      if (error) {
        console.error('Supabase upload error:', error);
       return res.status(500).send('Error uploading conversation to Supabase');
     } else {
        console.log('First Conversation uploaded successfully:', data);
       }
 
-      // Upload the conversation text to Supabase storage
-      const { data2:fileData2, error: uploadError2 } = await supabase
-        .storage
-        .from('truworths')
-        .upload(fileNamephone, conversationText, {
-         cacheControl: '3600',
-         contentType: 'text/plain',
-          upsert: false
-      });
-      
-     if (uploadError2) {
-       console.error('Supabase upload error:', error);
-      return res.status(500).send('Error uploading conversation to Supabase');
-    } else {
-       console.log('Conversation uploaded successfully:', data);
-      }
-
-
-try {
-  // Step 1: Download the existing file content
+      try {
+  console.log('Starting the try block');
+  
   const { data: existingFile, error: downloadError } = await supabase
     .storage
     .from('truworths')
     .download(fileNamephone);
   
-   console.log('Starting the try block');
-
   let existingContent = '';
-
   if (existingFile) {
     // Convert the file content to a string
     existingContent = await existingFile.text();
+    
+    // Step 2: Append the new content to the existing content
+    const updatedContent = `${existingContent}\n${conversationText}`;
+    
+    // Step 3: Upload the updated content back to the file
+    const { error: finaluploadError } = await supabase
+      .storage
+      .from('truworths')
+      .upload(fileNamephone, updatedContent, {
+        cacheControl: '3600',
+        contentType: 'text/plain',
+        upsert: true, // Overwrite the file with updated content
+      });
+    
+    if (finaluploadError) {
+      throw new Error(finaluploadError.message);
+    }
+    
+    console.log('Existing content:', existingContent);
+    console.log('Updated content:', updatedContent);
   } else if (downloadError && downloadError.status !== 404) {
     // Handle errors other than "file not found"
     throw new Error(downloadError.message);
+  } else {
+    // If the file doesn't exist, upload the new content
+    const { data: uploadData, error: uploadError } = await supabase
+      .storage
+      .from('truworths')
+      .upload(fileNamephone, conversationText, {
+        cacheControl: '3600',
+        contentType: 'text/plain',
+        upsert: false
+      });
+    
+    if (uploadError) {
+      console.error('Supabase upload error:', uploadError.message);
+      return res.status(500).send('Error uploading conversation to Supabase');
+    }
+    
+    console.log('First Conversation uploaded successfully:', uploadData);
   }
-
-  // Step 2: Append the new content to the existing content
-  const updatedContent = `${existingContent}\n${conversationText}`;
-
-  // Step 3: Upload the updated content back to the file
-  const { error: uploadError } = await supabase
-    .storage
-    .from('truworths')
-    .upload(fileNamephone, updatedContent, {
-      cacheControl: '3600',
-      contentType: 'text/plain',
-      upsert: true, // Overwrite the file with updated content
-    });
   
- 
-console.log('Existing content:', existingContent);
-console.log('Updated content:', updatedContent);
-
   const result = await checkFileAndLog(fileNamephone);
-
-  if (uploadError) {
-    throw new Error(uploadError.message);
-  }
-
   console.log('File updated successfully!');
 } catch (error) {
   console.error('Error appending to file:', error.message);
