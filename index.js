@@ -426,22 +426,48 @@ app.post('/process-speech', async (req, res) => {
     .from('truworths')
     .download(fileNamephone);
   
+  console.log('Download result:', { existingFile, downloadError }); // Add this line to log details
+  
   let existingContent = '';
+  if (downloadError) {
+    if (downloadError.status === 404) {
+      console.log('File not found, creating new file');
+      // If file doesn't exist, upload new content
+      const { data: uploadData, error: uploadError } = await supabase
+        .storage
+        .from('truworths')
+        .upload(fileNamephone, conversationText, {
+          cacheControl: '3600',
+          contentType: 'text/plain',
+          upsert: false
+        });
+      
+      if (uploadError) {
+        console.error('Supabase upload error:', uploadError);
+        return res.status(500).send('Error uploading conversation to Supabase');
+      }
+      
+      console.log('New file created successfully:', uploadData);
+      return; // Exit after creating new file
+    } else {
+      // For other errors, throw
+      throw new Error(`Download error: ${downloadError.message}`);
+    }
+  }
+  
+  // If file exists, proceed with appending
   if (existingFile) {
-    // Convert the file content to a string
     existingContent = await existingFile.text();
     
-    // Step 2: Append the new content to the existing content
     const updatedContent = `${existingContent}\n${conversationText}`;
     
-    // Step 3: Upload the updated content back to the file
     const { error: finaluploadError } = await supabase
       .storage
       .from('truworths')
       .upload(fileNamephone, updatedContent, {
         cacheControl: '3600',
         contentType: 'text/plain',
-        upsert: true, // Overwrite the file with updated content
+        upsert: true,
       });
     
     if (finaluploadError) {
@@ -450,32 +476,11 @@ app.post('/process-speech', async (req, res) => {
     
     console.log('Existing content:', existingContent);
     console.log('Updated content:', updatedContent);
-  } else if (downloadError && downloadError.status !== 404) {
-    // Handle errors other than "file not found"
-    throw new Error(downloadError.message);
-  } else {
-    // If the file doesn't exist, upload the new content
-    const { data: uploadData, error: uploadError } = await supabase
-      .storage
-      .from('truworths')
-      .upload(fileNamephone, conversationText, {
-        cacheControl: '3600',
-        contentType: 'text/plain',
-        upsert: false
-      });
-    
-    if (uploadError) {
-      console.error('Supabase upload error:', uploadError.message);
-      return res.status(500).send('Error uploading conversation to Supabase');
-    }
-    
-    console.log('First Conversation uploaded successfully:', uploadData);
   }
   
-  const result = await checkFileAndLog(fileNamephone);
-  console.log('File updated successfully!');
+  console.log('File operation completed successfully');
 } catch (error) {
-  console.error('Error appending to file:', error.message);
+  console.error('Error in file handling:', error);
 }
     
 
