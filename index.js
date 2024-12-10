@@ -95,13 +95,14 @@ async function callN8nWebhook(fileUrl) {
 }
 
 // Supabase File Check Function
-async function checkFileAndLog() {
+async function checkFileAndLog(fileNamephone) {
   try {
     // Get the public URL of the file
     const { data, error } = supabase
       .storage
       .from('truworths')
-      .getPublicUrl('+27815952073.txt');
+      //.getPublicUrl('+27815952073.txt');
+      .getPublicUrl(fileNamephone);
 
     if (error) {
       console.error('Error fetching file:', error.message);
@@ -130,8 +131,12 @@ async function checkFileAndLog() {
 // Backend (index.js)
 app.get('/check-file', async (req, res) => {
   try {
+
+    const caller = req.body.From;
+    const fileNamephone= `${caller}.txt`;
     
-    const result = await checkFileAndLog();
+    const result = await checkFileAndLog(fileNamephone);
+    
     res.json({ 
       message: 'File check completed', 
       data: result?.response?.output_text  || 'No data received'
@@ -145,8 +150,11 @@ app.get('/check-file', async (req, res) => {
 
 app.get('/webhook-data', async (req, res) => {
   try {
+
+    const caller = req.body.From;
+    const fileNamephone= `${caller}.txt`;
     
-    const result = await checkFileAndLog();
+    const result = await checkFileAndLog(fileNamephone);
     res.json({ 
       message: 'Webhook data retrieved', 
       response: result?.response?.text || 'No data received'
