@@ -402,7 +402,7 @@ app.post('/process-speech', async (req, res) => {
       const fileNamephone= `${currentCall.caller}.txt`;
       
       // Upload the conversation text to Supabase storage
-      const { data, error } = await supabase
+      const { data:fileData1, error:uploadError1 } = await supabase
         .storage
         .from('truworths')
         .upload(fileName, conversationText, {
@@ -411,8 +411,24 @@ app.post('/process-speech', async (req, res) => {
           upsert: false
       });
 
+      if (uploadError1) {
+       console.error('Supabase upload error:', error);
+      return res.status(500).send('Error uploading conversation to Supabase');
+    } else {
+       console.log('First Conversation uploaded successfully:', data);
+      }
+
+      // Upload the conversation text to Supabase storage
+      const { data2:fileData2, error: uploadError2 } = await supabase
+        .storage
+        .from('truworths')
+        .upload(fileNamephone, conversationText, {
+         cacheControl: '3600',
+         contentType: 'text/plain',
+          upsert: false
+      });
       
-     if (error) {
+     if (uploadError2) {
        console.error('Supabase upload error:', error);
       return res.status(500).send('Error uploading conversation to Supabase');
     } else {
