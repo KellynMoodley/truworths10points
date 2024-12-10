@@ -413,7 +413,7 @@ app.post('/process-speech', async (req, res) => {
 
       if (error) {
        console.error('Supabase upload error:', error);
-      return res.status(500).send('Error uploading conversation to Supabase');
+      return res.status(500).send('Error uploading first conversation to Supabase');
     } else {
        console.log('First Conversation uploaded successfully:', data);
       }
@@ -430,9 +430,9 @@ app.post('/process-speech', async (req, res) => {
 
       if (uploaderrorphone) {
        console.error('Supabase upload error:', uploaderrorphone.message);
-      return res.status(500).send('Error uploading conversation to Supabase');
+      return res.status(500).send('Error uploading second conversation to Supabase');
     } else {
-       console.log('First Conversation uploaded successfully:', uploadphone);
+       console.log('Second Conversation uploaded successfully:', uploadphone);
       }
 
      try {
