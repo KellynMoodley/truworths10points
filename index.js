@@ -418,22 +418,6 @@ app.post('/process-speech', async (req, res) => {
        console.log('First Conversation uploaded successfully:', data);
       }
 
-      // Upload the conversation text to Supabase storage
-      const { data:uploadphone, error:uploaderrorphone } = await supabase
-        .storage
-        .from('truworths')
-        .upload(fileNamephone, conversationText, {
-         cacheControl: '3600',
-         contentType: 'text/plain',
-          upsert: false
-      });
-
-      if (uploaderrorphone) {
-       console.error('Supabase upload error:', uploaderrorphone.message);
-      return res.status(500).send('Error uploading second conversation to Supabase');
-    } else {
-       console.log('Second Conversation uploaded successfully:', uploadphone);
-      }
 
      try {
 
@@ -452,6 +436,22 @@ app.post('/process-speech', async (req, res) => {
   } else if (downloadError && downloadError.status !== 404) {
     // Handle errors other than "file not found"
     throw new Error(downloadError.message);
+    // Upload the conversation text to Supabase storage
+      const { data:uploadphone, error:uploaderrorphone } = await supabase
+        .storage
+        .from('truworths')
+        .upload(fileNamephone, conversationText, {
+         cacheControl: '3600',
+         contentType: 'text/plain',
+          upsert: false
+      });
+
+      if (uploaderrorphone) {
+       console.error('Supabase upload error:', uploaderrorphone.message);
+      return res.status(500).send('Error uploading second conversation to Supabase');
+    } else {
+       console.log('Second Conversation uploaded successfully:', uploadphone);
+      }
   }
 
   // Step 2: Append the new content to the existing content
