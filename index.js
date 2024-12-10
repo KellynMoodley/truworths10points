@@ -132,7 +132,7 @@ async function checkFileAndLog(fileNamephone) {
 app.get('/check-file', async (req, res) => {
   try {
 
-    const caller = req.body.From;
+    const caller = req.params.caller;
     const fileNamephone= `${caller}.txt`;
     
     const result = await checkFileAndLog(fileNamephone);
@@ -151,7 +151,7 @@ app.get('/check-file', async (req, res) => {
 app.get('/webhook-data', async (req, res) => {
   try {
 
-    const caller = req.body.From;
+    const caller = req.params.caller;
     const fileNamephone= `${caller}.txt`;
     
     const result = await checkFileAndLog(fileNamephone);
