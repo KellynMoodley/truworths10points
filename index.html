@@ -26,9 +26,23 @@
     #header .brand {
       font-weight: bold;
     }
+    
+
+    #header .agent {
+    font-weight: bold;
+    font-size: 0.5em; /* Adjust font size for agent */
+    margin-top: 5px; /* Add some space between the brand and agent */
+    }
+
 
     #header .status, #header #clock {
       margin: 0;
+    }
+
+    #header .statusonline {
+    font-size: 1em; /* Adjust font size for agent */
+    border: 2px solid green;
+    background-color:green;
     }
 
     #container {
@@ -159,7 +173,9 @@
 
 <body>
   <header id="header">
-    <div class="brand">Truworths</div>
+    <div class="brand">Truworths Collections Dashboard</div>
+    <div class="agentname">Agent: Sarah Johnson</div>
+    <div class="statusonline">Online</div>
     <div id="clock">Time: 12:00 PM</div>
   </header>
 
