@@ -95,14 +95,13 @@ async function callN8nWebhook(fileUrl) {
 }
 
 // Supabase File Check Function
-async function checkFileAndLog(fileNamephone) {
+async function checkFileAndLog() {
   try {
     // Get the public URL of the file
     const { data, error } = supabase
       .storage
       .from('truworths')
       .getPublicUrl('+27815952073.txt');
-      //.getPublicUrl(fileNamephone);
 
     if (error) {
       console.error('Error fetching file:', error.message);
@@ -131,12 +130,8 @@ async function checkFileAndLog(fileNamephone) {
 // Backend (index.js)
 app.get('/check-file', async (req, res) => {
   try {
-
-    const caller = req.params.caller;
-    const fileNamephone= `${caller}.txt`;
     
-    const result = await checkFileAndLog(fileNamephone);
-    
+    const result = await checkFileAndLog();
     res.json({ 
       message: 'File check completed', 
       data: result?.response?.output_text  || 'No data received'
@@ -150,11 +145,8 @@ app.get('/check-file', async (req, res) => {
 
 app.get('/webhook-data', async (req, res) => {
   try {
-
-    const caller = req.params.caller;
-    const fileNamephone= `${caller}.txt`;
     
-    const result = await checkFileAndLog(fileNamephone);
+    const result = await checkFileAndLog();
     res.json({ 
       message: 'Webhook data retrieved', 
       response: result?.response?.text || 'No data received'
@@ -307,7 +299,6 @@ app.post('/voice', (req, res) => {
   };
 });
 
-
 // Process speech using Watson and handle option 3
 app.post('/process-speech', async (req, res) => {
   try {
@@ -420,23 +411,22 @@ app.post('/process-speech', async (req, res) => {
           upsert: false
       });
 
-      
-     if (error) {
+      if (error) {
        console.error('Supabase upload error:', error);
-      return res.status(500).send('Error uploading conversation to Supabase');
+      return res.status(500).send('Error uploading first conversation to Supabase');
     } else {
-       console.log('Conversation uploaded successfully:', data);
+       console.log('First Conversation uploaded successfully:', data);
       }
 
 
-try {
-  // Step 1: Download the existing file content
+     try {
+
+  console.log('Starting the try block');
+  
   const { data: existingFile, error: downloadError } = await supabase
     .storage
     .from('truworths')
     .download(fileNamephone);
-  
-   console.log('Starting the try block');
 
   let existingContent = '';
 
@@ -452,7 +442,7 @@ try {
   const updatedContent = `${existingContent}\n${conversationText}`;
 
   // Step 3: Upload the updated content back to the file
-  const { error: uploadError } = await supabase
+  const { error: finaluploadError } = await supabase
     .storage
     .from('truworths')
     .upload(fileNamephone, updatedContent, {
@@ -467,15 +457,31 @@ console.log('Updated content:', updatedContent);
 
   const result = await checkFileAndLog(fileNamephone);
 
-  if (uploadError) {
-    throw new Error(uploadError.message);
+  if (finaluploadError) {
+    throw new Error(finaluploadError.message);
   }
 
   console.log('File updated successfully!');
 } catch (error) {
   console.error('Error appending to file:', error.message);
+        // Upload the conversation text to Supabase storage
+      const { data:uploadphone, error:uploaderrorphone } = await supabase
+        .storage
+        .from('truworths')
+        .upload(fileNamephone, conversationText, {
+         cacheControl: '3600',
+         contentType: 'text/plain',
+          upsert: false
+      });
+
+      if (uploaderrorphone) {
+       console.error('Supabase upload error:', uploaderrorphone.message);
+      return res.status(500).send('Error uploading second conversation to Supabase');
+    } else {
+       console.log('Second Conversation uploaded successfully:', uploadphone);
+      }
 }
-    
+
 
       
       app.locals.pastCalls.push(currentCall); // Push the current call to pastCalls
@@ -507,8 +513,6 @@ console.log('Updated content:', updatedContent);
     res.send(response.toString());
   }
 });
-
-
 
 app.post('/handle-no-speech', async (req, res) => {
   try {
