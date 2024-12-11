@@ -67,7 +67,7 @@
 
     <!-- KPI Section -->
     <div class="container mx-auto px-4 py-4">
-        <div class="grid grid-cols-4 gap-3 w-1/2 mx-auto">
+       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-11/12 mx-auto">
             <div class="kpi-box bg-blue-600">
                 <h3 class="font-bold text-sm mb-1">Avg. Call Time</h3>
                 <span id="avg-call-time-value" class="text-xl font-semibold">Calculating...</span>
@@ -80,11 +80,12 @@
                 <h3 class="font-bold text-sm mb-1">Total Duration</h3>
                 <span id="total-duration-value" class="text-xl font-semibold">Calculating...</span>
             </div>
-            <div class="col-span-4 text-center mt-4">
-              <button onclick="downloadKpis()" class="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">
-                 Download KPI Report
-              </button>
-             </div>
+            <!-- Download KPI Report Button -->
+    <div class="text-center mt-6">
+        <button onclick="downloadKpis()" class="bg-blue-500 text-white py-2 px-6 rounded-lg hover:bg-blue-600">
+            Download KPI Report
+        </button>
+    </div>
         </div>
     </div>
 
