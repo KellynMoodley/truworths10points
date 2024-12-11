@@ -74,7 +74,7 @@ async function callN8nWebhook(fileUrl) {
       method: 'get',
       url: 'https://kkarodia.app.n8n.cloud/webhook/call_url',
       params: { myUrl: fileUrl },
-      timeout: 100000 // 10 second timeout
+      timeout: 300000 // 10 second timeout
     });
 
     console.log('Webhook Response Status:', response.status);
