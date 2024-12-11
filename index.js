@@ -420,22 +420,23 @@ app.post('/process-speech', async (req, res) => {
           upsert: false
       });
 
-      if (error) {
+      
+     if (error) {
        console.error('Supabase upload error:', error);
-      return res.status(500).send('Error uploading first conversation to Supabase');
+      return res.status(500).send('Error uploading conversation to Supabase');
     } else {
-       console.log('First Conversation uploaded successfully:', data);
+       console.log('Conversation uploaded successfully:', data);
       }
 
 
-     try {
-
-  console.log('Starting the try block');
-  
+try {
+  // Step 1: Download the existing file content
   const { data: existingFile, error: downloadError } = await supabase
     .storage
     .from('truworths')
     .download(fileNamephone);
+  
+   console.log('Starting the try block');
 
   let existingContent = '';
 
@@ -451,7 +452,7 @@ app.post('/process-speech', async (req, res) => {
   const updatedContent = `${existingContent}\n${conversationText}`;
 
   // Step 3: Upload the updated content back to the file
-  const { error: finaluploadError } = await supabase
+  const { error: uploadError } = await supabase
     .storage
     .from('truworths')
     .upload(fileNamephone, updatedContent, {
@@ -466,31 +467,15 @@ console.log('Updated content:', updatedContent);
 
   const result = await checkFileAndLog(fileNamephone);
 
-  if (finaluploadError) {
-    throw new Error(finaluploadError.message);
+  if (uploadError) {
+    throw new Error(uploadError.message);
   }
 
   console.log('File updated successfully!');
 } catch (error) {
   console.error('Error appending to file:', error.message);
-        // Upload the conversation text to Supabase storage
-      const { data:uploadphone, error:uploaderrorphone } = await supabase
-        .storage
-        .from('truworths')
-        .upload(fileNamephone, conversationText, {
-         cacheControl: '3600',
-         contentType: 'text/plain',
-          upsert: false
-      });
-
-      if (uploaderrorphone) {
-       console.error('Supabase upload error:', uploaderrorphone.message);
-      return res.status(500).send('Error uploading second conversation to Supabase');
-    } else {
-       console.log('Second Conversation uploaded successfully:', uploadphone);
-      }
 }
-
+    
 
       
       app.locals.pastCalls.push(currentCall); // Push the current call to pastCalls
@@ -522,6 +507,7 @@ console.log('Updated content:', updatedContent);
     res.send(response.toString());
   }
 });
+
 
 
 app.post('/handle-no-speech', async (req, res) => {
