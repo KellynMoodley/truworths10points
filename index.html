@@ -1,262 +1,129 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script defer src="script.js"></script>
-  <title>Phone Call Status</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: #f4f4f9;
-    }
-
-    #header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 15px 20px;
-      background-color:black;
-      color: white;
-      font-size: 1.2em;
-    }
-
-    #header .brand {
-      font-weight: bold;
-    }
-    
-
-    #header .agent {
-    font-weight: bold;
-    font-size: 5px; /* Adjust font size for agent */
-    margin-top: 5px; /* Add some space between the brand and agent */
-    margin-right: 0;
-    }
-
-
-    #header .status, #header #clock {
-      margin: 0;
-    }
-
-    #header .statusonline {
-    font-size: 16px; /* Adjust font size for agent */
-    border: 2px solid green;
-    background-color:green;
-    }
-
-    #container {
-      display: flex;
-      flex-wrap: wrap;
-      margin: 20px;
-    }
-
-    #profile-container, #past-calls {
-      background: #ffffff;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    }
-
-     #current-call {
-
-       display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  position: fixed;
-  top: 16px;
-  left: 5px;
-  width: 300px; /* Adjust width */
-  height: 300px; /* Adjust height */
-  background-color: #ffffff; /* Background color */
-  border: 1px solid #ccc; /* Optional border */
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Optional shadow */
-  padding: 10px; /* Padding inside the container */
-  border-radius: 8px; /* Rounded corners */
-    }
-
-    #profile-container {
-      flex: 2;
-      min-width: 300px;
-      margin-top: 20px;
-    }
-
-
-    #past-calls {
-      flex: 1;
-      width: 100%;
-      margin-top: 20px;
-    }
-
-    h1, h2 {
-      margin-top: 0;
-    }
-
-    ul {
-      padding: 0;
-      list-style: none;
-    }
-
-    .caller {
-      cursor: pointer;
-      font-weight: bold;
-      color: #007bff;
-      display: block;
-      margin: 10px 0;
-    }
-
-    .caller-details {
-      display: none;
-      padding: 10px;
-      background-color: #f9f9f9;
-      border-radius: 5px;
-      margin-top: 10px;
-    }
-
-    .profile-details span {
-      font-weight: bold;
-    }
-
-    .error-message {
-      color: red;
-      font-weight: bold;
-    }
-
-    .download-btn {
-      margin-left: 10px;
-      padding: 5px 10px;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-
-    .download-btn:hover {
-      background-color: #0056b3;
-    }
-
-    #result-container {
-      flex: 3;
-      margin-top: 20px;
-      padding: 10px;
-      background-color: #ffffff;
-      border-radius: 4px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-      word-wrap: break-word;
-      display: flex;
-      align-items: flex-start;
-      margin-right: 20px;
-    }
-
-    .triggerFileCheckBtn {
-      padding: 10px 20px;
-      font-size: 16px;
-      cursor: pointer;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      transition: background-color 0.3s;
-    }
-
-    .triggerFileCheckBtn:hover {
-      background-color: #0056b3;
-    }
-
-   #kpi-container {
-     flex: 1;
-      margin-top: 20px;
-      padding: 10px;
-      background: #ffffff;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    }
-
-    .kpi {
-      font-size: 16px;
-      margin-bottom: 10px;
-    }
-
-    .kpi-title {
-      font-weight: bold;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Truworths Collections Dashboard</title>
+    <script defer src="script.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f4f7fa;
+        }
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 20px;
+            padding: 20px;
+        }
+        .card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        .status-badge {
+            background-color: black;
+            color: white;
+            padding: 10px;
+            display: inline-flex;
+            align-items: center;
+            border-radius: 5px;
+        }
+        .kpi-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+            text-align: center;
+        }
+    </style>
 </head>
+<body class="bg-gray-100">
+    <!-- Header -->
+    <header class="bg-white py-4 px-6 flex flex-col items-start">
+        <div class="flex items-center w-full justify-between">
+            <div>
+                <h1 class="text-2xl font-bold">Truworths Collections Dashboard</h1>
+                <p class="text-gray-600">Agent: Sarah Johnson</p>
+            </div>
+            <div class="status-badge">
+                <span class="mr-2">Online</span>
+                <div id="clock">12:00 PM</div>
+            </div>
+        </div>
+    </header>
 
-<body>
-  <header id="header">
-    <div class="brand">Truworths Collections Dashboard</div>
-    <div class="agentname">Agent: Sarah Johnson</div>
-    <div class="statusonline">Online</div>
-    <div id="clock">Time: 12:00 PM</div>
-  </header>
-
-  <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-    <!-- Current Call -->
-    <div id="current-call">
-      <h2>Current Call</h2>
-      <p>Waiting for a call...</p>
-    </div>
-  </div>
-
-  <div id="container">
-    <!-- Profile Information -->
-    <div id="profile-container">
-      <h2>Contact Profile</h2>
-      <div id="profile" class="profile-details">
-        No caller details found.
-      </div>
-    </div>
-  </div>
-
-  <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-    <!-- Past Calls -->
-    <div id="past-calls">
-      <h2>Past Calls</h2>
-      <ul id="past-calls-list">
-        <li>No past calls available</li>
-      </ul>
-      <button id="triggerFileCheckBtn">Summary of past calls</button>
+    <!-- KPI Section -->
+    <div class="container mx-auto px-4 py-4">
+        <div class="grid grid-cols-3 gap-4">
+            <div class="kpi-box bg-blue-600">
+                <h3 class="font-bold mb-2">Avg. Call Time</h3>
+                <span id="avg-call-time-value" class="text-2xl font-semibold">Calculating...</span>
+            </div>
+            <div class="kpi-box bg-green-600">
+                <h3 class="font-bold mb-2">Total Calls</h3>
+                <span id="total-calls-value" class="text-2xl font-semibold">Calculating...</span>
+            </div>
+            <div class="kpi-box bg-purple-600">
+                <h3 class="font-bold mb-2">Total Duration</h3>
+                <span id="total-duration-value" class="text-2xl font-semibold">Calculating...</span>
+            </div>
+        </div>
     </div>
 
-    <!-- KPI Container -->
-    <div id="kpi-container">
-      <h3>Key Performance Indicators (KPIs)</h3>
-      <div id="avg-call-time" class="kpi">
-        <span class="kpi-title">Average Call Handling Time:</span> <span id="avg-call-time-value">Calculating...</span>
-      </div>
-      <div id="total-calls" class="kpi">
-        <span class="kpi-title">Total Calls:</span> <span id="total-calls-value">Calculating...</span>
-      </div>
-      <div id="total-duration" class="kpi">
-        <span class="kpi-title">Total Call Duration:</span> <span id="total-duration-value">Calculating...</span>
-      </div>
-      <div class="kpi">
-        <button onclick="downloadKpis()" class="download-btn">Download KPI Report</button>
-      </div>
+    <!-- Main Dashboard Grid -->
+    <div class="dashboard-grid">
+        <!-- Left Column -->
+        <div class="space-y-4">
+            <!-- Current Call -->
+            <div id="current-call" class="card">
+                <h2 class="text-lg font-semibold mb-4">Current Call</h2>
+                <p>Waiting for a call...</p>
+            </div>
+
+            <!-- Profile Information -->
+            <div id="profile-container" class="card">
+                <h2 class="text-lg font-semibold mb-4">Contact Profile</h2>
+                <div id="profile" class="profile-details">
+                    No caller details found.
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="space-y-4">
+            <!-- Past Calls -->
+            <div id="past-calls" class="card">
+                <h2 class="text-lg font-semibold mb-4">Past Calls</h2>
+                <ul id="past-calls-list" class="mb-4">
+                    <li>No past calls available</li>
+                </ul>
+                <button id="triggerFileCheckBtn" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition mb-4">
+                    Summary of past calls
+                </button>
+
+                <!-- Result Container -->
+                <div id="result-container" class="bg-gray-100 p-4 rounded mb-4">
+                    <p>Waiting for data...</p>
+                </div>
+
+                <!-- Rate this Content -->
+                <div class="text-center border-t pt-4">
+                    <h1 class="text-lg font-bold mb-4">Rate this content</h1>
+                    <div class="flex justify-center space-x-6">
+                        <button id="thumbsUp" class="text-4xl hover:text-green-500 transition">👍</button>
+                        <button id="thumbsDown" class="text-4xl hover:text-red-500 transition">👎</button>
+                    </div>
+                    <p id="feedbackMessage" class="hidden text-sm font-medium mt-4 text-gray-700"></p>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
-
-  <div id="result-container">
-    <!-- Webhook data will be displayed here -->
-    <p>Waiting for data...</p>
-  </div>
-
-  <div class="bg-white p-6 rounded-lg shadow-lg text-center">
-  <h1 class="text-2xl font-bold mb-4">Rate this content</h1>
-  <div class="flex justify-center space-x-6">
-    <button id="thumbsUp" class="rating-button flex flex-col items-center text-gray-600 hover:text-green-500 transition">
-      <span class="text-4xl">👍</span>
-    </button>
-    <button id="thumbsDown" class="rating-button flex flex-col items-center text-gray-600 hover:text-red-500 transition">
-      <span class="text-4xl">👎</span>
-    </button>
-  </div>
-  <p id="feedbackMessage" class="hidden text-sm font-medium mt-4 text-gray-700"></p>
-</div>
-
+</body>
 
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script>
