@@ -68,15 +68,15 @@
     <!-- KPI Section -->
     <div class="container mr-auto px-4 py-4">
        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-11/12 mr-auto">
-            <div class="kpi-box bg-black-600">
+            <div class="kpi-box bg-green-600">
                 <h3 class="font-bold text-sm mb-1">Avg. Call Time</h3>
                 <span id="avg-call-time-value" class="text-xl font-semibold">Calculating...</span>
             </div>
-            <div class="kpi-box bg-black-600">
+            <div class="kpi-box bg-green-600">
                 <h3 class="font-bold text-sm mb-1">Total Calls</h3>
                 <span id="total-calls-value" class="text-xl font-semibold">Calculating...</span>
             </div>
-            <div class="kpi-box bg-black-600">
+            <div class="kpi-box bg-green-600">
                 <h3 class="font-bold text-sm mb-1">Total Duration</h3>
                 <span id="total-duration-value" class="text-xl font-semibold">Calculating...</span>
             </div>
@@ -115,6 +115,14 @@
                 <h2 class="text-lg font-semibold mb-4">Past Calls</h2>
                 <ul id="past-calls-list" class="mb-4">
                     <li>No past calls available</li>
+                    <li>
+                      <div>
+                          <span class="caller" onclick="toggleDetails('${call.callSid}')">${call.caller}</span>
+                           <button onclick="downloadConversation('${call.callSid}')" class="bg-blue-600 text-white py-2 px-6 rounded-lg hover:bg-blue-600">
+                             Download Conversation
+                           </button>
+                      </div>
+                     </li>
                 </ul>
                 <button id="triggerFileCheckBtn" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition mb-4">
                     Summary of past calls
