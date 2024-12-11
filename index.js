@@ -365,6 +365,49 @@ app.post('/process-speech', async (req, res) => {
           botResponse = "There was an issue retrieving your account details. Please try again later.";
         }
       }
+    }else if (speechResult === '2'){
+      const phone = req.body.From;
+
+      if (!phone) {
+        botResponse = "I couldn't retrieve your phone number. Please provide it.";
+      } else {
+        try {
+          const url = 'https://api.hubapi.com/crm/v3/objects/contacts/search';
+          const query = {
+            filterGroups: [
+              {
+                filters: [
+                  {
+                    propertyName: 'mobilenumber',
+                    operator: 'EQ',
+                    value: phone
+                  }
+                ]
+              }
+            ],
+            properties: ['delinquencystatus', 'promisetopay']
+          };
+
+          const response = await axios.post(url, query, {
+            headers: {
+              Authorization: `Bearer ${ACCESS_TOKEN}`,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          const contact = response.data.results[0];
+
+          if (contact) {
+            const { delinquencystatus, promisetopay } = contact.properties;
+            botResponse = `Your delinquency status is ${delinquencystatus} and your promise to pay rating is ${promisetopay}.`;
+          } else {
+            botResponse = "I couldn't find your account details.";
+          }
+        } catch (error) {
+          console.error('Error fetching contact details from HubSpot:', error.response?.data || error.message);
+          botResponse = "There was an issue retrieving your account details. Please try again later.";
+        }
+      }
     }
 
     const response = new twiml.VoiceResponse();
