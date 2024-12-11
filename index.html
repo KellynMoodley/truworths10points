@@ -30,7 +30,7 @@
 
     #header .agent {
     font-weight: bold;
-    font-size: 0.5em; /* Adjust font size for agent */
+    font-size: 8px; /* Adjust font size for agent */
     margin-top: 5px; /* Add some space between the brand and agent */
     margin-right: 0;
     }
@@ -41,7 +41,7 @@
     }
 
     #header .statusonline {
-    font-size: 1em; /* Adjust font size for agent */
+    font-size: 8px; /* Adjust font size for agent */
     border: 2px solid green;
     background-color:green;
     }
@@ -187,6 +187,14 @@
     <div id="clock">Time: 12:00 PM</div>
   </header>
 
+  <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+    <!-- Current Call -->
+    <div id="current-call">
+      <h2>Current Call</h2>
+      <p>Waiting for a call...</p>
+    </div>
+  </div>
+
   <div id="container">
     <!-- Profile Information -->
     <div id="profile-container">
@@ -194,12 +202,6 @@
       <div id="profile" class="profile-details">
         No caller details found.
       </div>
-    </div>
-
-    <!-- Current Call -->
-    <div id="current-call">
-      <h2>Current Call</h2>
-      <p>Waiting for a call...</p>
     </div>
   </div>
 
