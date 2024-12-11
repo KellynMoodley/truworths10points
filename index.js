@@ -307,6 +307,7 @@ app.post('/voice', (req, res) => {
   };
 });
 
+
 // Process speech using Watson and handle option 3
 app.post('/process-speech', async (req, res) => {
   try {
@@ -416,7 +417,7 @@ app.post('/process-speech', async (req, res) => {
         .upload(fileName, conversationText, {
          cacheControl: '3600',
          contentType: 'text/plain',
-          upsert: true
+          upsert: false
       });
 
       if (error) {
@@ -521,6 +522,7 @@ console.log('Updated content:', updatedContent);
     res.send(response.toString());
   }
 });
+
 
 app.post('/handle-no-speech', async (req, res) => {
   try {
