@@ -12,7 +12,7 @@
         }
         .dashboard-grid {
             display: grid;
-            grid-template-columns: 1fr 300px;
+            grid-template-columns: 300px 1fr 300px;
             gap: 20px;
             padding: 20px;
         }
@@ -35,10 +35,18 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 20px;
-            border-radius: 10px;
+            padding: 15px;
+            border-radius: 8px;
             color: white;
             text-align: center;
+            margin-bottom: 10px;
+        }
+        .online-status {
+            background-color: green;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            margin-right: 10px;
         }
     </style>
 </head>
@@ -50,27 +58,27 @@
                 <h1 class="text-2xl font-bold">Truworths Collections Dashboard</h1>
                 <p class="text-gray-600">Agent: Sarah Johnson</p>
             </div>
-            <div class="status-badge">
-                <span class="mr-2">Online</span>
-                <div id="clock">12:00 PM</div>
+            <div class="flex items-center">
+                <span class="online-status">Online</span>
+                <div id="clock" class="status-badge">12:00 PM</div>
             </div>
         </div>
     </header>
 
     <!-- KPI Section -->
     <div class="container mx-auto px-4 py-4">
-        <div class="grid grid-cols-3 gap-4">
+        <div class="grid grid-cols-3 gap-3 w-1/2 ml-auto">
             <div class="kpi-box bg-blue-600">
-                <h3 class="font-bold mb-2">Avg. Call Time</h3>
-                <span id="avg-call-time-value" class="text-2xl font-semibold">Calculating...</span>
+                <h3 class="font-bold text-sm mb-1">Avg. Call Time</h3>
+                <span id="avg-call-time-value" class="text-xl font-semibold">Calculating...</span>
             </div>
             <div class="kpi-box bg-green-600">
-                <h3 class="font-bold mb-2">Total Calls</h3>
-                <span id="total-calls-value" class="text-2xl font-semibold">Calculating...</span>
+                <h3 class="font-bold text-sm mb-1">Total Calls</h3>
+                <span id="total-calls-value" class="text-xl font-semibold">Calculating...</span>
             </div>
             <div class="kpi-box bg-purple-600">
-                <h3 class="font-bold mb-2">Total Duration</h3>
-                <span id="total-duration-value" class="text-2xl font-semibold">Calculating...</span>
+                <h3 class="font-bold text-sm mb-1">Total Duration</h3>
+                <span id="total-duration-value" class="text-xl font-semibold">Calculating...</span>
             </div>
         </div>
     </div>
@@ -94,7 +102,7 @@
             </div>
         </div>
 
-        <!-- Right Column -->
+        <!-- Middle Column -->
         <div class="space-y-4">
             <!-- Past Calls -->
             <div id="past-calls" class="card">
@@ -119,6 +127,31 @@
                         <button id="thumbsDown" class="text-4xl hover:text-red-500 transition">👎</button>
                     </div>
                     <p id="feedbackMessage" class="hidden text-sm font-medium mt-4 text-gray-700"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="space-y-4">
+            <!-- KPI Container -->
+            <div id="kpi-container" class="card">
+                <h3 class="text-lg font-semibold mb-4">KPI Report</h3>
+                <div class="space-y-2">
+                    <div id="avg-call-time" class="kpi">
+                        <span class="font-medium">Average Call Handling Time:</span> 
+                        <span id="avg-call-time-report-value">Calculating...</span>
+                    </div>
+                    <div id="total-calls" class="kpi">
+                        <span class="font-medium">Total Calls:</span> 
+                        <span id="total-calls-report-value">Calculating...</span>
+                    </div>
+                    <div id="total-duration" class="kpi">
+                        <span class="font-medium">Total Call Duration:</span> 
+                        <span id="total-duration-report-value">Calculating...</span>
+                    </div>
+                    <button onclick="downloadKpis()" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition mt-4">
+                        Download KPI Report
+                    </button>
                 </div>
             </div>
         </div>
