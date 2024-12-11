@@ -67,7 +67,7 @@
 
     <!-- KPI Section -->
     <div class="container mx-auto px-4 py-4">
-        <div class="grid grid-cols-3 gap-3 w-1/2 mx-auto">
+        <div class="grid grid-cols-4 gap-3 w-1/2 mx-auto">
             <div class="kpi-box bg-blue-600">
                 <h3 class="font-bold text-sm mb-1">Avg. Call Time</h3>
                 <span id="avg-call-time-value" class="text-xl font-semibold">Calculating...</span>
@@ -81,6 +81,9 @@
                 <span id="total-duration-value" class="text-xl font-semibold">Calculating...</span>
             </div>
         </div>
+        <button onclick="downloadKpis()" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition mt-4">
+          Download KPI Report
+        </button>
     </div>
 
     <!-- Main Dashboard Grid -->
@@ -88,7 +91,7 @@
         <!-- Left Column -->
         <div class="space-y-2">
             <!-- Current Call -->
-            <div id="current-call" class="card mx-4 mt-4">
+            <div id="current-call" class="card">
                 <h2 class="text-lg font-semibold mb-4">Current Call</h2>
                 <p>Waiting for a call...</p>
             </div>
@@ -131,30 +134,7 @@
             </div>
         </div>
 
-        <!-- Right Column -->
-        <div class="space-y-4">
-            <!-- KPI Container -->
-            <div id="kpi-container" class="card">
-                <h3 class="text-lg font-semibold mb-4">KPI Report</h3>
-                <div class="space-y-2">
-                    <div id="avg-call-time" class="kpi">
-                        <span class="font-medium">Average Call Handling Time:</span> 
-                        <span id="avg-call-time-report-value">Calculating...</span>
-                    </div>
-                    <div id="total-calls" class="kpi">
-                        <span class="font-medium">Total Calls:</span> 
-                        <span id="total-calls-report-value">Calculating...</span>
-                    </div>
-                    <div id="total-duration" class="kpi">
-                        <span class="font-medium">Total Call Duration:</span> 
-                        <span id="total-duration-report-value">Calculating...</span>
-                    </div>
-                    <button onclick="downloadKpis()" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition mt-4">
-                        Download KPI Report
-                    </button>
-                </div>
-            </div>
-        </div>
+    
     </div>
 
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
