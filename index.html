@@ -48,11 +48,6 @@
             border-radius: 5px;
             margin-right: 10px;
         }
-        .blue-phone {
-            color: blue;
-            text-decoration: underline;
-            cursor: pointer;
-        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -62,23 +57,6 @@
             <div>
                 <h1 class="text-2xl font-bold">Truworths Collections Dashboard</h1>
                 <p class="text-gray-600">Agent: Sarah Johnson</p>
-                
-                <!-- Moved Current Call and Profile Information Here -->
-                <div class="mt-4">
-                    <!-- Current Call -->
-                    <div id="current-call" class="card mb-4">
-                        <h2 class="text-lg font-semibold mb-4">Current Call</h2>
-                        <p>Waiting for a call...</p>
-                    </div>
-
-                    <!-- Profile Information -->
-                    <div id="profile-container" class="card">
-                        <h2 class="text-lg font-semibold mb-4">Contact Profile</h2>
-                        <div id="profile" class="profile-details">
-                            No caller details found.
-                        </div>
-                    </div>
-                </div>
             </div>
             <div class="flex items-center">
                 <span class="online-status">Online</span>
@@ -89,7 +67,7 @@
 
     <!-- KPI Section -->
     <div class="container mx-auto px-4 py-4">
-        <div class="grid grid-cols-3 gap-3 w-full">
+        <div class="grid grid-cols-3 gap-3 w-1/2 ml-auto">
             <div class="kpi-box bg-blue-600">
                 <h3 class="font-bold text-sm mb-1">Avg. Call Time</h3>
                 <span id="avg-call-time-value" class="text-xl font-semibold">Calculating...</span>
@@ -109,7 +87,19 @@
     <div class="dashboard-grid">
         <!-- Left Column -->
         <div class="space-y-4">
-            <!-- Left column now empty due to moving Current Call and Profile to header -->
+            <!-- Profile Information (Moved up) -->
+            <div id="profile-container" class="card">
+                <h2 class="text-lg font-semibold mb-4">Contact Profile</h2>
+                <div id="profile" class="profile-details">
+                    No caller details found.
+                </div>
+            </div>
+
+            <!-- Current Call (Moved up) -->
+            <div id="current-call" class="card">
+                <h2 class="text-lg font-semibold mb-4">Current Call</h2>
+                <p>Waiting for a call...</p>
+            </div>
         </div>
 
         <!-- Middle Column -->
@@ -118,11 +108,10 @@
             <div id="past-calls" class="card">
                 <h2 class="text-lg font-semibold mb-4">Past Calls</h2>
                 <ul id="past-calls-list" class="mb-4">
-                    <!-- Example with blue phone number -->
-                    <li>Call to <span class="blue-phone">+27 12 345 6789</span></li>
+                    <li>No past calls available</li>
                 </ul>
                 <button id="triggerFileCheckBtn" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition mb-4">
-                    Download Conversation
+                    Summary of past calls
                 </button>
 
                 <!-- Result Container -->
@@ -160,18 +149,13 @@
                         <span class="font-medium">Total Call Duration:</span> 
                         <span id="total-duration-report-value">Calculating...</span>
                     </div>
+                    <button onclick="downloadKpis()" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition mt-4">
+                        Download KPI Report
+                    </button>
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- Moved Download KPI Report Button Below Main Content -->
-    <div class="container mx-auto px-4 py-4">
-        <button onclick="downloadKpis()" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition">
-            Download KPI Report
-        </button>
-    </div>
-</body>
 
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script>
