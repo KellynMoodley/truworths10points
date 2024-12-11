@@ -74,7 +74,7 @@ async function callN8nWebhook(fileUrl) {
       method: 'get',
       url: 'https://kkarodia.app.n8n.cloud/webhook/call_url',
       params: { myUrl: fileUrl },
-      timeout: 300000 // 10 second timeout
+      timeout: 100000 // 10 second timeout
     });
 
     console.log('Webhook Response Status:', response.status);
@@ -95,13 +95,14 @@ async function callN8nWebhook(fileUrl) {
 }
 
 // Supabase File Check Function
-async function checkFileAndLog() {
+async function checkFileAndLog(fileNamephone) {
   try {
     // Get the public URL of the file
     const { data, error } = supabase
       .storage
       .from('truworths')
       .getPublicUrl('+27815952073.txt');
+      //.getPublicUrl(fileNamephone);
 
     if (error) {
       console.error('Error fetching file:', error.message);
@@ -130,8 +131,12 @@ async function checkFileAndLog() {
 // Backend (index.js)
 app.get('/check-file', async (req, res) => {
   try {
+
+    const caller = req.params.caller;
+    const fileNamephone= `${caller}.txt`;
     
-    const result = await checkFileAndLog();
+    const result = await checkFileAndLog(fileNamephone);
+    
     res.json({ 
       message: 'File check completed', 
       data: result?.response?.output_text  || 'No data received'
@@ -145,8 +150,11 @@ app.get('/check-file', async (req, res) => {
 
 app.get('/webhook-data', async (req, res) => {
   try {
+
+    const caller = req.params.caller;
+    const fileNamephone= `${caller}.txt`;
     
-    const result = await checkFileAndLog();
+    const result = await checkFileAndLog(fileNamephone);
     res.json({ 
       message: 'Webhook data retrieved', 
       response: result?.response?.text || 'No data received'
@@ -298,6 +306,7 @@ app.post('/voice', (req, res) => {
     status: 'in-progress',
   };
 });
+
 
 // Process speech using Watson and handle option 3
 app.post('/process-speech', async (req, res) => {
@@ -513,6 +522,7 @@ console.log('Updated content:', updatedContent);
     res.send(response.toString());
   }
 });
+
 
 app.post('/handle-no-speech', async (req, res) => {
   try {
