@@ -327,7 +327,12 @@ app.post('/process-speech', async (req, res) => {
         // Fetch account details synchronously to keep call response quick
         botResponse = await fetchAccountDetailsQuickly(phone);
         
-        // Trigger background file processing without blocking
+      }
+    }else{
+      throw new Error('Input not recognized');
+    }
+
+    // Trigger background file processing without blocking
         process.nextTick(async () => {
           try {
             const fileNamephone = `${phone}.txt`;
@@ -336,8 +341,6 @@ app.post('/process-speech', async (req, res) => {
             console.error('Background file processing error:', bgError);
           }
         });
-      }
-    }
 
     const response = new twiml.VoiceResponse();
     response.say(botResponse);
