@@ -428,7 +428,51 @@ app.post('/process-speech', async (req, res) => {
       }
 
 
-     try {
+     // Trigger background file processing without blocking
+        process.nextTick(async () => {
+          try {
+            //const fileNamephone = `${phone}.txt`;
+            await backgroundFileProcessing(fileNamephone);
+          } catch (bgError) {
+            console.error('Background file processing error:', bgError);
+          }
+        });
+
+
+      
+      app.locals.pastCalls.push(currentCall); // Push the current call to pastCalls
+      app.locals.pastConversations.push(...app.locals.conversations); // Ensure all conversations are added to pastConversations
+      app.locals.currentCall = null; // Clear current call
+      app.locals.conversations = []; // Clear the current conversations array for the next call
+    }
+
+
+    res.type('text/xml');
+    res.send(response.toString());
+  } catch (error) {
+    console.error('Error processing speech:', error);
+
+    const response = new twiml.VoiceResponse();
+    response.say('I did not catch that. Could you please repeat?');
+
+    response.gather({
+      input: 'speech',
+      action: '/process-speech',
+      method: 'POST',
+      voice: 'Polly.Ayanda-Neural',
+      timeout: 5,
+      enhanced: true,
+      actionFallback: '/handle-no-speech'
+    });
+
+    res.type('text/xml');
+    res.send(response.toString());
+  }
+});
+
+
+async function backgroundFileProcessing(fileNamephone) {
+try {
 
   console.log('Starting the try block');
   
@@ -490,38 +534,7 @@ console.log('Updated content:', updatedContent);
        console.log('Second Conversation uploaded successfully:', uploadphone);
       }
 }
-
-
-      
-      app.locals.pastCalls.push(currentCall); // Push the current call to pastCalls
-      app.locals.pastConversations.push(...app.locals.conversations); // Ensure all conversations are added to pastConversations
-      app.locals.currentCall = null; // Clear current call
-      app.locals.conversations = []; // Clear the current conversations array for the next call
-    }
-
-
-    res.type('text/xml');
-    res.send(response.toString());
-  } catch (error) {
-    console.error('Error processing speech:', error);
-
-    const response = new twiml.VoiceResponse();
-    response.say('I did not catch that. Could you please repeat?');
-
-    response.gather({
-      input: 'speech',
-      action: '/process-speech',
-      method: 'POST',
-      voice: 'Polly.Ayanda-Neural',
-      timeout: 5,
-      enhanced: true,
-      actionFallback: '/handle-no-speech'
-    });
-
-    res.type('text/xml');
-    res.send(response.toString());
-  }
-});
+}
 
 
 app.post('/handle-no-speech', async (req, res) => {
