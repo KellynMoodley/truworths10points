@@ -308,39 +308,65 @@ app.post('/voice', (req, res) => {
 });
 
 
+// Process speech using Watson and handle option 3
 app.post('/process-speech', async (req, res) => {
   try {
-    const speechResult = req.body.Digits;
+    const speechResult= req.body.Digits; 
+    //const speechResult = req.body.SpeechResult;
 
     if (!speechResult) {
       throw new Error('No speech input received');
     }
 
-    let botResponse = '';
+   // console.log(`Speech input received: ${speechResult}`);
 
-    if (speechResult === '1') {
+    //let botResponse = 'Your issue has been saved. An agent will review and get back to you. Goodbye!';
+
+    //if (speechResult.toLowerCase().includes('review account')) {
+    if (speechResult === '1'){
       const phone = req.body.From;
 
       if (!phone) {
         botResponse = "I couldn't retrieve your phone number. Please provide it.";
       } else {
-        // Fetch account details synchronously to keep call response quick
-        botResponse = await fetchAccountDetailsQuickly(phone);
-        
-      }
-    }else{
-      throw new Error('Input not recognized');
-    }
+        try {
+          const url = 'https://api.hubapi.com/crm/v3/objects/contacts/search';
+          const query = {
+            filterGroups: [
+              {
+                filters: [
+                  {
+                    propertyName: 'mobilenumber',
+                    operator: 'EQ',
+                    value: phone
+                  }
+                ]
+              }
+            ],
+            properties: ['firstname', 'lastname', 'outstandingbalance']
+          };
 
-    // Trigger background file processing without blocking
-        process.nextTick(async () => {
-          try {
-            const fileNamephone = `${phone}.txt`;
-            await backgroundFileProcessing(phone, fileNamephone);
-          } catch (bgError) {
-            console.error('Background file processing error:', bgError);
+          const response = await axios.post(url, query, {
+            headers: {
+              Authorization: `Bearer ${ACCESS_TOKEN}`,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          const contact = response.data.results[0];
+
+          if (contact) {
+            const { firstname, lastname, outstandingbalance } = contact.properties;
+            botResponse = `Based on your account, your name is ${firstname}, your surname is ${lastname}, and your balance is ${outstandingbalance}.`;
+          } else {
+            botResponse = "I couldn't find your account details.";
           }
-        });
+        } catch (error) {
+          console.error('Error fetching contact details from HubSpot:', error.response?.data || error.message);
+          botResponse = "There was an issue retrieving your account details. Please try again later.";
+        }
+      }
+    }
 
     const response = new twiml.VoiceResponse();
     response.say(botResponse);
@@ -354,22 +380,125 @@ app.post('/process-speech', async (req, res) => {
         
     response.hangup();
 
-    // Existing call management logic remains the same
+    
     if (app.locals.currentCall) {
       const currentCall = app.locals.currentCall;
       const callDuration = Math.floor((new Date() - currentCall.startTime) / 1000);
       currentCall.duration = callDuration;
       currentCall.status = 'completed';
       currentCall.conversations = app.locals.conversations;
+      const now = new Date(); 
+      const timestamp = now.toLocaleString('en-GB', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'Africa/Johannesburg',
+      });
 
-      // Existing file upload and call management code remains the same
-      await uploadCallConversation(currentCall);
+      console.log(timestamp); // Example: "8 December 2024, 14:30"
+      
+      const conversationText = currentCall.conversations.map(conv => `
+        Date: ${timestamp}
+        Truworths customer: Option ${conv.user}
+        Truworths agent: ${conv.bot} 
+      `).join('');
+      
+      // Define a filename for the uploaded file
+      const fileName = `${currentCall.caller}_${currentCall.callSid}.txt`;
 
-      app.locals.pastCalls.push(currentCall);
-      app.locals.pastConversations.push(...app.locals.conversations);
-      app.locals.currentCall = null;
-      app.locals.conversations = [];
+      const fileNamephone= `${currentCall.caller}.txt`;
+      
+      // Upload the conversation text to Supabase storage
+      const { data, error } = await supabase
+        .storage
+        .from('truworths')
+        .upload(fileName, conversationText, {
+         cacheControl: '3600',
+         contentType: 'text/plain',
+          upsert: false
+      });
+
+      if (error) {
+       console.error('Supabase upload error:', error);
+      return res.status(500).send('Error uploading first conversation to Supabase');
+    } else {
+       console.log('First Conversation uploaded successfully:', data);
+      }
+
+
+     try {
+
+  console.log('Starting the try block');
+  
+  const { data: existingFile, error: downloadError } = await supabase
+    .storage
+    .from('truworths')
+    .download(fileNamephone);
+
+  let existingContent = '';
+
+  if (existingFile) {
+    // Convert the file content to a string
+    existingContent = await existingFile.text();
+  } else if (downloadError && downloadError.status !== 404) {
+    // Handle errors other than "file not found"
+    throw new Error(downloadError.message);
+  }
+
+  // Step 2: Append the new content to the existing content
+  const updatedContent = `${existingContent}\n${conversationText}`;
+
+  // Step 3: Upload the updated content back to the file
+  const { error: finaluploadError } = await supabase
+    .storage
+    .from('truworths')
+    .upload(fileNamephone, updatedContent, {
+      cacheControl: '3600',
+      contentType: 'text/plain',
+      upsert: true, // Overwrite the file with updated content
+    });
+  
+ 
+console.log('Existing content:', existingContent);
+console.log('Updated content:', updatedContent);
+
+  const result = await checkFileAndLog(fileNamephone);
+
+  if (finaluploadError) {
+    throw new Error(finaluploadError.message);
+  }
+
+  console.log('File updated successfully!');
+} catch (error) {
+  console.error('Error appending to file:', error.message);
+        // Upload the conversation text to Supabase storage
+      const { data:uploadphone, error:uploaderrorphone } = await supabase
+        .storage
+        .from('truworths')
+        .upload(fileNamephone, conversationText, {
+         cacheControl: '3600',
+         contentType: 'text/plain',
+          upsert: false
+      });
+
+      if (uploaderrorphone) {
+       console.error('Supabase upload error:', uploaderrorphone.message);
+      return res.status(500).send('Error uploading second conversation to Supabase');
+    } else {
+       console.log('Second Conversation uploaded successfully:', uploadphone);
+      }
+}
+
+
+      
+      app.locals.pastCalls.push(currentCall); // Push the current call to pastCalls
+      app.locals.pastConversations.push(...app.locals.conversations); // Ensure all conversations are added to pastConversations
+      app.locals.currentCall = null; // Clear current call
+      app.locals.conversations = []; // Clear the current conversations array for the next call
     }
+
 
     res.type('text/xml');
     res.send(response.toString());
@@ -393,121 +522,6 @@ app.post('/process-speech', async (req, res) => {
     res.send(response.toString());
   }
 });
-
-// Separate function for quick account details retrieval
-async function fetchAccountDetailsQuickly(phone) {
-  try {
-    const url = 'https://api.hubapi.com/crm/v3/objects/contacts/search';
-    const query = {
-      filterGroups: [
-        {
-          filters: [
-            {
-              propertyName: 'mobilenumber',
-              operator: 'EQ',
-              value: phone
-            }
-          ]
-        }
-      ],
-      properties: ['firstname', 'lastname', 'outstandingbalance']
-    };
-
-    const response = await axios.post(url, query, {
-      headers: {
-        Authorization: `Bearer ${ACCESS_TOKEN}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    const contact = response.data.results[0];
-
-    if (contact) {
-      const { firstname, lastname, outstandingbalance } = contact.properties;
-      return `Based on your account, your name is ${firstname}, your surname is ${lastname}, and your balance is ${outstandingbalance}.`;
-    } else {
-      return "I couldn't find your account details.";
-    }
-  } catch (error) {
-    console.error('Error fetching contact details from HubSpot:', error.response?.data || error.message);
-    return "There was an issue retrieving your account details. Please try again later.";
-  }
-}
-
-// Background file processing function
-async function backgroundFileProcessing(phone, fileNamephone) {
-  try {
-    // Get the current timestamp
-    const now = new Date(); 
-    const timestamp = now.toLocaleString('en-GB', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: 'Africa/Johannesburg',
-    });
-
-    // Create conversation text for logging
-    const conversationText = `
-      Date: ${timestamp}
-      Phone: ${phone}
-      Background Processing Initiated
-    `;
-
-    // Attempt to download existing file
-    const { data: existingFile, error: downloadError } = await supabase
-      .storage
-      .from('truworths')
-      .download(fileNamephone);
-
-    let existingContent = '';
-
-    if (existingFile) {
-      existingContent = await existingFile.text();
-    } else if (downloadError && downloadError.status !== 404) {
-      throw new Error(downloadError.message);
-    }
-
-    // Append new content
-    const updatedContent = `${existingContent}\n${conversationText}`;
-
-    // Upload updated content
-    const { error: finalUploadError } = await supabase
-      .storage
-      .from('truworths')
-      .upload(fileNamephone, updatedContent, {
-        cacheControl: '3600',
-        contentType: 'text/plain',
-        upsert: true,
-      });
-
-    if (finalUploadError) {
-      throw new Error(finalUploadError.message);
-    }
-
-    // Optional: Call N8N webhook or perform additional processing
-    await callN8nWebhook(fileNamephone);
-
-    console.log('Background file processing completed successfully');
-  } catch (error) {
-    console.error('Detailed background file processing error:', error);
-    
-    // Fallback upload if primary method fails
-    try {
-      await supabase
-        .storage
-        .from('truworths')
-        .upload(fileNamephone, `Error in processing: ${error.message}`, {
-          cacheControl: '3600',
-          contentType: 'text/plain',
-          upsert: false
-        });
-    } catch (fallbackError) {
-      console.error('Fallback upload failed:', fallbackError);
-    }
-  }
-}
 
 
 app.post('/handle-no-speech', async (req, res) => {
