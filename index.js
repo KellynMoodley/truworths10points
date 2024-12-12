@@ -429,14 +429,13 @@ app.post('/process-speech', async (req, res) => {
 
 
      // Trigger background file processing without blocking
-        process.nextTick(async () => {
-          try {
-            //const fileNamephone = `${phone}.txt`;
-            await backgroundFileProcessing(fileNamephone);
-          } catch (bgError) {
-            console.error('Background file processing error:', bgError);
-          }
-        });
+process.nextTick(async () => {
+  try {
+    await backgroundFileProcessing(fileNamephone, conversationText);
+  } catch (bgError) {
+    console.error('Background file processing error:', bgError);
+  }
+});
 
 
       
@@ -471,69 +470,71 @@ app.post('/process-speech', async (req, res) => {
 });
 
 
-async function backgroundFileProcessing(fileNamephone) {
-try {
+async function backgroundFileProcessing(fileNamephone, conversationText) {
+  try {
+    console.log('Starting the try block');
+    
+    const { data: existingFile, error: downloadError } = await supabase
+      .storage
+      .from('truworths')
+      .download(fileNamephone);
 
-  console.log('Starting the try block');
-  
-  const { data: existingFile, error: downloadError } = await supabase
-    .storage
-    .from('truworths')
-    .download(fileNamephone);
+    let existingContent = '';
 
-  let existingContent = '';
+    if (existingFile) {
+      // Convert the file content to a string
+      existingContent = await existingFile.text();
+    } else if (downloadError && downloadError.status !== 404) {
+      // Handle errors other than "file not found"
+      throw new Error(downloadError.message);
+    }
 
-  if (existingFile) {
-    // Convert the file content to a string
-    existingContent = await existingFile.text();
-  } else if (downloadError && downloadError.status !== 404) {
-    // Handle errors other than "file not found"
-    throw new Error(downloadError.message);
-  }
+    // Step 2: Append the new content to the existing content
+    const updatedContent = `${existingContent}\n${conversationText}`;
 
-  // Step 2: Append the new content to the existing content
-  const updatedContent = `${existingContent}\n${conversationText}`;
+    // Step 3: Upload the updated content back to the file
+    const { error: finaluploadError } = await supabase
+      .storage
+      .from('truworths')
+      .upload(fileNamephone, updatedContent, {
+        cacheControl: '3600',
+        contentType: 'text/plain',
+        upsert: true, // Overwrite the file with updated content
+      });
 
-  // Step 3: Upload the updated content back to the file
-  const { error: finaluploadError } = await supabase
-    .storage
-    .from('truworths')
-    .upload(fileNamephone, updatedContent, {
-      cacheControl: '3600',
-      contentType: 'text/plain',
-      upsert: true, // Overwrite the file with updated content
-    });
-  
- 
-console.log('Existing content:', existingContent);
-console.log('Updated content:', updatedContent);
+    console.log('Existing content:', existingContent);
+    console.log('Updated content:', updatedContent);
 
-  const result = await checkFileAndLog(fileNamephone);
+    const result = await checkFileAndLog(fileNamephone);
 
-  if (finaluploadError) {
-    throw new Error(finaluploadError.message);
-  }
+    if (finaluploadError) {
+      throw new Error(finaluploadError.message);
+    }
 
-  console.log('File updated successfully!');
-} catch (error) {
-  console.error('Error appending to file:', error.message);
-        // Upload the conversation text to Supabase storage
-      const { data:uploadphone, error:uploaderrorphone } = await supabase
+    console.log('File updated successfully!');
+  } catch (error) {
+    console.error('Error appending to file:', error.message);
+    
+    try {
+      // Upload the conversation text to Supabase storage
+      const { data: uploadphone, error: uploaderrorphone } = await supabase
         .storage
         .from('truworths')
         .upload(fileNamephone, conversationText, {
-         cacheControl: '3600',
-         contentType: 'text/plain',
+          cacheControl: '3600',
+          contentType: 'text/plain',
           upsert: false
-      });
+        });
 
       if (uploaderrorphone) {
-       console.error('Supabase upload error:', uploaderrorphone.message);
-      return res.status(500).send('Error uploading second conversation to Supabase');
-    } else {
-       console.log('Second Conversation uploaded successfully:', uploadphone);
+        console.error('Supabase upload error:', uploaderrorphone.message);
+      } else {
+        console.log('Second Conversation uploaded successfully:', uploadphone);
       }
-}
+    } catch (uploadError) {
+      console.error('Error during second upload attempt:', uploadError);
+    }
+  }
 }
 
 
