@@ -52,19 +52,13 @@
   <h1>N8N Webhook Response</h1>
   <form id="webhookForm">
     <label for="fileUrl">File URL:</label>
-    <input type="text" id="fileUrl" name="fileUrl" placeholder="Enter file URL" required>
     <button type="submit">Call N8N Webhook</button>
   </form>
-
-  <h2>Response:</h2>
-  <div id="response">No response yet.</div>
 
   <script>
     document.getElementById('webhookForm').addEventListener('submit', async (event) => {
       event.preventDefault();
-
-      const fileUrl = document.getElementById('fileUrl').value;
-      const responseDiv = document.getElementById('response');
+      
 
       try {
         const response = await fetch('/trigger-n8n', {
