@@ -1,305 +1,90 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Truworths Collections Dashboard</title>
-    <script defer src="script.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <style>
-        body {
-            background-color: #f4f7fa;
-        }
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: 350px 1fr 350px;
-            gap: 20px;
-            padding: 10px;
-        }
-        .card {
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 20px;
-        }
-        .status-badge {
-            background-color: black;
-            color: white;
-            padding: 10px;
-            display: inline-flex;
-            align-items: center;
-            border-radius: 5px;
-        }
-        .kpi-box {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 15px;
-            border-radius: 8px;
-            color: white;
-            text-align: center;
-            margin-bottom: 10px;
-        }
-        .online-status {
-            background-color: green;
-            color: white;
-            padding: 5px 10px;
-            border-radius: 5px;
-            margin-right: 10px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>N8N Webhook Response</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    h1 {
+      color: #333;
+    }
+    form {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    input[type="text"] {
+      width: 300px;
+      padding: 8px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button {
+      padding: 10px 20px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    #response {
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #f9f9f9;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      white-space: pre-wrap;
+    }
+  </style>
 </head>
-<body class="bg-gray-100">
-    <!-- Header -->
-    <header class="bg-white py-4 px-6 flex flex-col items-start">
-        <div class="flex items-center w-full justify-between">
-            <div>
-                <h1 class="text-2xl font-bold">Truworths Collections Dashboard</h1>
-                <p class="text-gray-600">Agent: Sarah Johnson</p>
-            </div>
-            <div class="flex items-center">
-                <span class="online-status">Online</span>
-                <div id="clock" class="status-badge">12:00 PM</div>
-            </div>
-        </div>
-    </header>
+<body>
+  <h1>N8N Webhook Response</h1>
+  <form id="webhookForm">
+    <label for="fileUrl">File URL:</label>
+    <input type="text" id="fileUrl" name="fileUrl" placeholder="Enter file URL" required>
+    <button type="submit">Call N8N Webhook</button>
+  </form>
 
-    <!-- KPI Section -->
-    <div class="container mr-auto px-4 py-4">
-       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-11/12 mr-auto">
-            <div class="kpi-box bg-blue-600">
-                <h3 class="font-bold text-sm mb-1">Avg. Call Time</h3>
-                <span id="avg-call-time-value" class="text-xl font-semibold">Calculating...</span>
-            </div>
-            <div class="kpi-box bg-blue-600">
-                <h3 class="font-bold text-sm mb-1">Total Calls</h3>
-                <span id="total-calls-value" class="text-xl font-semibold">Calculating...</span>
-            </div>
-            <div class="kpi-box bg-blue-600">
-                <h3 class="font-bold text-sm mb-1">Total Duration</h3>
-                <span id="total-duration-value" class="text-xl font-semibold">Calculating...</span>
-            </div>
-            <!-- Download KPI Report Button -->
-    <div class="text-center mt-6">
-        <button onclick="downloadKpis()" class="bg-blue-500 text-white py-2 px-6 rounded-lg hover:bg-blue-600">
-            Download KPI Report
-        </button>
-    </div>
-        </div>
-    </div>
+  <h2>Response:</h2>
+  <div id="response">No response yet.</div>
 
-    <!-- Main Dashboard Grid -->
-    <div class="dashboard-grid">
-        <!-- Left Column -->
-        <div class="space-y-2">
-            <!-- Current Call -->
-            <div id="current-call" class="card">
-                <h2 class="text-lg font-semibold mb-4">Current Call</h2>
-                <p>Waiting for a call...</p>
-            </div>
-
-            <!-- Profile Information -->
-            <div id="profile-container" class="card">
-                <h2 class="text-lg font-semibold mb-4">Contact Profile</h2>
-                <div id="profile" class="profile-details">
-                    No caller details found.
-                </div>
-            </div>
-        </div>
-
-        <!-- Middle Column -->
-        <div class="space-y-4">
-            <!-- Past Calls -->
-            <div id="past-calls" class="card">
-                <h2 class="text-lg font-semibold mb-4">Past Calls</h2>
-                <ul id="past-calls-list" class="mb-4">
-                    <li>No past calls available</li>
-                </ul>
-                <button id="triggerFileCheckBtn" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition mb-4">
-                    Summary of past calls
-                </button>
-
-                <!-- Result Container -->
-                <div id="result-container" class="bg-gray-100 p-4 rounded mb-4">
-                    <p>Waiting for data...</p>
-                </div>
-
-                <!-- Rate this Content -->
-                <div class="text-center border-t pt-4">
-                    <h1 class="text-lg font-bold mb-4">Rate this content</h1>
-                    <div class="flex justify-center space-x-6">
-                        <button id="thumbsUp" class="text-4xl hover:text-green-500 transition">👍</button>
-                        <button id="thumbsDown" class="text-4xl hover:text-red-500 transition">👎</button>
-                    </div>
-                    <p id="feedbackMessage" class="hidden text-sm font-medium mt-4 text-gray-700"></p>
-                </div>
-            </div>
-        </div>
-
-    
-    </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script>
-    function downloadConversation(callSid) {
-      fetch(`/download-conversation/${callSid}`)
-        .then(response => response.blob())
-        .then(blob => {          
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-               a.href = url;
-               a.download = `${callSid}.txt`;
-               document.body.appendChild(a);
-               a.click();
-               window.URL.revokeObjectURL(url);
-               a.remove();
-        })
-        .catch(error => console.error('Download error:', error));
-    }
+    document.getElementById('webhookForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
 
+      const fileUrl = document.getElementById('fileUrl').value;
+      const responseDiv = document.getElementById('response');
 
-    function downloadKpis() {
-      fetch('/download-kpis')
-        .then(response => response.blob())
-        .then(blob => {
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'Truworths_KPI_Report.txt';
-          document.body.appendChild(a);
-          a.click();
-          window.URL.revokeObjectURL(url);
-          a.remove();
-        })
-        .catch(error => console.error('Download error:', error));
-    }
-
-    function searchByPhoneNumber(phone) {
-      const profileDiv = document.getElementById('profile');
-      profileDiv.innerHTML = "Loading profile...";
-      axios.post('/api/search', { phone })
-        .then(response => {
-          const contacts = response.data;
-          if (contacts.length === 0) {
-            profileDiv.innerHTML = `<p class="error-message">No contacts found with phone number: ${phone}</p>`;
-          } else {
-            const contact = contacts[0].properties;
-            profileDiv.innerHTML = `
-              <p><span>First Name:</span> ${contact.firstname || 'N/A'}</p>
-              <p><span>Last Name:</span> ${contact.lastname || 'N/A'}</p>
-              <p><span>Email:</span> ${contact.email || 'N/A'}</p>
-              <p><span>Phone number:</span> ${contact.mobilenumber || 'N/A'}</p>
-              <p><span>Customer ID:</span> ${contact.customerid || 'N/A'}</p>
-              <p><span>Account Number:</span> ${contact.accountnumbers || 'N/A'}</p>
-              <p><span>High value customer:</span> ${contact.highvalue || 'N/A'}</p>
-              <p><span>Delinquency status:</span> ${contact.delinquencystatus || 'N/A'}</p>
-              <p><span>Segmentation:</span> ${contact.segmentation || 'N/A'}</p>
-              <p><span>Outstanding balance:</span> ${contact.outstandingbalance || 'N/A'}</p>
-              <p><span>Reasons for missed payment:</span> ${contact.missedpayment || 'N/A'}</p>
-              <p><span>Promise to pay rating:</span> ${contact.promisetopay || 'N/A'}</p>
-              <p><span>Payment method history:</span> ${contact.paymentmethodhistory || 'N/A'}</p>
-              <p><span>Last missed payment date:</span> ${contact.lastmissedpaymentdate || 'N/A'}</p>
-              <p><span>PTP (Promise to pay) date:</span> ${contact.ptpdate|| 'N/A'}</p>
-              <p><span>Best payment date:</span> ${contact.bestpaymentdate|| 'N/A'}</p>
-              <p><span>Amount to pay:</span> ${contact.amounttopay|| 'N/A'}</p>
-            `;
-          }
-        })
-        .catch(error => {
-          console.error('Error searching contacts:', error);
-          profileDiv.innerHTML = '<p class="error-message">Error loading profile. Please try again later.</p>';
+      try {
+        const response = await fetch('/trigger-n8n', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ fileUrl }),
         });
-    }
 
-    setInterval(() => {
-      fetch('/call-data')
-        .then(response => response.json())
-        .then(data => {
-          const currentCallDiv = document.getElementById('current-call');
-          const profileDiv = document.getElementById('profile');
-          const pastCallsList = document.getElementById('past-calls-list');
-          const avgCallTimeValue = document.getElementById('avg-call-time-value');
-          const totalCallsValue = document.getElementById('total-calls-value');
-          const totalDurationValue = document.getElementById('total-duration-value');
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
 
-          if (data.currentCall) {
-            currentCallDiv.innerHTML = `
-              <h2>Current Call</h2>
-              <p>Caller: ${data.currentCall.caller}</p>
-              <p>Status: ${data.currentCall.status}</p>
-              <p>Call SID: ${data.currentCall.callSid}</p>
-              <p>Duration: ${data.currentCall.duration} seconds</p>
-            `;
-            searchByPhoneNumber(data.currentCall.caller);
-
-            profileDiv.style.display = 'block';
-          } else {
-            currentCallDiv.innerHTML = '<p>No current call</p>';
-            profileDiv.innerHTML = 'No caller details found.';
-          }
-
-          if (data.pastCalls.length > 0) {
-            pastCallsList.innerHTML = data.pastCalls.map(call => {
-              const detailsDivId = `details-${call.callSid}`;
-              return `
-                <li>
-                  <div>
-                    <span class="caller" onclick="toggleDetails('${call.callSid}')">${call.caller}</span>
-                    <button onclick="downloadConversation('${call.callSid}')" class="download-btn">Download Conversation</button>
-                    <div id="${detailsDivId}" class="caller-details" style="${document.getElementById(detailsDivId)?.style.display === 'block' ? 'display: block;' : 'display: none;'}">
-                      <p>Status: ${call.status}</p>
-                      <p>Duration: ${call.duration} seconds</p>
-                      <h3>Conversation history:</h3>
-                      <ul>
-                        ${call.conversations.map(convo => `
-                          <li>
-                            <p>User: ${convo.user}</p>
-                            <p>Bot: ${convo.bot}</p>
-                          </li>
-                        `).join('')}
-                      </ul>
-                    </div>
-                  </div>
-                </li>
-              `;
-            }).join('');
-          } else {
-            pastCallsList.innerHTML = '<li>No past calls available</li>';
-          }
-
-          //const avgCallTime = data.avgCallTime || 'Calculating...';
-          //avgCallTimeValue.textContent = avgCallTime;
-
-          // Update KPIs
-          avgCallTimeValue.textContent = data.avgCallTime ? `${data.avgCallTime.toFixed(2)} seconds` : '0';
-          totalCallsValue.textContent = data.totalCalls || 0;
-          totalDurationValue.textContent = data.totalDuration ? `${data.totalDuration.toFixed(2)} seconds` : '0';
-        })
-        .catch(error => console.error('Error fetching call data:', error));
-    }, 5000);
-
-    function toggleDetails(callSid) {
-      const detailsDiv = document.getElementById(`details-${callSid}`);
-      if (detailsDiv.style.display === 'none') {
-        detailsDiv.style.display = 'block';
-      } else {
-        detailsDiv.style.display = 'none';
+        const data = await response.json();
+        responseDiv.textContent = JSON.stringify(data, null, 2);
+      } catch (error) {
+        responseDiv.textContent = `Error: ${error.message}`;
       }
-    }
-
-  window.watsonAssistantChatOptions = {
-    integrationID: "3db138a6-19ed-4563-af30-47d6dbfb6158", // The ID of this integration.
-    region: "us-south", // The region your integration is hosted in.
-    serviceInstanceID: "e717e961-5d8c-4000-9152-788aecd5bd2c", // The ID of your service instance.
-    onLoad: async (instance) => { await instance.render(); }
-  };
-  setTimeout(function(){
-    const t=document.createElement('script');
-    t.src="https://web-chat.global.assistant.watson.appdomain.cloud/versions/" + (window.watsonAssistantChatOptions.clientVersion || 'latest') + "/WatsonAssistantChatEntry.js";
-    document.head.appendChild(t);
-  });
-    
+    });
   </script>
 </body>
 </html>
