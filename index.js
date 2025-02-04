@@ -81,6 +81,16 @@ async function callN8nWebhook(fileUrl) {
   }
 }
 
+app.post('/trigger-n8n', async (req, res) => {
+  try {
+    const fileUrl = req.body.fileUrl; // Assuming fileUrl is passed in the request body
+    const result = await callN8nWebhook(fileUrl);
+    res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Start the server
 app.listen(port, () => {
   console.log(`Server started on port ${port}`);
