@@ -31,19 +31,6 @@ app.use(express.static(__dirname));
 
 require('dotenv').config();
 
-// Watson configuration
-const speechToText = new SpeechToTextV1({
-  authenticator: new IamAuthenticator({
-    apikey: process.env.watson_speech_to_text_api_key,
-  }),
-  serviceUrl: process.env.watson_speech_to_text_url,
-});
-
-// Twilio configuration
-const twilioClient = twilio(
-  process.env.TWILIO_ACCOUNT_SID,
-  process.env.TWILIO_AUTH_TOKEN
-);
 
 const ACCESS_TOKEN = process.env.access_token;
 
