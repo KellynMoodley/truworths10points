@@ -4,11 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>n8n Webhook Listener</title>
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
-        #summary { margin-top: 20px; padding: 10px; border: 1px solid #ddd; display: inline-block; }
-        input { padding: 8px; margin: 10px; }
-    </style>
 </head>
 <body>
     <h2>n8n Webhook Listener</h2>
@@ -16,24 +11,6 @@
     <button onclick="fetchSummary()">Get Summary</button>
     <div id="summary">Waiting for webhook data...</div>
 
-    <script>
-        async function fetchSummary() {
-            const accountNumber = document.getElementById('accountNumber').value;
-            if (!accountNumber) {
-                alert('Please enter an account number.');
-                return;
-            }
-            try {
-                const response = await fetch(`https://kkarodia.app.n8n.cloud/webhook/447e15a0-6001-402e-93ef-0f3aad7110cd?account=${encodeURIComponent(accountNumber)}`);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-                const data = await response.json();
-                document.getElementById('summary').innerText = JSON.stringify(data, null, 2);
-            } catch (error) {
-                document.getElementById('summary').innerText = 'No data for account number: ' + accountNumber;
-            }
-        }
-    </script>
+    <script src="n8n.js"></script>
 </body>
 </html>
