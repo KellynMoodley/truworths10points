@@ -1,19 +1,4 @@
-const express = require('express');
-const path = require('path');
-const app = express();
-const port = process.env.PORT || 3000;
-
-app.use(express.static(path.join(__dirname, 'public')));
-
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
-});
-
-const axios = require('axios');
+const axios = require('axios'); // You can use axios on the client-side too
 
 async function fetchSummary() {
     const accountNumber = document.getElementById('accountNumber').value;
