@@ -1,16 +1,28 @@
 const express = require('express');
 const path = require('path');
-const cors = require('cors'); // Add this line
+const cors = require('cors');
+const axios = require('axios');
+
 const app = express();
 const port = process.env.PORT || 3000;
 
-app.use(cors()); // Enable CORS for all routes
+app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+app.get('/fetch-summary', async (req, res) => {
+    const accountNumber = req.query.account;
+    try {
+        const response = await axios.get(`https://kkarodia.app.n8n.cloud/webhook/447e15a0-6001-402e-93ef-0f3aad7110cd?account=${encodeURIComponent(accountNumber)}`);
+        res.json(response.data);
+    } catch (error) {
+        res.status(404).json({ error: 'No data found' });
+    }
+});
+
 app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
+    console.log(`Server running on port ${port}`);
 });
