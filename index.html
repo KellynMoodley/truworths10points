@@ -3,32 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Webhook Tester</title>
+    <title>n8n Webhook Listener</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
+        #summary { margin-top: 20px; padding: 10px; border: 1px solid #ddd; display: inline-block; }
+        input { padding: 8px; margin: 10px; }
+    </style>
 </head>
 <body>
-    <h2>Webhook Tester</h2>
-    <button id="sendRequest">Send Webhook Request</button>
-    <pre id="response"></pre>
-    
-  <script>
-    document.getElementById('sendRequest').addEventListener('click', async function() {
-        const responseElem = document.getElementById('response');
-        responseElem.textContent = 'Sending...';
+    <h2>n8n Webhook Listener</h2>
+    <input type="text" id="accountNumber" placeholder="Enter Account Number">
+    <button onclick="fetchSummary()">Get Summary</button>
+    <div id="summary">Waiting for webhook data...</div>
 
-        try {
-            const response = await fetch('https://kkarodia.app.n8n.cloud/webhook/d1243d6b-35d5-4d00-913b-72ec5605839f');
-
-            const text = await response.text(); // Get response as text
-            try {
-                const data = JSON.parse(text); // Try to parse as JSON
-                responseElem.textContent = JSON.stringify(data, null, 2);
-            } catch (jsonError) {
-                responseElem.textContent = text; // If parsing fails, show raw text
+    <script>
+        async function fetchSummary() {
+            const accountNumber = document.getElementById('accountNumber').value;
+            if (!accountNumber) {
+                alert('Please enter an account number.');
+                return;
             }
-        } catch (error) {
-            responseElem.textContent = 'Error: ' + error.message;
+            try {
+                const response = await fetch(`https://kkarodia.app.n8n.cloud/webhook/447e15a0-6001-402e-93ef-0f3aad7110cd?account=${encodeURIComponent(accountNumber)}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                const data = await response.json();
+                document.getElementById('summary').innerText = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('summary').innerText = 'No data for account number: ' + accountNumber;
+            }
         }
-    });
-</script>
+    </script>
 </body>
 </html>
