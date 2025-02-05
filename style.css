@@ -9,9 +9,15 @@ body {
     padding: 10px;
     border: 1px solid #ddd;
     display: inline-block;
+    min-width: 300px;
+    max-width: 600px;
+    word-wrap: break-word;
+    font-family: "Courier New", monospace;
+    background-color: #f4f4f4;
 }
 
 input {
     padding: 8px;
     margin: 10px;
+    width: 300px;
 }
