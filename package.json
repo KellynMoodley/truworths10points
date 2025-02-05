@@ -6,7 +6,7 @@
   "main": "n8n.js",
   "scripts": {
     "prestart": "npm audit fix --force",
-    "start": "node n8n.js",
+    "start": "node server.js",
     "dev": "nodemon n8n.js"
   },
   "dependencies": {
