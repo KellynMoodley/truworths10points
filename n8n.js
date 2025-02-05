@@ -1,3 +1,5 @@
+const axios = require('axios');
+
 async function fetchSummary() {
     const accountNumber = document.getElementById('accountNumber').value;
     if (!accountNumber) {
