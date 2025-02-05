@@ -7,12 +7,8 @@ async function fetchSummary() {
         return;
     }
     try {
-        const response = await fetch(`https://kkarodia.app.n8n.cloud/webhook/447e15a0-6001-402e-93ef-0f3aad7110cd?account=${encodeURIComponent(accountNumber)}`);
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        const data = await response.json();
-        document.getElementById('summary').innerText = JSON.stringify(data, null, 2);
+        const response = await axios.get(`https://kkarodia.app.n8n.cloud/webhook/447e15a0-6001-402e-93ef-0f3aad7110cd?account=${encodeURIComponent(accountNumber)}`);
+        document.getElementById('summary').innerText = JSON.stringify(response.data, null, 2);
     } catch (error) {
         document.getElementById('summary').innerText = 'No data for account number: ' + accountNumber;
     }
