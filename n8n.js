@@ -9,7 +9,7 @@ async function fetchSummary() {
         const data = await response.json();
         
         if (Array.isArray(data) && data.length > 0) {
-            document.getElementById('summary').innerText = `Summary 1: ${data[0].text}\nSummary 2: ${data[1]?.text || 'N/A'}`;
+            document.getElementById('summary').innerText = `Summary 1: ${data[0]}\nSummary 2: ${data[1] || 'N/A'}`;
         } else {
             document.getElementById('summary').innerText = 'No data found for the given account number.';
         }
