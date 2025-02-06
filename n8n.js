@@ -1,19 +1,30 @@
 async function fetchSummary() {
     const accountNumber = document.getElementById('accountNumber').value;
+    const summaryElement = document.getElementById('summary');
+
     if (!accountNumber) {
-        alert('Please enter an account number.');
+        summaryElement.textContent = 'Please enter an account number.';
         return;
     }
+
     try {
         const response = await fetch(`/fetch-summary?account=${encodeURIComponent(accountNumber)}`);
-        const data = await response.json();
-        console.log('Webhook response:', data);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-        // Now you can safely manipulate the DOM
-        const resultElement = document.getElementById('summary');
-        resultElement.textContent = JSON.stringify(data.response.text);
+        const data = await response.json();
+        
+        // Safer data access with optional chaining and fallback
+        const summary = data?.response?.text 
+            ? (data.response.text[1] || '') + (data.response.text[2] || '')
+            : 'No summary available';
+
+        summaryElement.textContent = summary;
         
     } catch (error) {
-        document.getElementById('summary').innerText = 'No data for account number: ' + accountNumber;
+        console.error('Fetch error:', error);
+        summaryElement.textContent = `Error fetching summary: ${error.message}`;
     }
 }
