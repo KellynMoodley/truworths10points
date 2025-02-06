@@ -7,10 +7,12 @@ async function fetchSummary() {
     try {
         const response = await fetch(`/fetch-summary?account=${encodeURIComponent(accountNumber)}`);
         const data = await response.json();
+        console.log('Webhook response:', data);
+
+        // Now you can safely manipulate the DOM
+        const resultElement = document.getElementById('summary');
+        resultElement.textContent = JSON.stringify(data.response.text);
         
-        // Create a formatted display of all responses
-        const summary = data.map(item => item.response.text).join('\n\n');
-        document.getElementById('summary').innerText = summary;
     } catch (error) {
         document.getElementById('summary').innerText = 'No data for account number: ' + accountNumber;
     }
