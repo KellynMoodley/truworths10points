@@ -16,7 +16,7 @@ app.get('/', (req, res) => {
 app.get('/fetch-summary', async (req, res) => {
     const accountNumber = req.query.account;
     try {
-        const response = await axios.get(`https://kkarodia.app.n8n.cloud/webhook/447e15a0-6001-402e-93ef-0f3aad7110cd?account=${encodeURIComponent(accountNumber)}`);
+        const response = await axios.get(`https://kkarodia.app.n8n.cloud/webhook/fc65bc6d-e420-482e-ba3b-cea430d402ff?account=${encodeURIComponent(accountNumber)}`);
         res.json(response.data);
     } catch (error) {
         res.status(404).json({ error: 'No data found' });
