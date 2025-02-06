@@ -7,7 +7,10 @@ async function fetchSummary() {
     try {
         const response = await fetch(`/fetch-summary?account=${encodeURIComponent(accountNumber)}`);
         const data = await response.json();
-        document.getElementById('summary').innerText = JSON.stringify(data, null, 2);
+        
+        // Create a formatted display of all responses
+        const summary = data.map(item => item.response.text).join('\n\n');
+        document.getElementById('summary').innerText = summary;
     } catch (error) {
         document.getElementById('summary').innerText = 'No data for account number: ' + accountNumber;
     }
