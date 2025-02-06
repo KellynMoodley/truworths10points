@@ -6,7 +6,7 @@ async function fetchSummary() {
     }
     try {
         const response = await fetch(`/fetch-summary?account=${encodeURIComponent(accountNumber)}`);
-        const data = await response.json();
+        const data = await response.result.json();
 
         document.getElementById('summary').innerText = JSON.stringify(data, null, 2);        
         
