@@ -19,8 +19,8 @@ async function fetchSummary() {
         }
 
         // Access specific indices
-        const value2 = data[2]; 
-        const value3 = data[3];
+        const value2 = response.data[2]; 
+        const value3 = response.data[3];
 
         // Combine them (assuming they are numbers or strings)
         const combinedData = value2 + value3;
