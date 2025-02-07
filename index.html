@@ -6,7 +6,6 @@
     <title>N8N Webhook Listener</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
-    <script src="n8n.js"></script>
 </head>
 <body class="bg-gray-100 min-h-screen flex">
     <div class="w-80 bg-white shadow-lg h-screen fixed left-0 top-0 overflow-y-auto">
@@ -95,9 +94,6 @@
                             <div>
                                 <h3 class="font-semibold text-gray-800 group-hover:text-blue-700">${account.Collections_Segment_Detail || 'N/A'}</h3>
                                 <p class="text-sm text-gray-500 group-hover:text-blue-600">Account: ${account.Account_no}</p>
-                                <p class="text-sm text-gray-500 group-hover:text-blue-600">Account: ${account.Call_Datetime}</p>
-                                <p class="text-sm text-gray-500 group-hover:text-blue-600">Account: ${account.Call_Length}</p>
-                                <p class="text-sm text-gray-500 group-hover:text-blue-600">Account: ${account.Agent_Team_Nam}</p>
                             </div>
                         </div>
                     `;
@@ -115,39 +111,10 @@
             // Find the selected account
             const selectedAccount = accountsData.find(account => account.Account_no === accountId);
             
-            if (selectedAccount) {
-                const detailsContent = document.getElementById('detailsContent');
-                detailsContent.innerHTML = `
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <h3 class="font-semibold text-gray-700">Basic Information</h3>
-                            <p><strong>Call Datetime:</strong> ${selectedAccount.Call_Datetime}</p>
-                            <p><strong>Call Length:</strong> ${selectedAccount.Call_Length}</p>
-                            <p><strong>Agent Team:</strong> ${selectedAccount.Agent_Team_Name}</p>
-                        </div>
-                        <div>
-                            <h3 class="font-semibold text-gray-700">Financial Details</h3>
-                            <p><strong>Current Balance:</strong> ${selectedAccount.Current_Balance}</p>
-                            <p><strong>Total Amount Due:</strong> ${selectedAccount.Total_amount_due}</p>
-                            <p><strong>Last Payment Amount:</strong> ${selectedAccount.Last_Payment_Amount}</p>
-                        </div>
-                        <div>
-                            <h3 class="font-semibold text-gray-700">Payment Information</h3>
-                            <p><strong>Payment Due Date:</strong> ${selectedAccount.Payment_Due_Date}</p>
-                            <p><strong>Date Last Payment:</strong> ${selectedAccount.Date_Last_Payment}</p>
-                            <p><strong>Payment Recency:</strong> ${selectedAccount.Payment_Recency_Months} months</p>
-                        </div>
-                        <div>
-                            <h3 class="font-semibold text-gray-700">Additional Details</h3>
-                            <p><strong>Customer Bank:</strong> ${selectedAccount.Customer_Bank_Name}</p>
-                            <p><strong>Behavioral Score:</strong> ${selectedAccount.behav_score}</p>
-                            <p><strong>Store Preference:</strong> ${selectedAccount.Store_Pref_Name}</p>
-                        </div>
-                    </div>
-                `;
-            }
         }
 
+        <script src="n8n.js"></script>
+        </script>
         function fetchSummary() {
             const accountNumber = document.getElementById('accountNumber').value;
             document.getElementById('summary').textContent = `Fetching summary for account: ${accountNumber}`;
