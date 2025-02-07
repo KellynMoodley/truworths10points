@@ -54,36 +54,35 @@
         </div>
     </main>
     <script>
-        // Function to handle file upload and parse Excel
+        let accountsData = [];
+
         document.getElementById('excelFile').addEventListener('change', function(e) {
             const file = e.target.files[0];
             const reader = new FileReader();
 
             reader.onload = function(event) {
                 const workbook = XLSX.read(event.target.result, { type: 'binary' });
-                
-                // Assuming the first sheet in the workbook
                 const sheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[sheetName];
 
                 // Convert worksheet to JSON
-                const accounts = XLSX.utils.sheet_to_json(worksheet);
+                accountsData = XLSX.utils.sheet_to_json(worksheet);
 
                 // Clear existing account list
                 const accountList = document.getElementById('accountList');
                 accountList.innerHTML = '';
 
                 // Populate accounts dynamically
-                accounts.forEach(account => {
+                accountsData.forEach(account => {
                     const accountDiv = document.createElement('div');
                     accountDiv.className = 'bg-gray-50 hover:bg-blue-100 p-3 rounded-lg cursor-pointer transition group';
-                    accountDiv.setAttribute('onclick', `selectAccount('${account.AccountNumber}')`);
+                    accountDiv.setAttribute('onclick', `selectAccount('${account.Account_no}')`);
                     
                     accountDiv.innerHTML = `
                         <div class="flex justify-between items-center">
                             <div>
-                                <h3 class="font-semibold text-gray-800 group-hover:text-blue-700">${account.Name}</h3>
-                                <p class="text-sm text-gray-500 group-hover:text-blue-600">Account: ${account.AccountNumber}</p>
+                                <h3 class="font-semibold text-gray-800 group-hover:text-blue-700">${account.Collections_Segment_Detail || 'N/A'}</h3>
+                                <p class="text-sm text-gray-500 group-hover:text-blue-600">Account: ${account.Account_no}</p>
                             </div>
                         </div>
                     `;
@@ -97,10 +96,30 @@
 
         function selectAccount(accountId) {
             document.getElementById('accountNumber').value = accountId;
+            
+            // Find the selected account
+            const selectedAccount = accountsData.find(account => account.Account_no === accountId);
+            
+            if (selectedAccount) {
+                const summaryElement = document.getElementById('summary');
+                summaryElement.innerHTML = `
+Account Details:
+-----------------
+Account Number: ${selectedAccount.Account_no}
+Collections Segment: ${selectedAccount.Collections_Segment}
+Current Balance: ${selectedAccount.Current_Balance}
+Total Amount Due: ${selectedAccount.Total_amount_due}
+Last Payment Amount: ${selectedAccount.Last_Payment_Amount}
+Payment Due Date: ${selectedAccount.Payment_Due_Date}
+Date Last Payment: ${selectedAccount.Date_Last_Payment}
+Agent Team: ${selectedAccount.Agent_Team_Name}
+Customer Bank: ${selectedAccount.Customer_Bank_Name}
+Behavioral Score: ${selectedAccount.behav_score}
+                `;
+            }
         }
 
         function fetchSummary() {
-            // Placeholder for your webhook logic
             const accountNumber = document.getElementById('accountNumber').value;
             document.getElementById('summary').textContent = `Fetching summary for account: ${accountNumber}`;
         }
