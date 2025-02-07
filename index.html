@@ -5,49 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>N8N Webhook Listener</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
 </head>
 <body class="bg-gray-100 min-h-screen flex">
     <div class="w-80 bg-white shadow-lg h-screen fixed left-0 top-0 overflow-y-auto">
         <div class="bg-blue-600 text-white p-6">
             <h2 class="text-xl font-bold">Account Profiles</h2>
+            <input 
+                type="file" 
+                id="excelFile" 
+                accept=".xlsx, .xls, .csv" 
+                class="mt-2 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+            >
         </div>
         <div id="accountList" class="p-4 space-y-3">
-            <div 
-                onclick="selectAccount('10101123738860')" 
-                class="bg-gray-50 hover:bg-blue-100 p-3 rounded-lg cursor-pointer transition group"
-            >
-                <div class="flex justify-between items-center">
-                    <div>
-                        <h3 class="font-semibold text-gray-800 group-hover:text-blue-700">Sam Wilson</h3>
-                        <p class="text-sm text-gray-500 group-hover:text-blue-600">Account: 10101123738860</p>
-                    </div>
-                </div>
-            </div>
-            <div 
-                onclick="selectAccount('67890')" 
-                class="bg-gray-50 hover:bg-blue-100 p-3 rounded-lg cursor-pointer transition group"
-            >
-                <div class="flex justify-between items-center">
-                    <div>
-                        <h3 class="font-semibold text-gray-800 group-hover:text-blue-700">Jane Smith</h3>
-                        <p class="text-sm text-gray-500 group-hover:text-blue-600">Account: 67890</p>
-                    </div>
-                </div>
-            </div>
-            <div 
-                onclick="selectAccount('54321')" 
-                class="bg-gray-50 hover:bg-blue-100 p-3 rounded-lg cursor-pointer transition group"
-            >
-                <div class="flex justify-between items-center">
-                    <div>
-                        <h3 class="font-semibold text-gray-800 group-hover:text-blue-700">Alice Johnson</h3>
-                        <p class="text-sm text-gray-500 group-hover:text-blue-600">Account: 54321</p>
-                    </div>
-                </div>
-            </div>
+            <!-- Accounts will be dynamically populated here -->
         </div>
     </div>
-
     <main class="ml-80 flex-grow p-10 w-[calc(100%-320px)]">
         <div class="bg-white shadow-md rounded-xl p-8 max-w-2xl mx-auto">
             <h2 class="text-3xl font-bold mb-6 text-center text-gray-800">N8N Webhook Listener</h2>
@@ -79,11 +53,56 @@
             </div>
         </div>
     </main>
-
-    <script src="n8n.js"></script>
     <script>
+        // Function to handle file upload and parse Excel
+        document.getElementById('excelFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(event) {
+                const workbook = XLSX.read(event.target.result, { type: 'binary' });
+                
+                // Assuming the first sheet in the workbook
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+
+                // Convert worksheet to JSON
+                const accounts = XLSX.utils.sheet_to_json(worksheet);
+
+                // Clear existing account list
+                const accountList = document.getElementById('accountList');
+                accountList.innerHTML = '';
+
+                // Populate accounts dynamically
+                accounts.forEach(account => {
+                    const accountDiv = document.createElement('div');
+                    accountDiv.className = 'bg-gray-50 hover:bg-blue-100 p-3 rounded-lg cursor-pointer transition group';
+                    accountDiv.setAttribute('onclick', `selectAccount('${account.AccountNumber}')`);
+                    
+                    accountDiv.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h3 class="font-semibold text-gray-800 group-hover:text-blue-700">${account.Name}</h3>
+                                <p class="text-sm text-gray-500 group-hover:text-blue-600">Account: ${account.AccountNumber}</p>
+                            </div>
+                        </div>
+                    `;
+                    
+                    accountList.appendChild(accountDiv);
+                });
+            };
+
+            reader.readAsBinaryString(file);
+        });
+
         function selectAccount(accountId) {
             document.getElementById('accountNumber').value = accountId;
+        }
+
+        function fetchSummary() {
+            // Placeholder for your webhook logic
+            const accountNumber = document.getElementById('accountNumber').value;
+            document.getElementById('summary').textContent = `Fetching summary for account: ${accountNumber}`;
         }
     </script>
 </body>
