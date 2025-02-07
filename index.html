@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,62 +8,82 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
     <script src="n8n.js"></script>
 </head>
-
 <body class="bg-gray-100 min-h-screen flex">
     <div class="w-80 bg-white shadow-lg h-screen fixed left-0 top-0 overflow-y-auto">
         <div class="bg-blue-600 text-white p-6">
             <h2 class="text-xl font-bold">Account Profiles</h2>
-            <input type="file" id="excelFile" accept=".xlsx, .xls, .csv"
-                class="mt-2 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+            <input 
+                type="file" 
+                id="excelFile" 
+                accept=".xlsx, .xls, .csv" 
+                class="mt-2 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+            >
         </div>
         <div id="accountList" class="p-4 space-y-3">
             <!-- Accounts will be dynamically populated here -->
         </div>
     </div>
 
-    <main class="w-1/2 p-10">
-        <div class="bg-white shadow-md rounded-xl p-8 max-w-2xl mx-auto">
-            <h2 class="text-3xl font-bold mb-6 text-center text-gray-800">N8N Webhook Listener</h2>
-            
-            <div class="mb-6">
-                <label class="block text-gray-700 text-sm font-bold mb-2" for="accountNumber">
-                    Account Number
-                </label>
-                <input type="text" id="accountNumber" placeholder="Enter Account Number"
-                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
-            </div>
-            
-            <button onclick="fetchSummary()"
-                class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition duration-300 font-semibold">
-                Get Summary
-            </button>
-            
-            <div id="summary"
-                class="mt-8 p-6 bg-gray-50 border border-gray-200 rounded-lg whitespace-pre-wrap overflow-auto max-h-64">
-                Waiting for webhook data...
+    <div class="ml-80 flex flex-grow">
+        <div id="accountDetails" class="w-1/2 bg-white shadow-lg h-screen overflow-y-auto p-6">
+            <h2 class="text-2xl font-bold mb-4 text-gray-800">Account Details</h2>
+            <div id="detailsContent" class="space-y-4">
+                <p class="text-gray-500">Select an account to view details</p>
             </div>
         </div>
-    </main>
+
+        <main class="w-1/2 p-10">
+            <div class="bg-white shadow-md rounded-xl p-8 max-w-2xl mx-auto">
+                <h2 class="text-3xl font-bold mb-6 text-center text-gray-800">N8N Webhook Listener</h2>
+                
+                <div class="mb-6">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="accountNumber">
+                        Account Number
+                    </label>
+                    <input 
+                        type="text" 
+                        id="accountNumber" 
+                        placeholder="Enter Account Number"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                    >
+                </div>
+                
+                <button 
+                    onclick="fetchSummary()"
+                    class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition duration-300 font-semibold"
+                >
+                    Get Summary
+                </button>
+                
+                <div 
+                    id="summary" 
+                    class="mt-8 p-6 bg-gray-50 border border-gray-200 rounded-lg whitespace-pre-wrap overflow-auto max-h-64"
+                >
+                    Waiting for webhook data...
+                </div>
+            </div>
+        </main>
+    </div>
 
     <script>
         let accountsData = [];
 
-        document.getElementById('excelFile').addEventListener('change', function (e) {
+        document.getElementById('excelFile').addEventListener('change', function(e) {
             const file = e.target.files[0];
             const reader = new FileReader();
 
-            reader.onload = function (event) {
+            reader.onload = function(event) {
                 const workbook = XLSX.read(event.target.result, { type: 'binary' });
                 const sheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[sheetName];
-                
+
                 // Convert worksheet to JSON
                 accountsData = XLSX.utils.sheet_to_json(worksheet);
-                
+
                 // Clear existing account list
                 const accountList = document.getElementById('accountList');
                 accountList.innerHTML = '';
-                
+
                 // Populate accounts dynamically
                 accountsData.forEach(account => {
                     const accountDiv = document.createElement('div');
@@ -76,6 +95,9 @@
                             <div>
                                 <h3 class="font-semibold text-gray-800 group-hover:text-blue-700">${account.Collections_Segment_Detail || 'N/A'}</h3>
                                 <p class="text-sm text-gray-500 group-hover:text-blue-600">Account: ${account.Account_no}</p>
+                                <p class="text-sm text-gray-500 group-hover:text-blue-600">Account: ${account.Call_Datetime}</p>
+                                <p class="text-sm text-gray-500 group-hover:text-blue-600">Account: ${account.Call_Length}</p>
+                                <p class="text-sm text-gray-500 group-hover:text-blue-600">Account: ${account.Agent_Team_Nam}</p>
                             </div>
                         </div>
                     `;
@@ -83,9 +105,48 @@
                     accountList.appendChild(accountDiv);
                 });
             };
-            
+
             reader.readAsBinaryString(file);
         });
+
+        function selectAccount(accountId) {
+            document.getElementById('accountNumber').value = accountId;
+            
+            // Find the selected account
+            const selectedAccount = accountsData.find(account => account.Account_no === accountId);
+            
+            if (selectedAccount) {
+                const detailsContent = document.getElementById('detailsContent');
+                detailsContent.innerHTML = `
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <h3 class="font-semibold text-gray-700">Basic Information</h3>
+                            <p><strong>Call Datetime:</strong> ${selectedAccount.Call_Datetime}</p>
+                            <p><strong>Call Length:</strong> ${selectedAccount.Call_Length}</p>
+                            <p><strong>Agent Team:</strong> ${selectedAccount.Agent_Team_Name}</p>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-gray-700">Financial Details</h3>
+                            <p><strong>Current Balance:</strong> ${selectedAccount.Current_Balance}</p>
+                            <p><strong>Total Amount Due:</strong> ${selectedAccount.Total_amount_due}</p>
+                            <p><strong>Last Payment Amount:</strong> ${selectedAccount.Last_Payment_Amount}</p>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-gray-700">Payment Information</h3>
+                            <p><strong>Payment Due Date:</strong> ${selectedAccount.Payment_Due_Date}</p>
+                            <p><strong>Date Last Payment:</strong> ${selectedAccount.Date_Last_Payment}</p>
+                            <p><strong>Payment Recency:</strong> ${selectedAccount.Payment_Recency_Months} months</p>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-gray-700">Additional Details</h3>
+                            <p><strong>Customer Bank:</strong> ${selectedAccount.Customer_Bank_Name}</p>
+                            <p><strong>Behavioral Score:</strong> ${selectedAccount.behav_score}</p>
+                            <p><strong>Store Preference:</strong> ${selectedAccount.Store_Pref_Name}</p>
+                        </div>
+                    </div>
+                `;
+            }
+        }
 
         function fetchSummary() {
             const accountNumber = document.getElementById('accountNumber').value;
@@ -93,5 +154,4 @@
         }
     </script>
 </body>
-
 </html>
