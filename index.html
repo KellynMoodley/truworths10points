@@ -6,6 +6,7 @@
     <title>N8N Webhook Listener</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
+    <script src="n8n.js"></script>
 </head>
 <body class="bg-gray-100 min-h-screen flex">
     <div class="w-80 bg-white shadow-lg h-screen fixed left-0 top-0 overflow-y-auto">
@@ -22,37 +23,48 @@
             <!-- Accounts will be dynamically populated here -->
         </div>
     </div>
-    <main class="ml-80 flex-grow p-10 w-[calc(100%-320px)]">
-        <div class="bg-white shadow-md rounded-xl p-8 max-w-2xl mx-auto">
-            <h2 class="text-3xl font-bold mb-6 text-center text-gray-800">N8N Webhook Listener</h2>
-            
-            <div class="mb-6">
-                <label class="block text-gray-700 text-sm font-bold mb-2" for="accountNumber">
-                    Account Number
-                </label>
-                <input 
-                    type="text" 
-                    id="accountNumber" 
-                    placeholder="Enter Account Number"
-                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-                >
-            </div>
-            
-            <button 
-                onclick="fetchSummary()"
-                class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition duration-300 font-semibold"
-            >
-                Get Summary
-            </button>
-            
-            <div 
-                id="summary" 
-                class="mt-8 p-6 bg-gray-50 border border-gray-200 rounded-lg whitespace-pre-wrap overflow-auto max-h-64"
-            >
-                Waiting for webhook data...
+
+    <div class="ml-80 flex flex-grow">
+        <div id="accountDetails" class="w-1/2 bg-white shadow-lg h-screen overflow-y-auto p-6">
+            <h2 class="text-2xl font-bold mb-4 text-gray-800">Account Details</h2>
+            <div id="detailsContent" class="space-y-4">
+                <p class="text-gray-500">Select an account to view details</p>
             </div>
         </div>
-    </main>
+
+        <main class="w-1/2 p-10">
+            <div class="bg-white shadow-md rounded-xl p-8 max-w-2xl mx-auto">
+                <h2 class="text-3xl font-bold mb-6 text-center text-gray-800">N8N Webhook Listener</h2>
+                
+                <div class="mb-6">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="accountNumber">
+                        Account Number
+                    </label>
+                    <input 
+                        type="text" 
+                        id="accountNumber" 
+                        placeholder="Enter Account Number"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                    >
+                </div>
+                
+                <button 
+                    onclick="fetchSummary()"
+                    class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition duration-300 font-semibold"
+                >
+                    Get Summary
+                </button>
+                
+                <div 
+                    id="summary" 
+                    class="mt-8 p-6 bg-gray-50 border border-gray-200 rounded-lg whitespace-pre-wrap overflow-auto max-h-64"
+                >
+                    Waiting for webhook data...
+                </div>
+            </div>
+        </main>
+    </div>
+
     <script>
         let accountsData = [];
 
@@ -101,20 +113,34 @@
             const selectedAccount = accountsData.find(account => account.Account_no === accountId);
             
             if (selectedAccount) {
-                const summaryElement = document.getElementById('summary');
-                summaryElement.innerHTML = `
-Account Details:
------------------
-Account Number: ${selectedAccount.Account_no}
-Collections Segment: ${selectedAccount.Collections_Segment}
-Current Balance: ${selectedAccount.Current_Balance}
-Total Amount Due: ${selectedAccount.Total_amount_due}
-Last Payment Amount: ${selectedAccount.Last_Payment_Amount}
-Payment Due Date: ${selectedAccount.Payment_Due_Date}
-Date Last Payment: ${selectedAccount.Date_Last_Payment}
-Agent Team: ${selectedAccount.Agent_Team_Name}
-Customer Bank: ${selectedAccount.Customer_Bank_Name}
-Behavioral Score: ${selectedAccount.behav_score}
+                const detailsContent = document.getElementById('detailsContent');
+                detailsContent.innerHTML = `
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <h3 class="font-semibold text-gray-700">Basic Information</h3>
+                            <p><strong>Account Number:</strong> ${selectedAccount.Account_no}</p>
+                            <p><strong>Collections Segment:</strong> ${selectedAccount.Collections_Segment}</p>
+                            <p><strong>Agent Team:</strong> ${selectedAccount.Agent_Team_Name}</p>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-gray-700">Financial Details</h3>
+                            <p><strong>Current Balance:</strong> ${selectedAccount.Current_Balance}</p>
+                            <p><strong>Total Amount Due:</strong> ${selectedAccount.Total_amount_due}</p>
+                            <p><strong>Last Payment Amount:</strong> ${selectedAccount.Last_Payment_Amount}</p>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-gray-700">Payment Information</h3>
+                            <p><strong>Payment Due Date:</strong> ${selectedAccount.Payment_Due_Date}</p>
+                            <p><strong>Date Last Payment:</strong> ${selectedAccount.Date_Last_Payment}</p>
+                            <p><strong>Payment Recency:</strong> ${selectedAccount.Payment_Recency_Months} months</p>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-gray-700">Additional Details</h3>
+                            <p><strong>Customer Bank:</strong> ${selectedAccount.Customer_Bank_Name}</p>
+                            <p><strong>Behavioral Score:</strong> ${selectedAccount.behav_score}</p>
+                            <p><strong>Store Preference:</strong> ${selectedAccount.Store_Pref_Name}</p>
+                        </div>
+                    </div>
                 `;
             }
         }
