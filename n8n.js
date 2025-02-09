@@ -1,27 +1,21 @@
 async function fetchSummary() {
     const accountNumber = document.getElementById('accountNumber').value;
-    const summaryElement = document.getElementById('summary');
-    
     if (!accountNumber) {
         alert('Please enter an account number.');
         return;
     }
-
     try {
-        summaryElement.innerText = 'Loading...';
-        summaryElement.classList.add('loading');
-        
         const response = await fetch(`/fetch-summary?account=${encodeURIComponent(accountNumber)}`);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
         const data = await response.json();
-        summaryElement.innerText = JSON.stringify(data, null, 2);
+
+        // Convert object to formatted text
+        let formattedText = JSON.stringify(data, null, 2)
+            .replace(/\\n/g, '<br>')  // Replace explicit "\n" in string
+            .replace(/\n/g, '<br>')    // Replace actual newline characters
+
+        document.getElementById('summary').innerHTML = formattedText;
+        
     } catch (error) {
-        summaryElement.innerHTML = `<div class="error">Error: ${error.message}</div>`;
-    } finally {
-        summaryElement.classList.remove('loading');
+        document.getElementById('summary').innerHTML = 'No data for account number: ' + accountNumber;
     }
 }
