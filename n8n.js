@@ -7,13 +7,15 @@ async function fetchSummary() {
     try {
         const response = await fetch(`/fetch-summary?account=${encodeURIComponent(accountNumber)}`);
         const data = await response.json();
-        console.log('Webhook response:', data);
 
-        // Now you can safely manipulate the DOM
-        const resultElement = document.getElementById('summary');
-        resultElement.textContent = JSON.stringify(data.response.text);
+        // Convert object to formatted text
+        let formattedText = JSON.stringify(data, null, 2)
+            .replace(/\\n/g, '<br>')  // Replace explicit "\n" in string
+            .replace(/\n/g, '<br>')    // Replace actual newline characters
+
+        document.getElementById('summary').innerHTML = formattedText;
         
     } catch (error) {
-        document.getElementById('summary').innerText = 'No data for account number: ' + accountNumber;
+        document.getElementById('summary').innerHTML = 'No data for account number: ' + accountNumber;
     }
 }
