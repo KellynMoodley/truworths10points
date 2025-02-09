@@ -7,12 +7,17 @@ async function fetchSummary() {
     try {
         const response = await fetch(`/fetch-summary?account=${encodeURIComponent(accountNumber)}`);
         const data = await response.json();
-
-        // Convert object to formatted text
-        let formattedText = JSON.stringify(data, null, 2)
-            .replace(/\\n/g, '<br>')  // Replace explicit "\n" in string
-            .replace(/\n/g, '<br>')    // Replace actual newline characters
-
+        
+        // Parse the string into an array by splitting on numbered points
+        const points = data.toString().split(/\d+\.\s*"/).filter(point => point.trim());
+        
+        // Format each point
+        const formattedText = points.map((point, index) => {
+            // Clean up the point by removing extra quotes and commas
+            const cleanPoint = point.replace(/^"|"$|",$/g, '').trim();
+            return `${index + 1}. ${cleanPoint}`;
+        }).join('<br><br>');
+        
         document.getElementById('summary').innerHTML = formattedText;
         
     } catch (error) {
