@@ -18,14 +18,12 @@ async function fetchSummary() {
         }
 
         const data = await response.json();
-        
-        if (Array.isArray(data)) {
-            summaryElement.innerHTML = data
-                .map((item, index) => `${index + 1}. ${JSON.stringify(item, null, 2)}`)
-                .join('<br>');
-        } else {
-            summaryElement.innerText = JSON.stringify(data, null, 2);
-        }
+
+        // Formatting output to ensure each key-value pair appears on a new line
+        summaryElement.innerText = Object.entries(data)
+            .map(([key, value]) => `${key}: ${value}`)
+            .join('\n');
+
     } catch (error) {
         summaryElement.innerHTML = `<div class="error">Error: ${error.message}</div>`;
     } finally {
