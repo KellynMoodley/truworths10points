@@ -1,44 +1,16 @@
-// n8n.js
 async function fetchSummary() {
-    const summaryElement = document.getElementById('summary');
     const accountNumber = document.getElementById('accountNumber').value;
-
     if (!accountNumber) {
-        summaryElement.innerHTML = '<div class="error">Please enter an account number.</div>';
+        alert('Please enter an account number.');
         return;
     }
-
     try {
-        // Show loading state
-        summaryElement.classList.add('loading');
-        summaryElement.textContent = 'Loading...';
-
-        const response = await fetch(`/fetch-summary?account=${encodeURIComponent(accountNumber)}`);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
+        const response = await fetch(/fetch-summary?account=${encodeURIComponent(accountNumber)});
         const data = await response.json();
 
-        if (data.error) {
-            throw new Error(data.error);
-        }
-
-        // Format and display the data
-        let formattedText = JSON.stringify(data, null, 2)
-            summaryElement.innerHTML = formattedText;
+        document.getElementById('summary').innerText = JSON.stringify(data, null, 2);        
         
     } catch (error) {
-        console.error('Error:', error);
-        summaryElement.innerHTML = `<div class="error">Error: ${error.message}</div>`;
-    } finally {
-        summaryElement.classList.remove('loading');
+        document.getElementById('summary').innerText = 'No data for account number: ' + accountNumber;
     }
 }
-
-// Add event listener for page load
-document.addEventListener('DOMContentLoaded', () => {
-    // Optional: Add any initialization code here
-    console.log('N8N Webhook Listener initialized');
-});
