@@ -4,24 +4,24 @@ async function fetchSummary() {
         alert('Please enter an account number.');
         return;
     }
+
     try {
         const response = await fetch(`/fetch-summary?account=${encodeURIComponent(accountNumber)}`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
         const data = await response.json();
-        
-        // Parse the string into an array by splitting on numbered points
-const points = data.toString().split(/\d+\.\s*[" ,]/).filter(point => point.trim());
+        if (!data || data.length === 0) {
+            document.getElementById('summary').innerHTML = `No data for account number: ${accountNumber}`;
+            return;
+        }
 
-// Format each point
-const formattedText = points.map((point, index) => {
-    // Clean up the point by removing extra quotes and commas
-    const cleanPoint = point.replace(/^"|"$|",$/g, '').trim();
-    return `${index + 1}. ${cleanPoint}`;
-}).join('<br><br>');
+        // Format the data into readable HTML
+        const formattedText = data.map((item, index) => `<p><strong>${index + 1}. ${item}</strong></p>`).join('');
 
-        
         document.getElementById('summary').innerHTML = formattedText;
-        
     } catch (error) {
-        document.getElementById('summary').innerHTML = 'No data for account number: ' + accountNumber;
+        document.getElementById('summary').innerHTML = `Error fetching data: ${error.message}`;
     }
 }
