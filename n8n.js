@@ -18,7 +18,8 @@ async function fetchSummary() {
         }
         
         const data = await response.json();
-        summaryElement.innerText = JSON.stringify(data, null, 2);
+        const formattedData = JSON.stringify(data, null, 2).replace(/,/g, ',\n'); // Add a new line after every comma
+        summaryElement.innerText = formattedData;
     } catch (error) {
         summaryElement.innerHTML = `<div class="error">Error: ${error.message}</div>`;
     } finally {
