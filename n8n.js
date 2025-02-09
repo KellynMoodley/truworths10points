@@ -18,7 +18,16 @@ async function fetchSummary() {
         }
         
         const data = await response.json();
-        summaryElement.innerText = JSON.stringify(data, null, 2);
+        let formattedText = JSON.stringify(data, null, 2);
+        
+        // Remove quotes and escape characters
+        formattedText = formattedText.replace(/\\|"/g, '');
+
+        // Find '##' and move the following text to a new line
+        formattedText = formattedText.replace(/##/g, '\n');
+
+        // Update the summaryElement with the formatted text
+        summaryElement.innerText = formattedText;
     } catch (error) {
         summaryElement.innerHTML = `<div class="error">Error: ${error.message}</div>`;
     } finally {
