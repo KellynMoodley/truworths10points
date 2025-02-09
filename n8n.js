@@ -26,11 +26,11 @@ async function fetchSummary() {
         }
 
         // Format and display the data
-        let formattedText = JSON.stringify(data, null, 2)
-            .replace(/\\n/g, '\n')  // Replace explicit "\n" in string
-            .replace(/\n/g, '<br>'); // Replace actual newline characters
+        //let formattedText = JSON.stringify(data, null, 2)
+        //    .replace(/\\n/g, '\n')  // Replace explicit "\n" in string
+        //    .replace(/\n/g, '<br>'); // Replace actual newline characters
 
-        summaryElement.innerHTML = formattedText;
+        summaryElement.innerHTML = data;
     } catch (error) {
         console.error('Error:', error);
         summaryElement.innerHTML = `<div class="error">Error: ${error.message}</div>`;
