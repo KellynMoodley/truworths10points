@@ -10,8 +10,6 @@ async function fetchSummary() {
 
         // Convert object to formatted text
         let formattedText = JSON.stringify(data, null, 2)
-            .replace(/\\n/g, '<br>')  // Replace explicit "\n" in string
-            .replace(/\n/g, '<br>')    // Replace actual newline characters
 
         document.getElementById('summary').innerHTML = formattedText;
         
