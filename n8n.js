@@ -24,7 +24,7 @@ async function fetchSummary() {
         formattedText = formattedText.replace(/\\|"/g, '');
 
         // Find '##' and move the following text to a new line
-        formattedText = formattedText.replace(/##/g, '\n');
+        formattedText = formattedText.replace(/##/g, '\n\n');
 
         // Update the summaryElement with the formatted text
         summaryElement.innerText = formattedText;
