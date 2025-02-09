@@ -19,10 +19,9 @@ async function fetchSummary() {
 
         const data = await response.json();
 
-        // Formatting output to ensure each key-value pair appears on a new line
-        summaryElement.innerText = Object.entries(data)
-            .map(([key, value]) => `${key}: ${value}`)
-            .join('\n');
+        // Ensure numbers 1-10 are on separate lines
+        summaryElement.innerText = JSON.stringify(data, null, 2)
+            .replace(/(\d+)/g, '\n$1');
 
     } catch (error) {
         summaryElement.innerHTML = `<div class="error">Error: ${error.message}</div>`;
