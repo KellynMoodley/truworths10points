@@ -83,8 +83,11 @@
         formattedText = formattedText.replace(/["\[\],;\\/]/g, '');
         
         // Add two newlines after each period
-        formattedText = formattedText.replace(/##/g, '\n\n'); // Adds two new lines before ##
-               // replace(/\./g, '.\n\n');
+       // formattedText = formattedText.replace(/##/g, '\n\n'); // Adds two new lines before ##
+
+                // Add two newlines after sentence-ending punctuation (excluding decimal numbers)
+           formattedText = formattedText.replace(/(?<!\d)([.?!])\s*/g, '$1\n\n');
+
                 // Update the summary element
                 summaryElement.innerText = formattedText;
                 
