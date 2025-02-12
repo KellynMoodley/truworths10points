@@ -51,69 +51,107 @@
     <script>
         let accountsData = [];
 
+        // Function to display error messages
+        function showError(message) {
+            const summaryElement = document.getElementById('summary');
+            summaryElement.innerHTML = `<div class="text-red-600 font-semibold">${message}</div>`;
+        }
+
+        async function fetchSummary() {
+            const accountNumber = document.getElementById('accountNumber').value;
+            const summaryElement = document.getElementById('summary');
+            
+            if (!accountNumber) {
+                showError('Please enter an account number.');
+                return;
+            }
+
+            try {
+                summaryElement.innerText = 'Loading...';
+                
+                const response = await fetch(`/fetch-summary?account=${encodeURIComponent(accountNumber)}`);
+                
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Format the response text
+                let formattedText = JSON.stringify(data, null, 2);
+                // Remove quotes and escape characters
+                formattedText = formattedText.replace(/\\|"/g, '');
+                // Find '##' and move the following text to a new line
+                formattedText = formattedText.replace(/##/g, '\n\n');
+                
+                // Update the summary element
+                summaryElement.innerText = formattedText;
+                
+            } catch (error) {
+                showError(`Failed to fetch summary: ${error.message}`);
+            }
+        }
+
         document.getElementById('excelFile').addEventListener('change', function(e) {
             const file = e.target.files[0];
             const reader = new FileReader();
 
             reader.onload = function(event) {
-                const workbook = XLSX.read(event.target.result, { type: 'binary' });
-                const sheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[sheetName];
+                try {
+                    const workbook = XLSX.read(event.target.result, { type: 'binary' });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
 
-                // Convert worksheet to JSON
-                accountsData = XLSX.utils.sheet_to_json(worksheet);
+                    // Convert worksheet to JSON
+                    accountsData = XLSX.utils.sheet_to_json(worksheet);
 
-                // Clear existing account list
-                const accountList = document.getElementById('accountList');
-                accountList.innerHTML = '';
+                    if (accountsData.length === 0) {
+                        showError('No data found in the Excel file');
+                        return;
+                    }
 
-                // Populate accounts dynamically
-                accountsData.forEach(account => {
-                    const accountDiv = document.createElement('div');
-                    accountDiv.className = 'bg-gray-50 hover:bg-blue-100 p-3 rounded-lg cursor-pointer transition group';
-                    accountDiv.setAttribute('onclick', `selectAccount('${account.Account_no}')`);
-                    
-                    accountDiv.innerHTML = `
-                        <div class="flex justify-between items-center">
-                            <div>
-                                <h3 class="font-semibold text-gray-800 group-hover:text-blue-700">${account.Collections_Segment_Detail || 'N/A'}</h3>
-                                <p class="text-sm text-gray-500 group-hover:text-blue-600">Account: ${account.Account_no}</p>
+                    // Clear existing account list
+                    const accountList = document.getElementById('accountList');
+                    accountList.innerHTML = '';
+
+                    // Populate accounts dynamically
+                    accountsData.forEach(account => {
+                        const accountDiv = document.createElement('div');
+                        accountDiv.className = 'bg-gray-50 hover:bg-blue-100 p-3 rounded-lg cursor-pointer transition group';
+                        accountDiv.setAttribute('onclick', `selectAccount('${account.Account_no}')`);
+                        
+                        accountDiv.innerHTML = `
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <h3 class="font-semibold text-gray-800 group-hover:text-blue-700">${account.Collections_Segment_Detail || 'N/A'}</h3>
+                                    <p class="text-sm text-gray-500 group-hover:text-blue-600">Account: ${account.Account_no}</p>
+                                </div>
                             </div>
-                        </div>
-                    `;
-                    
-                    accountList.appendChild(accountDiv);
-                });
+                        `;
+                        
+                        accountList.appendChild(accountDiv);
+                    });
+                } catch (error) {
+                    showError(`Error reading Excel file: ${error.message}`);
+                }
+            };
+
+            reader.onerror = function(error) {
+                showError(`Error reading file: ${error.message}`);
             };
 
             reader.readAsBinaryString(file);
         });
 
-        async function selectAccount(accountId) {
+        function selectAccount(accountId) {
             // Update the account number input
             document.getElementById('accountNumber').value = accountId;
-            
-            // Find the selected account
-            const selectedAccount = accountsData.find(account => account.Account_no === accountId);
-            
-            if (selectedAccount) {
-                // Show loading state
-                const summaryElement = document.getElementById('summary');
-                summaryElement.textContent = 'Loading summary...';
-                
-                try {
-                    // Fetch the detailed summary
-                    await fetchSummary();
-                } catch (error) {
-                    console.error('Error fetching summary:', error);
-                    summaryElement.textContent = 'Error loading summary. Please try again.';
-                }
-            }
+            // Fetch and display the summary
+            fetchSummary();
         }
 
         // Add event listener for manual account number input
         document.getElementById('accountNumber').addEventListener('change', fetchSummary);
     </script>
-    <script src="n8n.js"></script>
 </body>
 </html>
