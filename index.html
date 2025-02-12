@@ -80,13 +80,15 @@
                 // Format the response text
                 let formattedText = JSON.stringify(data, null, 2);
                 // Remove quotes, brackets, commas and other special characters
-        formattedText = formattedText.replace(/["\[\],;\\/]/g, '');
+                  formattedText = formattedText.replace(/["\[\],;\\/]/g, '');
         
-        // Add two newlines after each period
-       // formattedText = formattedText.replace(/##/g, '\n\n'); // Adds two new lines before ##
+    
 
                 // Add two newlines after sentence-ending punctuation (excluding decimal numbers)
-           formattedText = formattedText.replace(/(?<!\d)([.?!])\s*/g, '$1\n\n');
+                  formattedText = formattedText.replace(/(?<!\d)([.?!])\s*/g, '$1\n\n');
+                // Ensure "##" starts on a new line
+                formattedText = formattedText.replace(/##/g, '\n\n');
+                                              .replace((/:/g, '\n\n');
 
                 // Update the summary element
                 summaryElement.innerText = formattedText;
