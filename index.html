@@ -23,40 +23,30 @@
         </div>
     </div>
 
-
     <main class="ml-80 flex flex-grow p-10">
-    <div class="bg-white shadow-md rounded-xl p-8 max-w-full mx-auto w-full">
-        <h2 class="text-3xl font-bold mb-6 text-center text-gray-800">Summary</h2>
-        
-        <div class="mb-6">
-            <label class="block text-gray-700 text-sm font-bold mb-2" for="accountNumber">
-                Account Number
-            </label>
-            <input 
-                type="text" 
-                id="accountNumber" 
-                placeholder="Enter Account Number"
-                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+        <div class="bg-white shadow-md rounded-xl p-8 max-w-full mx-auto w-full">
+            <h2 class="text-3xl font-bold mb-6 text-center text-gray-800">Summary</h2>
+            
+            <div class="mb-6">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="accountNumber">
+                    Account Number
+                </label>
+                <input 
+                    type="text" 
+                    id="accountNumber" 
+                    placeholder="Enter Account Number"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                >
+            </div>
+            
+            <div 
+                id="summary" 
+                class="mt-8 p-6 bg-gray-50 border border-gray-200 rounded-lg whitespace-pre-wrap overflow-auto max-h-96 w-full"
             >
+                Select an account from the list to view summary...
+            </div>
         </div>
-        
-        <button 
-            onclick="fetchSummary()"
-            class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition duration-300 font-semibold"
-        >
-            Get Summary
-        </button>
-        
-        <div 
-            id="summary" 
-            class="mt-8 p-6 bg-gray-50 border border-gray-200 rounded-lg whitespace-pre-wrap overflow-auto max-h-96 w-full"
-        >
-            Waiting for webhook data...
-           </div>
-         </div>
-       </main>
-   
-    </div>
+    </main>
 
     <script>
         let accountsData = [];
@@ -100,16 +90,21 @@
         });
 
         function selectAccount(accountId) {
+            // Update the account number input
             document.getElementById('accountNumber').value = accountId;
             
             // Find the selected account
             const selectedAccount = accountsData.find(account => account.Account_no === accountId);
             
-        }
-        
-        function fetchSummary() {
-            const accountNumber = document.getElementById('accountNumber').value;
-            document.getElementById('summary').textContent = `Fetching summary for account: ${accountNumber}`;
+            // Update the summary immediately
+            if (selectedAccount) {
+                const summaryElement = document.getElementById('summary');
+                // Format the account data for display
+                const summaryText = Object.entries(selectedAccount)
+                    .map(([key, value]) => `${key}: ${value}`)
+                    .join('\n');
+                summaryElement.textContent = summaryText;
+            }
         }
     </script>
     <script src="n8n.js"></script>
