@@ -87,7 +87,7 @@
                 // Add two newlines after sentence-ending punctuation (excluding decimal numbers)
                   formattedText = formattedText.replace(/(?<!\d)([.?!])\s*/g, '$1\n\n');
                 // Ensure "##" starts on a new line
-                formattedText = formattedText.replace(/##/g, '\n\n');
+                formattedText = formattedText.replace(/##/g, '\n\n')
                                               .replace((/:/g, '\n\n');
 
                 // Update the summary element
