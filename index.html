@@ -89,23 +89,30 @@
             reader.readAsBinaryString(file);
         });
 
-        function selectAccount(accountId) {
+        async function selectAccount(accountId) {
             // Update the account number input
             document.getElementById('accountNumber').value = accountId;
             
             // Find the selected account
             const selectedAccount = accountsData.find(account => account.Account_no === accountId);
             
-            // Update the summary immediately
             if (selectedAccount) {
+                // Show loading state
                 const summaryElement = document.getElementById('summary');
-                // Format the account data for display
-                const summaryText = Object.entries(selectedAccount)
-                    .map(([key, value]) => `${key}: ${value}`)
-                    .join('\n');
-                summaryElement.textContent = summaryText;
+                summaryElement.textContent = 'Loading summary...';
+                
+                try {
+                    // Fetch the detailed summary
+                    await fetchSummary();
+                } catch (error) {
+                    console.error('Error fetching summary:', error);
+                    summaryElement.textContent = 'Error loading summary. Please try again.';
+                }
             }
         }
+
+        // Add event listener for manual account number input
+        document.getElementById('accountNumber').addEventListener('change', fetchSummary);
     </script>
     <script src="n8n.js"></script>
 </body>
