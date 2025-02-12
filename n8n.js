@@ -21,10 +21,10 @@ async function fetchSummary() {
         let formattedText = JSON.stringify(data, null, 2);
         
         // Remove quotes and escape characters
-        formattedText = formattedText.replace(/\\|"/g, '');
+        formattedText = formattedText.replace(/\\[];,|"/g, '');
 
         // Find '##' and move the following text to a new line
-        formattedText = formattedText.replace(/##/g, '\n\n');
+        formattedText = formattedText.replace(/./g, '\n\n');
 
         // Update the summaryElement with the formatted text
         summaryElement.innerText = formattedText;
