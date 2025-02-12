@@ -1,8 +1,8 @@
 {
-  "name": "twilio-call-status",
+  "name": "truworths project",
   "version": "1.0.0",
   "type": "commonjs",
-  "description": "A simple app to display phone call status from Twilio",
+  "description": "App to provide AI summaries",
   "main": "n8n.js",
   "scripts": {
     "prestart": "npm audit fix --force",
