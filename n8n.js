@@ -21,10 +21,9 @@ async function fetchSummary() {
         let formattedText = JSON.stringify(data, null, 2);
         
         // Remove quotes, brackets, commas and other special characters
-        formattedText = formattedText.replace(/["\[\],;]/g, '');
+        //formattedText = formattedText.replace(/["\[\],;]/g, '');
         
-        // Add two newlines after each period
-        formattedText = formattedText.replace(/\./g, '.\n\n');
+    
 
         // Update the summaryElement with the formatted text
         summaryElement.innerText = formattedText;
