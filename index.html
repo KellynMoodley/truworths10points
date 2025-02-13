@@ -104,7 +104,9 @@
 
                 // Format primary content
                 let formattedPrimary = primaryContent
-                    .replace(/:/g, '\n');
+                    ? primaryContent
+                    .replace(/:/g, '\n')
+                    : 'No primary information available';
 
                 // Format secondary content
                 let formattedSecondary = secondaryContent
