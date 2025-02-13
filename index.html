@@ -41,12 +41,12 @@
             
             <div class="grid grid-cols-1 gap-6">
                 <div>
-                    <h3 class="text-lg font-semibold mb-2 text-gray-700">Primary Information</h3>
+                    <h3 class="text-lg font-semibold mb-2 text-gray-700">Summary</h3>
                     <div 
                         id="Summary" 
                         class="p-6 bg-gray-50 border border-gray-200 rounded-lg whitespace-pre-wrap overflow-auto max-h-96 w-full"
                     >
-                        Select an account to view primary information...
+                        Select an account to view summary...
                     </div>
                 </div>
                 
@@ -61,7 +61,7 @@
         function showError(message) {
             const primaryElement = document.getElementById('primarySummary');
             primaryElement.innerHTML = <div class="text-red-600 font-semibold">${message}</div>;
-            secondaryElement.innerHTML = '';
+
         }
 
         async function fetchSummary() {
