@@ -82,7 +82,7 @@
                 
                 formattedText = formattedText.replace(/["\[\],;\\/]/g, '');
                 formattedText = formattedText.replace(/nn/g, '\n\n');
-                formattedText = formattedText.replace(/n/g, '\n');
+                formattedText = formattedText.replace(/n-/g, '\n');
 
                 summaryElement.innerText = formattedText || 'No summary available';
                 
