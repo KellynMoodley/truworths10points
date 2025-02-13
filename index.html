@@ -81,8 +81,7 @@
                 let formattedText = JSON.stringify(data, null, 2);
                 
                 formattedText = formattedText.replace(/["\[\],;\\/]/g, '');
-                formattedText = formattedText.replace(/nn/g, '\n\n');
-                formattedText = formattedText.replace(/n-/g, '\n');
+                formattedText = formattedText.replace(/##/g, '\n\n');
 
                 summaryElement.innerText = formattedText || 'No summary available';
                 
