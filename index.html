@@ -69,7 +69,7 @@
         function showError(message) {
             const primaryElement = document.getElementById('primarySummary');
             const secondaryElement = document.getElementById('secondarySummary');
-            primaryElement.innerHTML = `<div class="text-red-600 font-semibold">${message}</div>`;
+            primaryElement.innerHTML = <div class="text-red-600 font-semibold">${message}</div>;
             secondaryElement.innerHTML = '';
         }
 
@@ -87,10 +87,10 @@
                 primaryElement.innerText = 'Loading...';
                 secondaryElement.innerText = 'Loading...';
                 
-                const response = await fetch(`/fetch-summary?account=${encodeURIComponent(accountNumber)}`);
+                const response = await fetch(/fetch-summary?account=${encodeURIComponent(accountNumber)});
                 
                 if (!response.ok) {
-                    throw new Error(`Error: ${response.status}`);
+                    throw new Error(Error: ${response.status});
                 }
                 
                 const data = await response.json();
@@ -119,7 +119,7 @@
                 secondaryElement.innerText = formattedSecondary;
                 
             } catch (error) {
-                showError(`Failed to fetch summary: ${error.message}`);
+                showError(Failed to fetch summary: ${error.message});
             }
         }
 
@@ -146,26 +146,26 @@
                     accountsData.forEach(account => {
                         const accountDiv = document.createElement('div');
                         accountDiv.className = 'bg-gray-50 hover:bg-blue-100 p-3 rounded-lg cursor-pointer transition group';
-                        accountDiv.setAttribute('onclick', `selectAccount('${account.Account_no}')`);
+                        accountDiv.setAttribute('onclick', selectAccount('${account.Account_no}'));
                         
-                        accountDiv.innerHTML = `
+                        accountDiv.innerHTML = 
                             <div class="flex justify-between items-center">
                                 <div>
                                     <h3 class="font-semibold text-gray-800 group-hover:text-blue-700">${account.Collections_Segment_Detail || 'N/A'}</h3>
                                     <p class="text-sm text-gray-500 group-hover:text-blue-600">Account: ${account.Account_no}</p>
                                 </div>
                             </div>
-                        `;
+                        ;
                         
                         accountList.appendChild(accountDiv);
                     });
                 } catch (error) {
-                    showError(`Error reading Excel file: ${error.message}`);
+                    showError(Error reading Excel file: ${error.message});
                 }
             };
 
             reader.onerror = function(error) {
-                showError(`Error reading file: ${error.message}`);
+                showError(Error reading file: ${error.message});
             };
 
             reader.readAsBinaryString(file);
