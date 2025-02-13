@@ -97,7 +97,7 @@
                 let formattedText = JSON.stringify(data, null, 2);
                 
                 // Remove quotes, brackets, commas and other special characters
-               // formattedText = formattedText.replace(/["\[\],;\\/]/g, '');
+                formattedText = formattedText.replace(/["\[\],;\\/]/g, '');
 
                 // Split the content based on ##
                 const [primaryContent, secondaryContent] = formattedText.split('##').map(content => content.trim());
