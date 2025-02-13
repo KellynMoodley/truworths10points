@@ -43,22 +43,14 @@
                 <div>
                     <h3 class="text-lg font-semibold mb-2 text-gray-700">Primary Information</h3>
                     <div 
-                        id="primarySummary" 
+                        id="Summary" 
                         class="p-6 bg-gray-50 border border-gray-200 rounded-lg whitespace-pre-wrap overflow-auto max-h-96 w-full"
                     >
                         Select an account to view primary information...
                     </div>
                 </div>
                 
-                <div>
-                    <h3 class="text-lg font-semibold mb-2 text-gray-700">Secondary Information</h3>
-                    <div 
-                        id="secondarySummary" 
-                        class="p-6 bg-gray-50 border border-gray-200 rounded-lg whitespace-pre-wrap overflow-auto max-h-96 w-full"
-                    >
-                        Select an account to view secondary information...
-                    </div>
-                </div>
+        
             </div>
         </div>
     </main>
@@ -68,7 +60,6 @@
 
         function showError(message) {
             const primaryElement = document.getElementById('primarySummary');
-            const secondaryElement = document.getElementById('secondarySummary');
             primaryElement.innerHTML = <div class="text-red-600 font-semibold">${message}</div>;
             secondaryElement.innerHTML = '';
         }
@@ -76,7 +67,7 @@
         async function fetchSummary() {
             const accountNumber = document.getElementById('accountNumber').value;
             const primaryElement = document.getElementById('primarySummary');
-            const secondaryElement = document.getElementById('secondarySummary');
+        
             
             if (!accountNumber) {
                 showError('Please enter an account number.');
@@ -85,7 +76,7 @@
 
             try {
                 primaryElement.innerText = 'Loading...';
-                secondaryElement.innerText = 'Loading...';
+            
                 
                 const response = await fetch(/fetch-summary?account=${encodeURIComponent(accountNumber)});
                 
@@ -99,24 +90,13 @@
                 // Remove quotes, brackets, commas and other special characters
                 formattedText = formattedText.replace(/["\[\],;\\/]/g, '');
 
-                // Split the content based on ##
-                const [primaryContent, secondaryContent] = formattedText.split('##').map(content => content.trim());
+            
 
-                // Format primary content
-                let formattedPrimary = primaryContent
-                    ? primaryContent
-                    .replace(/:/g, '\n')
-                    : 'No primary information available';
-
-                // Format secondary content
-                let formattedSecondary = secondaryContent
-                    ? secondaryContent
-                        .replace(/:/g, '\n')
-                    : 'No secondary information available';
+               
 
                 // Update the display elements
-                primaryElement.innerText = formattedPrimary;
-                secondaryElement.innerText = formattedSecondary;
+                primaryElement.innerText = formattedText;
+                
                 
             } catch (error) {
                 showError(Failed to fetch summary: ${error.message});
