@@ -39,26 +39,11 @@
                 >
             </div>
             
-            <div class="grid grid-cols-1 gap-6">
-                <div>
-                    <h3 class="text-lg font-semibold mb-2 text-gray-700">Primary Information</h3>
-                    <div 
-                        id="primarySummary" 
-                        class="p-6 bg-gray-50 border border-gray-200 rounded-lg whitespace-pre-wrap overflow-auto max-h-96 w-full"
-                    >
-                        Select an account to view primary information...
-                    </div>
-                </div>
-                
-                <div>
-                    <h3 class="text-lg font-semibold mb-2 text-gray-700">Secondary Information</h3>
-                    <div 
-                        id="secondarySummary" 
-                        class="p-6 bg-gray-50 border border-gray-200 rounded-lg whitespace-pre-wrap overflow-auto max-h-96 w-full"
-                    >
-                        Select an account to view secondary information...
-                    </div>
-                </div>
+            <div 
+                id="summary" 
+                class="mt-8 p-6 bg-gray-50 border border-gray-200 rounded-lg whitespace-pre-wrap overflow-auto max-h-96 w-full"
+            >
+                Select an account from the list to view summary...
             </div>
         </div>
     </main>
@@ -66,17 +51,15 @@
     <script>
         let accountsData = [];
 
+        // Function to display error messages
         function showError(message) {
-            const primaryElement = document.getElementById('primarySummary');
-            const secondaryElement = document.getElementById('secondarySummary');
-            primaryElement.innerHTML = `<div class="text-red-600 font-semibold">${message}</div>`;
-            secondaryElement.innerHTML = '';
+            const summaryElement = document.getElementById('summary');
+            summaryElement.innerHTML = `<div class="text-red-600 font-semibold">${message}</div>`;
         }
 
         async function fetchSummary() {
             const accountNumber = document.getElementById('accountNumber').value;
-            const primaryElement = document.getElementById('primarySummary');
-            const secondaryElement = document.getElementById('secondarySummary');
+            const summaryElement = document.getElementById('summary');
             
             if (!accountNumber) {
                 showError('Please enter an account number.');
@@ -84,8 +67,7 @@
             }
 
             try {
-                primaryElement.innerText = 'Loading...';
-                secondaryElement.innerText = 'Loading...';
+                summaryElement.innerText = 'Loading...';
                 
                 const response = await fetch(`/fetch-summary?account=${encodeURIComponent(accountNumber)}`);
                 
@@ -94,29 +76,23 @@
                 }
                 
                 const data = await response.json();
-                let formattedText = JSON.stringify(data, null, 2);
                 
+                // Format the response text
+                let formattedText = JSON.stringify(data, null, 2);
                 // Remove quotes, brackets, commas and other special characters
-                formattedText = formattedText.replace(/["\[\],;\\/]/g, '');
+                  formattedText = formattedText.replace(/["\[\],;\\/]/g, '');
+        
+    
 
-                // Split the content based on ##
-                const [primaryContent, secondaryContent] = formattedText.split('##').map(content => content.trim());
+                // Add two newlines after sentence-ending punctuation (excluding decimal numbers)
+                formattedText = formattedText.replace(/(?<!\d[.,])([.?!])\s*/g, '$1\n\n');
 
-                // Format primary content
-                let formattedPrimary = primaryContent
-                    //.replace(/(?<!\d[.,])([.?!])\s*/g, '$1\n\n')
-                    .replace(/:/g, '\n');
+                // Ensure "##" starts on a new line
+                formattedText = formattedText.replace(/##/g, '\n\n')
+                                              .replace(/:/g, '\n\n');
 
-                // Format secondary content
-                let formattedSecondary = secondaryContent
-                    ? secondaryContent
-                      //  .replace(/(?<!\d[.,])([.?!])\s*/g, '$1\n\n')
-                        .replace(/:/g, '\n')
-                    : 'No secondary information available';
-
-                // Update the display elements
-                primaryElement.innerText = formattedPrimary;
-                secondaryElement.innerText = formattedSecondary;
+                // Update the summary element
+                summaryElement.innerText = formattedText;
                 
             } catch (error) {
                 showError(`Failed to fetch summary: ${error.message}`);
@@ -133,6 +109,7 @@
                     const sheetName = workbook.SheetNames[0];
                     const worksheet = workbook.Sheets[sheetName];
 
+                    // Convert worksheet to JSON
                     accountsData = XLSX.utils.sheet_to_json(worksheet);
 
                     if (accountsData.length === 0) {
@@ -140,9 +117,11 @@
                         return;
                     }
 
+                    // Clear existing account list
                     const accountList = document.getElementById('accountList');
                     accountList.innerHTML = '';
 
+                    // Populate accounts dynamically
                     accountsData.forEach(account => {
                         const accountDiv = document.createElement('div');
                         accountDiv.className = 'bg-gray-50 hover:bg-blue-100 p-3 rounded-lg cursor-pointer transition group';
@@ -172,10 +151,13 @@
         });
 
         function selectAccount(accountId) {
+            // Update the account number input
             document.getElementById('accountNumber').value = accountId;
+            // Fetch and display the summary
             fetchSummary();
         }
 
+        // Add event listener for manual account number input
         document.getElementById('accountNumber').addEventListener('change', fetchSummary);
     </script>
 </body>
