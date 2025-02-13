@@ -104,13 +104,13 @@
 
                 // Format primary content
                 let formattedPrimary = primaryContent
-                    .replace(/(?<!\d[.,])([.?!])\s*/g, '$1\n\n')
+                    //.replace(/(?<!\d[.,])([.?!])\s*/g, '$1\n\n')
                     .replace(/:/g, '\n');
 
                 // Format secondary content
                 let formattedSecondary = secondaryContent
                     ? secondaryContent
-                        .replace(/(?<!\d[.,])([.?!])\s*/g, '$1\n\n')
+                      //  .replace(/(?<!\d[.,])([.?!])\s*/g, '$1\n\n')
                         .replace(/:/g, '\n')
                     : 'No secondary information available';
 
